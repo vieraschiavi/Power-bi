@@ -23,8 +23,11 @@ predictivos con validación temporal honesta y termina en un motor que recomiend
 | `src/` | Pipeline Python: generación, transformación, ML y motor de IA |
 | `sql/` | DDL del modelo estrella, ETL, controles de calidad y vistas semánticas (T-SQL) |
 | `powerbi/archivos/` | **Los tres tableros listos para abrir** (`.pbit` y PBIP) |
+| `powerbi/esquema.py` | El contrato único: nombres, tipos, relaciones, formatos |
+| `powerbi/validar_contrato.py` | Verifica que las 4 capas del modelo no divergieron |
 | `powerbi/dax/` | Biblioteca DAX: medidas base + una por tablero |
-| `powerbi/generar_pbit.py` | Genera los archivos de Power BI desde el contrato de `esquema.py` |
+| `powerbi/generar_pbit.py` | Genera los archivos de Power BI desde ese contrato |
+| `powerbi/tema_adium.json` | Tema corporativo importable en Power BI |
 | `powerbi/modelo/` | Modelo semántico: relaciones, RLS, optimización, diccionario de métricas |
 | `powerbi/diseno_tableros.md` | Diseño página por página de los tres tableros |
 | `docs/` | Documentación visual del proceso completo |
@@ -34,10 +37,18 @@ predictivos con validación temporal honesta y termina en un motor que recomiend
 
 ## Correrlo
 
+**En Windows, un doble clic en `construir_tableros.bat`** hace todo: instala
+dependencias, corre el pipeline, valida el contrato del modelo, regenera los
+tres archivos con la ruta de datos de tu máquina y abre el primero.
+
+A mano:
+
 ```bash
 pip install -r requirements.txt
-python src/run_all.py               # ~75 segundos, reproducible
-python powerbi/generar_pbit.py      # regenera los tres archivos de Power BI
+python src/run_all.py                    # ~65 s, reproducible
+python powerbi/generar_sql_vistas.py     # vistas SQL desde el contrato
+python powerbi/validar_contrato.py       # ¿las 4 capas dicen lo mismo?
+python powerbi/generar_pbit.py           # los tres archivos de Power BI
 ```
 
 Genera todo en `data/`. Después, doble clic en

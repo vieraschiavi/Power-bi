@@ -210,7 +210,7 @@ GO
 -- las dimensiones de producto, filial y calendario.
 IF OBJECT_ID('star.fact_sellout') IS NOT NULL DROP TABLE star.fact_sellout;
 CREATE TABLE star.fact_sellout (
-    fecha_mes         DATE          NOT NULL,
+    fecha             DATE          NOT NULL,   -- mismo nombre en los 8 hechos
     id_filial         INT           NOT NULL,
     id_producto       INT           NOT NULL,
     unidades_sellout  BIGINT        NOT NULL,
@@ -265,6 +265,8 @@ CREATE TABLE star.fact_recomendaciones (
     canal                       VARCHAR(30)   NOT NULL,
     segmento                    CHAR(1)       NOT NULL,
     rank_segmento               TINYINT       NOT NULL,
+    sku                         VARCHAR(20)   NOT NULL,
+    marca                       VARCHAR(60)   NOT NULL,
     descuento_pct               DECIMAL(6,4)  NOT NULL,
     precio_neto                 DECIMAL(12,2) NOT NULL,
     margen_unitario             DECIMAL(12,2) NOT NULL,
@@ -284,6 +286,55 @@ CREATE TABLE star.fact_recomendaciones (
     ganancia_vs_sin_oferta_usd  DECIMAL(18,2) NOT NULL,
     en_borde_de_soporte         BIT           NOT NULL,
     justificativo               NVARCHAR(1200) NOT NULL
+);
+GO
+
+-- Proyecciones mensuales de los modelos (pasos 3 y 4). Son hechos del modelo
+-- como cualquier otro: se consultan desde el mismo tablero, con las mismas
+-- dimensiones y el mismo contexto de filtro. Si vivieran en un Excel aparte,
+-- nadie las usaría.
+IF OBJECT_ID('star.fact_forecast_devoluciones') IS NOT NULL DROP TABLE star.fact_forecast_devoluciones;
+CREATE TABLE star.fact_forecast_devoluciones (
+    fecha                   DATE          NOT NULL,
+    id_filial               INT           NOT NULL,
+    cod_filial              CHAR(2)       NOT NULL,
+    importe                 DECIMAL(18,2) NOT NULL,
+    importe_dev             DECIMAL(18,2) NOT NULL,
+    tasa_dev_valor          DECIMAL(8,5)  NOT NULL,
+    tasa_dev_proyectada     DECIMAL(8,5)  NOT NULL,
+    importe_dev_proyectado  DECIMAL(18,2) NOT NULL,
+    -- Marca el tramo que el modelo NUNCA vio al entrenar. La precisión que se
+    -- publica se calcula solo sobre estas filas: mostrar la de entrenamiento
+    -- sería mentir con estadística correcta.
+    es_holdout              BIT           NOT NULL
+);
+GO
+
+IF OBJECT_ID('star.fact_forecast_ofertas') IS NOT NULL DROP TABLE star.fact_forecast_ofertas;
+CREATE TABLE star.fact_forecast_ofertas (
+    fecha                     DATE          NOT NULL,
+    id_filial                 INT           NOT NULL,
+    cod_filial                CHAR(2)       NOT NULL,
+    ofertas                   INT           NOT NULL,
+    aceptadas                 INT           NOT NULL,
+    valor_ofertado            DECIMAL(18,2) NOT NULL,
+    inversion_usd             DECIMAL(18,2) NOT NULL,
+    inversion_proyectada_usd  DECIMAL(18,2) NOT NULL,
+    tasa_aceptacion           DECIMAL(8,5)  NOT NULL,
+    es_holdout                BIT           NOT NULL
+);
+GO
+
+-- Estado de calidad: una sola fila que alimenta el encabezado de confianza de
+-- los tres tableros. El estado del dato es parte del modelo, no un anexo: si
+-- vive fuera, nadie lo mira y el semáforo deja de existir.
+IF OBJECT_ID('star.fact_estado_datos') IS NOT NULL DROP TABLE star.fact_estado_datos;
+CREATE TABLE star.fact_estado_datos (
+    ultimo_dato         DATE         NOT NULL,
+    controles_criticos  INT          NOT NULL,
+    controles_alerta    INT          NOT NULL,
+    controles_ok        INT          NOT NULL,
+    ultima_validacion   DATETIME2(0) NOT NULL
 );
 GO
 

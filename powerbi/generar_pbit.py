@@ -29,8 +29,10 @@ Uso:  python powerbi/generar_pbit.py
 """
 from __future__ import annotations
 
+import argparse
 import json
 import re
+import unicodedata
 import uuid
 import zipfile
 from pathlib import Path
@@ -50,6 +52,9 @@ SALIDA.mkdir(exist_ok=True)
 # reflejo de JSON o C— produciría una ruta inválida. El escapado a JSON lo
 # hace json.dumps después, y al decodificar vuelve a una sola barra.
 RUTA_DATOS_DEFECTO = r"C:\Adium\data\star"
+SERVIDOR_DEFECTO = "localhost"
+BASE_DEFECTO = "AdiumBI"
+ORIGEN_DEFECTO = "Parquet"
 
 
 # ==========================================================================
@@ -170,32 +175,54 @@ def _m_lista(valores) -> str:
 
 def expresion_m(tabla: str, cfg: dict) -> list[str]:
     """
-    Genera la consulta M de una tabla.
+    Genera la consulta M de una tabla, con DOS orígenes conmutables.
 
-    Estructura fija en cuatro pasos, siempre la misma, para que el diff entre
-    versiones sea legible:
-        Origen → columnas derivadas → renombrar a nombres de negocio → tipar
+        OrigenDatos = "SQL Server"  →  las vistas star.v_* de la base
+        OrigenDatos = "Parquet"     →  los archivos de data/star
+
+    Es un parámetro, no dos versiones del archivo: se cambia en
+    Inicio → Transformar datos → Administrar parámetros, sin tocar una consulta.
+
+    Los dos caminos CONVERGEN en el mismo conjunto de columnas con nombres de
+    negocio, y recién ahí siguen los pasos comunes. Esa convergencia es lo que
+    permite que las 117 medidas DAX funcionen igual con cualquiera de los dos
+    orígenes: el modelo semántico no se entera de dónde vino el dato.
+
+    La rama SQL lee las VISTAS, que ya devuelven los nombres finales y las
+    columnas derivadas. La rama Parquet tiene que reproducir eso en M. Por eso
+    las vistas son el contrato: la lógica canónica vive en SQL y M la replica,
+    no al revés.
     """
     origen = cfg["origen"]
-    lineas = [
-        "let",
-        f'    Origen = Parquet.Document(File.Contents(RutaDatos & "\\{origen}.parquet")),',
-    ]
-    paso = "Origen"
+    lineas = ["let"]
+
+    # ---------- rama SQL Server: la vista ya viene lista ----------
+    lineas.append(
+        f'    FuenteSQL = () => Sql.Database(ServidorSQL, BaseSQL)'
+        f'{{[Schema="star", Item="{tabla}"]}}[Data],'
+    )
+
+    # ---------- rama Parquet: hay que construir lo que la vista ya hace ----------
+    lineas.append("    FuenteParquet = () =>")
+    lineas.append("        let")
+    lineas.append(
+        f'            Crudo = Parquet.Document(File.Contents(RutaDatos & "\\{origen}.parquet")),'
+    )
+    paso = "Crudo"
 
     # aplanado de dimensiones satélite (desnormalización de estrella)
     if tabla in esq.APLANAR:
         ap = esq.APLANAR[tabla]
         cols = list(ap["columnas"])
         lineas.append(
-            f'    Satelite = Parquet.Document(File.Contents(RutaDatos & "\\{ap["tabla"]}.parquet")),'
+            f'            Satelite = Parquet.Document(File.Contents(RutaDatos & "\\{ap["tabla"]}.parquet")),'
         )
         lineas.append(
-            f'    Unido = Table.NestedJoin({paso}, {{"{ap["clave"]}"}}, Satelite, '
+            f'            Unido = Table.NestedJoin({paso}, {{"{ap["clave"]}"}}, Satelite, '
             f'{{"{ap["clave"]}"}}, "_sat", JoinKind.LeftOuter),'
         )
         lineas.append(
-            '    Expandido = Table.ExpandTableColumn(Unido, "_sat", '
+            '            Expandido = Table.ExpandTableColumn(Unido, "_sat", '
             + _m_lista(cols)
             + ", "
             + _m_lista([ap["columnas"][c] for c in cols])
@@ -204,11 +231,11 @@ def expresion_m(tabla: str, cfg: dict) -> list[str]:
         paso = "Expandido"
 
     # columnas derivadas
-    for i, (nombre, expr, tipo) in enumerate(esq.DERIVADAS.get(tabla, [])):
+    for i, d in enumerate(esq.DERIVADAS.get(tabla, [])):
         nuevo = f"Derivada{i}"
         lineas.append(
-            f'    {nuevo} = Table.AddColumn({paso}, "{nombre}", '
-            f"each {expr}, {tipo}),"
+            f'            {nuevo} = Table.AddColumn({paso}, "{d["nombre"]}", '
+            f'each {d["m"]}, {d["tipo_m"]}),'
         )
         paso = nuevo
 
@@ -220,11 +247,22 @@ def expresion_m(tabla: str, cfg: dict) -> list[str]:
     ]
     if renombres:
         lineas.append(
-            f"    Renombrado = Table.RenameColumns({paso}, "
+            f"            Renombrado = Table.RenameColumns({paso}, "
             + _m_lista(renombres)
-            + "),"
+            + ")"
         )
         paso = "Renombrado"
+    else:
+        lineas[-1] = lineas[-1].rstrip(",")
+
+    lineas.append("        in")
+    lineas.append(f"            {paso},")
+
+    # ---------- convergencia ----------
+    lineas.append(
+        '    Origen = if OrigenDatos = "SQL Server" then FuenteSQL() else FuenteParquet(),'
+    )
+    paso = "Origen"
 
     # selección: solo lo que el modelo declara. Cada columna de más es memoria.
     visibles = [v for _o, v, _t, _oc in cfg["columnas"]]
@@ -247,6 +285,58 @@ def expresion_m(tabla: str, cfg: dict) -> list[str]:
 # ==========================================================================
 # 3 · Modelo TMSL
 # ==========================================================================
+def _parametro(nombre: str, valor: str, descripcion: str,
+               permitidos: list[str] | None = None) -> dict:
+    """
+    Parámetro de Power Query.
+
+    Va en `model.expressions`, no como tabla: un parámetro es un valor escalar
+    reutilizable. Declarado como tabla, la concatenación de ruta no compila.
+    """
+    meta = 'meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true'
+    if permitidos:
+        # Lista cerrada: el usuario elige de un desplegable en vez de tipear
+        # "SQL server" y pasar media hora buscando por qué no carga.
+        meta += ", AllowedValues = " + _m_lista(permitidos)
+    meta += "]"
+    return {
+        "name": nombre,
+        "kind": "m",
+        "description": descripcion,
+        "expression": [_m_texto(valor), "    " + meta],
+        "annotations": [{"name": "PBI_ResultType", "value": "Text"}],
+    }
+
+
+def parametros() -> list[dict]:
+    return [
+        _parametro(
+            "OrigenDatos", ORIGEN_DEFECTO,
+            "De dónde lee el modelo. 'Parquet' usa los archivos locales que "
+            "genera el pipeline; 'SQL Server' se conecta a las vistas star.v_* "
+            "del data warehouse. Las 117 medidas funcionan igual con los dos.",
+            ["Parquet", "SQL Server"],
+        ),
+        _parametro(
+            "RutaDatos", RUTA_DATOS_DEFECTO,
+            "Solo para OrigenDatos = 'Parquet'. Carpeta con los .parquet del "
+            "modelo estrella (la que genera `python src/run_all.py`). "
+            "Ruta absoluta, sin barra final.",
+        ),
+        _parametro(
+            "ServidorSQL", SERVIDOR_DEFECTO,
+            "Solo para OrigenDatos = 'SQL Server'. Instancia donde se "
+            "desplegaron los scripts de sql/.",
+        ),
+        _parametro(
+            "BaseSQL", BASE_DEFECTO,
+            "Solo para OrigenDatos = 'SQL Server'. Base de datos que contiene "
+            "el esquema star.",
+        ),
+    ]
+
+
+
 def construir_modelo(nombre_tablero: str, medidas: list[dict]) -> dict:
     tablas = []
 
@@ -360,19 +450,7 @@ def construir_modelo(nombre_tablero: str, medidas: list[dict]) -> dict:
             # Parámetro de Power Query. Va en `expressions`, NO como tabla:
             # un parámetro es un valor escalar reutilizable, y es lo que hace
             # que el template sea portable — al abrirlo, Power BI lo pide.
-            "expressions": [{
-                "name": "RutaDatos",
-                "kind": "m",
-                "description": "Carpeta que contiene los .parquet del modelo estrella "
-                               "(la que genera `python src/run_all.py`).",
-                "expression": [
-                    f'"{RUTA_DATOS_DEFECTO}"',
-                    '    meta [IsParameterQuery=true, Type="Text", '
-                    "IsParameterQueryRequired=true]",
-                ],
-                "annotations": [{"name": "PBI_NavigationStepName", "value": "Navegación"},
-                                {"name": "PBI_ResultType", "value": "Text"}],
-            }],
+            "expressions": parametros(),
             "tables": tablas,
             "relationships": relaciones,
             "roles": [{
@@ -393,7 +471,7 @@ def construir_modelo(nombre_tablero: str, medidas: list[dict]) -> dict:
             }],
             "annotations": [
                 {"name": "PBI_QueryOrder",
-                 "value": json.dumps(["RutaDatos"] + list(esq.TABLAS) + ["_Medidas"], ensure_ascii=False)},
+                 "value": json.dumps([p["name"] for p in parametros()] + list(esq.TABLAS) + ["_Medidas"], ensure_ascii=False)},
                 {"name": "__PBI_TimeIntelligenceEnabled", "value": "0"},
             ],
         },
@@ -553,7 +631,10 @@ def texto(x, y, w, h, contenido: str, tamano=12, z=0) -> dict:
 
 def pagina(nombre: str, visuales: list[dict], ordinal: int) -> dict:
     return {
-        "name": uuid.uuid4().hex[:20],
+        # Nombre determinístico, no aleatorio: los botones de navegación
+        # referencian la sección por nombre. Un GUID nuevo en cada corrida
+        # dejaría todos los botones apuntando al vacío.
+        "name": _slug(nombre),
         "displayName": nombre,
         "displayOption": 1,
         "width": ANCHO,
@@ -565,16 +646,163 @@ def pagina(nombre: str, visuales: list[dict], ordinal: int) -> dict:
     }
 
 
-# ---- páginas por tablero -------------------------------------------------
+# ---- composición de páginas ----------------------------------------------
+#
+# Ritmo vertical fijo en las tres páginas de los tres tableros. Que un KPI esté
+# siempre en el mismo lugar no es estética: es lo que permite que alguien pase
+# de una página a otra sin volver a buscar dónde está cada cosa.
+#
+#   0 –  36   barra de navegación (botones)
+#  40 –  96   título, subtítulo y estado del dato
+# 100 – 132   slicers
+# 136 – 232   fila de KPI
+# 236 – 700   análisis
+#
+FILA_NAV, ALTO_NAV = 4, 32
+FILA_TITULO = 44
+FILA_SLICER, ALTO_SLICER = 100, 32
+FILA_KPI, ALTO_KPI = 136, 96
+FILA_CONTENIDO = 244
+MARGEN = 20
 
-FILA_KPI = 78
-ALTO_KPI = 96
+
+def _slug(titulo: str) -> str:
+    """
+    Nombre estable de sección.
+
+    Tiene que ser determinístico: los botones de navegación referencian la
+    sección por nombre, así que un GUID aleatorio en cada corrida rompería
+    todos los botones en la siguiente regeneración.
+    """
+    limpio = "".join(
+        c if c.isalnum() else "_"
+        for c in unicodedata.normalize("NFKD", titulo)
+        .encode("ascii", "ignore").decode()
+    )
+    return "s" + re.sub(r"_+", "_", limpio).strip("_").lower()
+
+
+def boton_navegacion(x, y, w, h, etiqueta: str, destino: str, activo: bool = False) -> dict:
+    """
+    Botón que navega a otra página del reporte.
+
+    La acción vive en `vcObjects.visualLink` con `type = PageNavigation` y el
+    nombre de la sección destino. Es lo que hace que el botón realmente
+    funcione al hacer clic, en vez de ser un rectángulo con texto.
+    """
+    def lit(v):
+        return {"expr": {"Literal": {"Value": v}}}
+
+    fondo = "'#0B3C5D'" if activo else "'#FFFFFF'"
+    letra = "'#FFFFFF'" if activo else "'#0B3C5D'"
+
+    conf = {
+        "name": uuid.uuid5(uuid.NAMESPACE_DNS, f"btn{destino}{etiqueta}{x}").hex[:20],
+        "layouts": [{"id": 0, "position": {"x": x, "y": y, "z": 100,
+                                           "width": w, "height": h}}],
+        "singleVisual": {
+            "visualType": "actionButton",
+            "objects": {
+                "icon": [{"properties": {"shapeType": lit("'blank'")},
+                          "selector": {"id": "default"}}],
+                "text": [{"properties": {
+                    "show": lit("true"),
+                    "text": lit(f"'{etiqueta}'"),
+                    "fontSize": lit("10D"),
+                    "fontColor": {"solid": {"color": lit(letra)}},
+                    "bold": lit("true" if activo else "false"),
+                }, "selector": {"id": "default"}}],
+                "fill": [{"properties": {
+                    "show": lit("true"),
+                    "fillColor": {"solid": {"color": lit(fondo)}},
+                    "transparency": lit("0D"),
+                }, "selector": {"id": "default"}}],
+                "outline": [{"properties": {
+                    "show": lit("true"),
+                    "lineColor": {"solid": {"color": lit("'#0B3C5D'")}},
+                    "weight": lit("1D"),
+                }, "selector": {"id": "default"}}],
+            },
+            "vcObjects": {
+                "visualLink": [{"properties": {
+                    "show": lit("true"),
+                    "type": lit("'PageNavigation'"),
+                    "navigationSection": lit(f"'{destino}'"),
+                }}],
+            },
+            "drillFilterOtherVisuals": True,
+        },
+    }
+    return {"x": x, "y": y, "z": 100, "width": w, "height": h,
+            "config": json.dumps(conf, ensure_ascii=False)}
+
+
+def barra_navegacion(titulos: list[str], actual: str) -> list[dict]:
+    """Los botones de todas las páginas del reporte, con la actual resaltada."""
+    ancho = min(190, (ANCHO - 2 * MARGEN) // max(len(titulos), 1) - 6)
+    return [
+        boton_navegacion(MARGEN + i * (ancho + 6), FILA_NAV, ancho, ALTO_NAV,
+                         t, _slug(t), activo=(t == actual))
+        for i, t in enumerate(titulos)
+    ]
+
+
+def slicer(x, y, w, h, tabla: str, columna: str, titulo: str) -> dict:
+    """Segmentación. Filtra todos los visuales de la página."""
+    conf = {
+        "name": uuid.uuid5(uuid.NAMESPACE_DNS, f"sl{tabla}{columna}{x}{y}").hex[:20],
+        "layouts": [{"id": 0, "position": {"x": x, "y": y, "z": 50,
+                                           "width": w, "height": h}}],
+        "singleVisual": {
+            "visualType": "slicer",
+            "projections": {"Values": [{"queryRef": f"{tabla}.{columna}"}]},
+            "prototypeQuery": {
+                "Version": 2,
+                "From": [{"Name": "c", "Entity": tabla, "Type": 0}],
+                "Select": [_columna(tabla, columna, "c")],
+            },
+            "objects": {
+                "general": [{"properties": {
+                    # Desplegable y no lista: en una página con 8 visuales, tres
+                    # slicers en formato lista se comen la mitad del espacio.
+                    "outlineColor": {"solid": {"color": {"expr": {"Literal": {"Value": "'#C9D0CC'"}}}}},
+                    "outlineWeight": {"expr": {"Literal": {"Value": "1D"}}},
+                }}],
+                "header": [{"properties": {
+                    "show": {"expr": {"Literal": {"Value": "true"}}},
+                    "text": {"expr": {"Literal": {"Value": f"'{titulo}'"}}},
+                }}],
+            },
+            "drillFilterOtherVisuals": True,
+        },
+    }
+    return {"x": x, "y": y, "z": 50, "width": w, "height": h,
+            "config": json.dumps(conf, ensure_ascii=False)}
+
+
+def fila_slicers() -> list[dict]:
+    """
+    Los mismos tres cortes en todas las páginas, en el mismo lugar.
+
+    Filial, período y clase terapéutica son los tres ejes por los que el
+    negocio pregunta siempre. Ponerlos fijos evita que cada página invente su
+    propio juego de filtros y que el usuario pierda el contexto al navegar.
+    """
+    ancho = (ANCHO - 2 * MARGEN - 2 * 10) // 3
+    return [
+        slicer(MARGEN, FILA_SLICER, ancho, ALTO_SLICER,
+               "v_dim_filial", "País", "Filial"),
+        slicer(MARGEN + ancho + 10, FILA_SLICER, ancho, ALTO_SLICER,
+               "v_dim_calendario", "Año-Mes", "Período"),
+        slicer(MARGEN + 2 * (ancho + 10), FILA_SLICER, ancho, ALTO_SLICER,
+               "v_dim_producto", "Clase terapéutica", "Clase terapéutica"),
+    ]
 
 
 def kpis(nombres: list[str], y=FILA_KPI) -> list[dict]:
-    ancho = (ANCHO - 40 - 12 * (len(nombres) - 1)) // len(nombres)
+    ancho = (ANCHO - 2 * MARGEN - 12 * (len(nombres) - 1)) // len(nombres)
     return [
-        visual("card", 20 + i * (ancho + 12), y, ancho, ALTO_KPI,
+        visual("card", MARGEN + i * (ancho + 12), y, ancho, ALTO_KPI,
                medidas=[n], titulo=n)
         for i, n in enumerate(nombres)
     ]
@@ -582,242 +810,282 @@ def kpis(nombres: list[str], y=FILA_KPI) -> list[dict]:
 
 def encabezado(titulo: str, subtitulo: str) -> list[dict]:
     return [
-        texto(20, 14, 760, 54, titulo, 20),
-        texto(800, 20, 460, 46,
-              "Estado del dato: ver medidas Encabezado de Confianza y Estado de Vigencia", 10),
-        texto(20, 52, 760, 24, subtitulo, 11),
+        texto(MARGEN, FILA_TITULO, 700, 30, titulo, 18),
+        texto(MARGEN, FILA_TITULO + 28, 700, 24, subtitulo, 10),
+        # El estado del dato va VISIBLE, no en un tooltip. Cuando el negocio ve
+        # el estado del dato, empieza a cuidarlo — y un tablero que no dice
+        # cuándo se actualizó es un tablero en el que no se puede confiar.
+        visual("card", 740, FILA_TITULO - 4, 250, 52,
+               medidas=["Encabezado de Confianza"], titulo="Calidad"),
+        visual("card", 1000, FILA_TITULO - 4, 260, 52,
+               medidas=["Estado de Vigencia"], titulo="Vigencia"),
     ]
+
+
+def armar(titulos: list[str], actual: str, subtitulo: str,
+          kpi: list[str], contenido: list[dict], ordinal: int) -> dict:
+    """Compone una página completa con el ritmo vertical fijo."""
+    visuales = (
+        barra_navegacion(titulos, actual)
+        + encabezado(actual.split(" · ", 1)[-1], subtitulo)
+        + fila_slicers()
+        + kpis(kpi)
+        + contenido
+    )
+    return pagina(actual, visuales, ordinal)
+
+
+# ---- páginas por tablero -------------------------------------------------
+
+Y0 = FILA_CONTENIDO
+ALTO_LIBRE = 700 - Y0
 
 
 def paginas_var() -> list[dict]:
+    T = ["1 · Resumen ejecutivo", "2 · Puente Precio-Volumen-Mix",
+         "3 · Sell-in vs Sell-out", "4 · Detalle"]
     p = []
-    v = encabezado("VAR · Resumen ejecutivo",
-                   "Ventas netas, cumplimiento, share y margen — con el origen de la variación")
-    v += kpis(["Ventas Netas USD", "Var % vs AA", "Cumplimiento %",
-               "Market Share Valores %", "Margen Bruto %"])
-    v += [
-        visual("lineClusteredColumnComboChart", 20, 190, 760, 300,
-               medidas=["Ventas Netas USD", "Objetivo USD"],
-               categoria=("v_dim_calendario", "Año-Mes"),
-               titulo="Ventas netas vs objetivo por mes"),
-        visual("clusteredBarChart", 796, 190, 464, 300,
-               medidas=["Ventas Netas USD"],
-               categoria=("v_dim_filial", "País"),
-               titulo="Ventas por filial"),
-        visual("clusteredBarChart", 20, 502, 496, 198,
-               medidas=["Ventas Netas USD"],
-               categoria=("v_dim_producto", "Marca"),
-               titulo="Top productos"),
-        visual("tableEx", 532, 502, 728, 198,
-               medidas=["Ventas Netas USD", "Var % vs AA", "Cumplimiento %",
-                        "Market Share Valores %", "Var Share pp"],
-               categoria=("v_dim_filial", "País"),
-               titulo="Detalle por filial"),
-    ]
-    p.append(pagina("1 · Resumen ejecutivo", v, 0))
 
-    v = encabezado("VAR · Puente Precio – Volumen – Mix",
-                   "De dónde viene exactamente la variación contra el año anterior")
-    v += kpis(["Var USD vs AA", "Efecto Volumen USD", "Efecto Precio USD",
-               "Efecto Mix USD", "Control Cierre del Puente"])
-    v += [
-        visual("waterfallChart", 20, 190, 1240, 300,
-               medidas=["Var USD vs AA"],
-               categoria=("v_dim_calendario", "Año-Mes"),
-               titulo="Variación mes a mes"),
-        visual("tableEx", 20, 502, 1240, 198,
-               medidas=["Efecto Volumen USD", "Efecto Precio USD", "Efecto Mix USD",
-                        "Var USD vs AA"],
-               categoria=("v_dim_producto", "Clase terapéutica"),
-               titulo="Descomposición por clase terapéutica"),
-    ]
-    p.append(pagina("2 · Puente Precio-Volumen-Mix", v, 1))
+    p.append(armar(T, T[0],
+        "Ventas netas, cumplimiento, share y margen — con el origen de la variación",
+        ["Ventas Netas USD", "Var % vs AA", "Cumplimiento %",
+         "Market Share Valores %", "Margen Bruto %"],
+        [
+            visual("lineClusteredColumnComboChart", MARGEN, Y0, 760, 280,
+                   medidas=["Ventas Netas USD", "Objetivo USD"],
+                   categoria=("v_dim_calendario", "Año-Mes"),
+                   titulo="Ventas netas vs objetivo por mes"),
+            visual("clusteredBarChart", 796, Y0, 464, 280,
+                   medidas=["Ventas Netas USD"],
+                   categoria=("v_dim_filial", "País"),
+                   titulo="Ventas por filial"),
+            visual("clusteredBarChart", MARGEN, Y0 + 292, 496, 164,
+                   medidas=["Ventas Netas USD"],
+                   categoria=("v_dim_producto", "Marca"),
+                   titulo="Top productos"),
+            visual("card", 532, Y0 + 292, 728, 164,
+                   medidas=["Origen de la Variación de Share"],
+                   titulo="¿Caí yo o creció el mercado?"),
+        ], 0))
 
-    v = encabezado("VAR · Sell-in vs Sell-out",
-                   "La carga de canal de hoy es la devolución del mes que viene")
-    v += kpis(["Unidades", "Sell-out Unidades", "Brecha Sell-in vs Sell-out %",
-               "Market Share Unidades %"])
-    v += [
-        visual("lineChart", 20, 190, 760, 300,
-               medidas=["Unidades", "Sell-out Unidades"],
-               categoria=("v_dim_calendario", "Año-Mes"),
-               titulo="Sell-in vs sell-out por mes"),
-        visual("scatterChart", 796, 190, 464, 300,
-               medidas=["Brecha Sell-in vs Sell-out %", "Tasa de Devolución Valor %"],
-               categoria=("v_dim_producto", "SKU"),
-               titulo="Brecha de canal vs devoluciones"),
-        visual("tableEx", 20, 502, 1240, 198,
-               medidas=["Unidades", "Sell-out Unidades",
-                        "Brecha Sell-in vs Sell-out %", "Alerta de Carga de Canal"],
-               categoria=("v_dim_filial", "País"),
-               titulo="Estado del canal por filial"),
-    ]
-    p.append(pagina("3 · Sell-in vs Sell-out", v, 2))
+    p.append(armar(T, T[1],
+        "De dónde viene exactamente la variación contra el año anterior",
+        ["Var USD vs AA", "Efecto Volumen USD", "Efecto Precio USD",
+         "Efecto Mix USD", "Control Cierre del Puente"],
+        [
+            visual("waterfallChart", MARGEN, Y0, 1240, 280,
+                   medidas=["Var USD vs AA"],
+                   categoria=("v_dim_calendario", "Año-Mes"),
+                   titulo="Variación mes a mes"),
+            visual("tableEx", MARGEN, Y0 + 292, 1240, 164,
+                   medidas=["Efecto Volumen USD", "Efecto Precio USD",
+                            "Efecto Mix USD", "Var USD vs AA"],
+                   categoria=("v_dim_producto", "Clase terapéutica"),
+                   titulo="Descomposición por clase terapéutica"),
+        ], 1))
+
+    p.append(armar(T, T[2],
+        "La carga de canal de hoy es la devolución del mes que viene",
+        ["Unidades", "Sell-out Unidades", "Brecha Sell-in vs Sell-out %",
+         "Market Share Unidades %"],
+        [
+            visual("lineChart", MARGEN, Y0, 760, 280,
+                   medidas=["Unidades", "Sell-out Unidades"],
+                   categoria=("v_dim_calendario", "Año-Mes"),
+                   titulo="Sell-in vs sell-out por mes"),
+            visual("scatterChart", 796, Y0, 464, 280,
+                   medidas=["Brecha Sell-in vs Sell-out %",
+                            "Tasa de Devolución Valor %"],
+                   categoria=("v_dim_producto", "SKU"),
+                   titulo="Brecha de canal vs devoluciones"),
+            visual("card", MARGEN, Y0 + 292, 1240, 164,
+                   medidas=["Alerta de Carga de Canal"],
+                   titulo="Estado del canal"),
+        ], 2))
+
+    p.append(armar(T, T[3],
+        "Bajar al grano cuando un número de arriba llama la atención",
+        ["Ventas Netas USD", "Unidades", "Precio Promedio USD",
+         "Descuento Efectivo %", "Margen Bruto %"],
+        [
+            visual("tableEx", MARGEN, Y0, 1240, 456,
+                   medidas=["Ventas Netas USD", "Unidades", "Precio Promedio USD",
+                            "Descuento Efectivo %", "Margen Bruto %"],
+                   categoria=("v_dim_cliente", "Cliente"),
+                   titulo="Detalle por cliente"),
+        ], 3))
     return p
 
 
 def paginas_ofertas() -> list[dict]:
+    T = ["1 · Retorno de la política", "2 · Recomendación de IA",
+         "3 · Proyección de inversión"]
     p = []
-    v = encabezado("Ofertas · Retorno de la política comercial",
-                   "Cuánto cuesta el descuento y cuánto margen devuelve")
-    v += kpis(["Inversión Comercial USD", "Inversión sobre Ventas %",
-               "Tasa de Aceptación %", "ROI de Ofertas", "Semáforo de ROI"])
-    v += [
-        visual("lineClusteredColumnComboChart", 20, 190, 760, 300,
-               medidas=["Inversión Comercial USD", "Ventas con Oferta USD"],
-               categoria=("v_dim_calendario", "Año-Mes"),
-               titulo="Inversión comercial y ventas con oferta"),
-        visual("clusteredBarChart", 796, 190, 464, 300,
-               medidas=["Margen por USD Invertido"],
-               categoria=("v_dim_tipo_oferta", "Tipo de oferta"),
-               titulo="Eficiencia por instrumento"),
-        visual("clusteredColumnChart", 20, 502, 496, 148,
-               medidas=["Inversión Comercial USD"],
-               categoria=("v_dim_cliente", "Segmento"),
-               titulo="Inversión por segmento de cliente"),
-        visual("tableEx", 532, 502, 728, 148,
-               medidas=["Inversión Comercial USD", "Tasa de Aceptación %",
-                        "ROI de Ofertas"],
-               categoria=("v_dim_filial", "País"),
-               titulo="Detalle por filial"),
-        texto(20, 658, 1240, 44,
-              "ROI comparativo, no causal: incluye ventas que podrían haber "
-              "ocurrido sin oferta. Para medir impacto incremental hace falta "
-              "un grupo de control.", 10),
-    ]
-    p.append(pagina("1 · Retorno de la política", v, 0))
 
-    v = encabezado("Ofertas · Recomendación del motor de IA",
-                   "Qué ofertar, a qué precio, en qué segmento y por qué")
-    v += kpis(["Recomendaciones Activas", "Ganancia Estimada USD",
-               "Stock Rescatado USD", "Descuento Recomendado %",
-               "Recomendaciones que Requieren Test"])
-    v += [
-        visual("tableEx", 20, 190, 760, 320,
-               medidas=["Descuento Recomendado %", "Ganancia Estimada USD",
-                        "Stock Rescatado USD"],
-               categoria=("v_fact_recomendaciones", "SKU recomendado"),
-               titulo="Recomendaciones por SKU"),
-        visual("clusteredBarChart", 796, 190, 464, 320,
-               medidas=["Ganancia Estimada USD"],
-               categoria=("v_fact_recomendaciones", "Segmento recomendado"),
-               titulo="Ganancia estimada por segmento"),
-        visual("card", 20, 522, 1240, 180,
-               medidas=["Justificativo Seleccionado"],
-               titulo="Por qué el motor propone esta oferta"),
-    ]
-    p.append(pagina("2 · Recomendación de IA", v, 1))
+    p.append(armar(T, T[0],
+        "Cuánto cuesta el descuento y cuánto margen devuelve",
+        ["Inversión Comercial USD", "Inversión sobre Ventas %",
+         "Tasa de Aceptación %", "ROI de Ofertas", "Semáforo de ROI"],
+        [
+            visual("lineClusteredColumnComboChart", MARGEN, Y0, 760, 268,
+                   medidas=["Inversión Comercial USD", "Ventas con Oferta USD"],
+                   categoria=("v_dim_calendario", "Año-Mes"),
+                   titulo="Inversión comercial y ventas con oferta"),
+            visual("clusteredBarChart", 796, Y0, 464, 268,
+                   medidas=["Margen por USD Invertido"],
+                   categoria=("v_dim_tipo_oferta", "Tipo de oferta"),
+                   titulo="Eficiencia por instrumento"),
+            visual("clusteredColumnChart", MARGEN, Y0 + 280, 496, 130,
+                   medidas=["Inversión Comercial USD"],
+                   categoria=("v_dim_cliente", "Segmento"),
+                   titulo="Inversión por segmento de cliente"),
+            visual("tableEx", 532, Y0 + 280, 728, 130,
+                   medidas=["Inversión Comercial USD", "Tasa de Aceptación %",
+                            "ROI de Ofertas"],
+                   categoria=("v_dim_filial", "País"),
+                   titulo="Detalle por filial"),
+            # La advertencia va FIJA en la página, no en un tooltip: es lo que
+            # evita que alguien cite este ROI en un comité como impacto causal.
+            texto(MARGEN, Y0 + 418, 1240, 38,
+                  "ROI comparativo, no causal: incluye ventas que podrían haber "
+                  "ocurrido sin oferta. Para medir impacto incremental hace "
+                  "falta un grupo de control.", 10),
+        ], 0))
 
-    v = encabezado("Ofertas · Proyección de inversión",
-                   "Cuánto va a costar la política comercial el mes que viene")
-    v += kpis(["Inversión Comercial USD", "Inversión Proyectada USD",
-               "Desvío del Forecast %", "Precisión del Forecast %"])
-    v += [
-        visual("lineChart", 20, 190, 1240, 320,
-               medidas=["Inversión Comercial USD", "Inversión Proyectada USD"],
-               categoria=("v_dim_calendario", "Año-Mes"),
-               titulo="Inversión real vs proyectada"),
-        visual("tableEx", 20, 522, 1240, 180,
-               medidas=["Inversión Comercial USD", "Inversión Proyectada USD",
-                        "Desvío del Forecast %"],
-               categoria=("v_dim_filial", "País"),
-               titulo="Desvío por filial"),
-    ]
-    p.append(pagina("3 · Proyección de inversión", v, 2))
+    p.append(armar(T, T[1],
+        "Qué ofertar, a qué precio, en qué segmento y por qué",
+        ["Recomendaciones Activas", "Ganancia Estimada USD",
+         "Stock Rescatado USD", "Descuento Recomendado %",
+         "Recomendaciones que Requieren Test"],
+        [
+            visual("tableEx", MARGEN, Y0, 760, 280,
+                   medidas=["Descuento Recomendado %", "Ganancia Estimada USD",
+                            "Stock Rescatado USD"],
+                   categoria=("v_fact_recomendaciones", "SKU recomendado"),
+                   titulo="Recomendaciones por SKU"),
+            visual("clusteredBarChart", 796, Y0, 464, 280,
+                   medidas=["Ganancia Estimada USD"],
+                   categoria=("v_fact_recomendaciones", "Segmento recomendado"),
+                   titulo="Ganancia estimada por segmento"),
+            # El justificativo ocupa el ancho completo a propósito: una
+            # recomendación que un comercial no puede discutir es una
+            # recomendación que no va a aplicar.
+            visual("card", MARGEN, Y0 + 292, 1240, 164,
+                   medidas=["Justificativo Seleccionado"],
+                   titulo="Por qué el motor propone esta oferta"),
+        ], 1))
+
+    p.append(armar(T, T[2],
+        "Cuánto va a costar la política comercial el mes que viene",
+        ["Inversión Comercial USD", "Inversión Proyectada USD",
+         "Desvío del Forecast %", "Precisión del Forecast %"],
+        [
+            visual("lineChart", MARGEN, Y0, 1240, 280,
+                   medidas=["Inversión Comercial USD", "Inversión Proyectada USD"],
+                   categoria=("v_dim_calendario", "Año-Mes"),
+                   titulo="Inversión real vs proyectada"),
+            visual("tableEx", MARGEN, Y0 + 292, 1240, 164,
+                   medidas=["Inversión Comercial USD", "Inversión Proyectada USD",
+                            "Desvío del Forecast %"],
+                   categoria=("v_dim_filial", "País"),
+                   titulo="Desvío por filial"),
+        ], 2))
     return p
 
 
 def paginas_logistica() -> list[dict]:
+    T = ["1 · Nivel de servicio", "2 · Devoluciones",
+         "3 · Riesgo predictivo", "4 · Stock y vencimientos"]
     p = []
-    v = encabezado("Logística · Nivel de servicio",
-                   "Entregas a tiempo y completas, y quién las está fallando")
-    v += kpis(["OTIF %", "Fill Rate %", "Lead Time Promedio",
-               "Exceso sobre SLA", "Semáforo OTIF"])
-    v += [
-        visual("lineChart", 20, 190, 760, 300,
-               medidas=["OTIF %", "Fill Rate %"],
-               categoria=("v_dim_calendario", "Año-Mes"),
-               titulo="OTIF y fill rate por mes"),
-        visual("clusteredBarChart", 796, 190, 464, 300,
-               medidas=["OTIF %"],
-               categoria=("v_dim_transportista", "Transportista"),
-               titulo="OTIF por transportista"),
-        visual("tableEx", 20, 502, 760, 150,
-               medidas=["OTIF %", "Lead Time Promedio", "Líneas Despachadas"],
-               categoria=("v_dim_filial", "País"),
-               titulo="Nivel de servicio por filial"),
-        visual("card", 796, 502, 464, 150,
-               medidas=["Alerta de Cadena de Frío"],
-               titulo="Cadena de frío"),
-    ]
-    p.append(pagina("1 · Nivel de servicio", v, 0))
 
-    v = encabezado("Logística · Devoluciones",
-                   "Cuánto vuelve, por qué motivo y cuánto de eso era evitable")
-    v += kpis(["Tasa de Devolución Valor %", "Var Tasa Devolución pp",
-               "% Devoluciones Evitables", "Margen Perdido por Devoluciones USD"])
-    v += [
-        visual("clusteredBarChart", 20, 190, 620, 300,
-               medidas=["Importe Devuelto USD"],
-               categoria=("v_dim_motivo_devolucion", "Motivo de devolución"),
-               titulo="Devoluciones por motivo"),
-        visual("clusteredColumnChart", 656, 190, 604, 300,
-               medidas=["Importe Devuelto USD"],
-               categoria=("v_dim_motivo_devolucion", "Área responsable"),
-               titulo="Devoluciones por área responsable"),
-        visual("tableEx", 20, 502, 1240, 200,
-               medidas=["Importe Devuelto USD", "Tasa de Devolución Valor %",
-                        "% Devoluciones Evitables"],
-               categoria=("v_dim_filial", "País"),
-               titulo="Detalle por filial"),
-    ]
-    p.append(pagina("2 · Devoluciones", v, 1))
+    p.append(armar(T, T[0],
+        "Entregas a tiempo y completas, y quién las está fallando",
+        ["OTIF %", "Fill Rate %", "Lead Time Promedio",
+         "Exceso sobre SLA", "Semáforo OTIF"],
+        [
+            visual("lineChart", MARGEN, Y0, 760, 280,
+                   medidas=["OTIF %", "Fill Rate %"],
+                   categoria=("v_dim_calendario", "Año-Mes"),
+                   titulo="OTIF y fill rate por mes"),
+            visual("clusteredBarChart", 796, Y0, 464, 280,
+                   medidas=["OTIF %"],
+                   categoria=("v_dim_transportista", "Transportista"),
+                   titulo="OTIF por transportista"),
+            visual("tableEx", MARGEN, Y0 + 292, 760, 164,
+                   medidas=["OTIF %", "Lead Time Promedio", "Líneas Despachadas"],
+                   categoria=("v_dim_filial", "País"),
+                   titulo="Nivel de servicio por filial"),
+            visual("card", 796, Y0 + 292, 464, 164,
+                   medidas=["Alerta de Cadena de Frío"],
+                   titulo="Cadena de frío"),
+        ], 0))
 
-    v = encabezado("Logística · Riesgo predictivo",
-                   "Qué pedidos revisar ANTES de despachar")
-    v += kpis(["Pedidos en Riesgo Crítico", "Importe en Riesgo USD",
-               "Probabilidad Media de Devolución",
-               "Captura en el Top 10% de Riesgo"])
-    v += [
-        visual("clusteredColumnChart", 20, 190, 620, 300,
-               medidas=["Importe en Riesgo USD"],
-               categoria=("v_fact_scoring_devoluciones", "Banda de riesgo"),
-               titulo="Exposición por banda de riesgo"),
-        visual("card", 656, 190, 604, 140,
-               medidas=["Lectura del Modelo de Riesgo"],
-               titulo="Lectura operativa del modelo"),
-        visual("clusteredBarChart", 656, 342, 604, 148,
-               medidas=["Importe en Riesgo USD"],
-               categoria=("v_dim_transportista", "Transportista"),
-               titulo="Riesgo por transportista"),
-        visual("tableEx", 20, 502, 1240, 200,
-               medidas=["Importe en Riesgo USD", "Probabilidad Media de Devolución",
-                        "Pedidos en Riesgo Crítico"],
-               categoria=("v_dim_cliente", "Cliente"),
-               titulo="Clientes con mayor exposición"),
-    ]
-    p.append(pagina("3 · Riesgo predictivo", v, 2))
+    p.append(armar(T, T[1],
+        "Cuánto vuelve, por qué motivo y cuánto de eso era evitable",
+        ["Tasa de Devolución Valor %", "Var Tasa Devolución pp",
+         "% Devoluciones Evitables", "Margen Perdido por Devoluciones USD"],
+        [
+            visual("clusteredBarChart", MARGEN, Y0, 620, 280,
+                   medidas=["Importe Devuelto USD"],
+                   categoria=("v_dim_motivo_devolucion", "Motivo de devolución"),
+                   titulo="Devoluciones por motivo"),
+            visual("clusteredColumnChart", 656, Y0, 604, 280,
+                   medidas=["Importe Devuelto USD"],
+                   categoria=("v_dim_motivo_devolucion", "Área responsable"),
+                   titulo="Devoluciones por área responsable"),
+            visual("tableEx", MARGEN, Y0 + 292, 1240, 164,
+                   medidas=["Importe Devuelto USD", "Tasa de Devolución Valor %",
+                            "% Devoluciones Evitables"],
+                   categoria=("v_dim_filial", "País"),
+                   titulo="Detalle por filial"),
+        ], 1))
 
-    v = encabezado("Logística · Stock y vencimientos",
-                   "Dónde hay sobrestock y qué está por vencer")
-    v += kpis(["Valor de Stock USD", "Días de Cobertura", "Unidades por Vencer",
-               "Valor en Riesgo de Vencimiento USD", "Estado de Cobertura"])
-    v += [
-        visual("clusteredBarChart", 20, 190, 620, 300,
-               medidas=["Días de Cobertura"],
-               categoria=("v_dim_deposito", "Depósito"),
-               titulo="Cobertura por depósito"),
-        visual("clusteredBarChart", 656, 190, 604, 300,
-               medidas=["Valor en Riesgo de Vencimiento USD"],
-               categoria=("v_dim_producto", "SKU"),
-               titulo="Valor en riesgo de vencimiento por SKU"),
-        visual("tableEx", 20, 502, 1240, 200,
-               medidas=["Stock Unidades", "Días de Cobertura", "Unidades por Vencer",
-                        "Valor en Riesgo de Vencimiento USD", "Estado de Cobertura"],
-               categoria=("v_dim_producto", "Clase terapéutica"),
-               titulo="Stock por clase terapéutica"),
-    ]
-    p.append(pagina("4 · Stock y vencimientos", v, 3))
+    p.append(armar(T, T[2],
+        "Qué pedidos revisar ANTES de despachar",
+        ["Pedidos en Riesgo Crítico", "Importe en Riesgo USD",
+         "Probabilidad Media de Devolución", "Captura en el Top 10% de Riesgo"],
+        [
+            visual("clusteredColumnChart", MARGEN, Y0, 620, 280,
+                   medidas=["Importe en Riesgo USD"],
+                   categoria=("v_fact_scoring_devoluciones", "Banda de riesgo"),
+                   titulo="Exposición por banda de riesgo"),
+            # A un gerente de logística no se le comunica "AUC 0,82": se le
+            # comunica cuántas devoluciones evita revisando 1 de cada 10 pedidos.
+            visual("card", 656, Y0, 604, 132,
+                   medidas=["Lectura del Modelo de Riesgo"],
+                   titulo="Lectura operativa del modelo"),
+            visual("clusteredBarChart", 656, Y0 + 144, 604, 136,
+                   medidas=["Importe en Riesgo USD"],
+                   categoria=("v_dim_transportista", "Transportista"),
+                   titulo="Riesgo por transportista"),
+            visual("tableEx", MARGEN, Y0 + 292, 1240, 164,
+                   medidas=["Importe en Riesgo USD",
+                            "Probabilidad Media de Devolución",
+                            "Pedidos en Riesgo Crítico"],
+                   categoria=("v_dim_cliente", "Cliente"),
+                   titulo="Clientes con mayor exposición"),
+        ], 2))
+
+    p.append(armar(T, T[3],
+        "Dónde hay sobrestock y qué está por vencer",
+        ["Valor de Stock USD", "Días de Cobertura", "Unidades por Vencer",
+         "Valor en Riesgo de Vencimiento USD", "Estado de Cobertura"],
+        [
+            visual("clusteredBarChart", MARGEN, Y0, 620, 280,
+                   medidas=["Días de Cobertura"],
+                   categoria=("v_dim_deposito", "Depósito"),
+                   titulo="Cobertura por depósito"),
+            visual("clusteredBarChart", 656, Y0, 604, 280,
+                   medidas=["Valor en Riesgo de Vencimiento USD"],
+                   categoria=("v_dim_producto", "SKU"),
+                   titulo="Valor en riesgo de vencimiento por SKU"),
+            visual("tableEx", MARGEN, Y0 + 292, 1240, 164,
+                   medidas=["Stock Unidades", "Días de Cobertura",
+                            "Unidades por Vencer",
+                            "Valor en Riesgo de Vencimiento USD"],
+                   categoria=("v_dim_producto", "Clase terapéutica"),
+                   titulo="Stock por clase terapéutica"),
+        ], 3))
     return p
 
 
@@ -920,7 +1188,40 @@ def escribir_pbip(tablero: str, modelo: dict, layout: dict) -> Path:
 
 # ==========================================================================
 def main() -> None:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument(
+        "--ruta",
+        help="Carpeta de los .parquet que queda precargada en el parámetro "
+             "RutaDatos. Si se pasa, el archivo abre apuntando a la máquina "
+             "donde se generó y no hay que tipear nada.",
+    )
+    ap.add_argument(
+        "--servidor", help="Instancia de SQL Server para el parámetro ServidorSQL."
+    )
+    ap.add_argument("--base", help="Base de datos para el parámetro BaseSQL.")
+    ap.add_argument(
+        "--origen", choices=["Parquet", "SQL Server"], default=None,
+        help="Origen por defecto del modelo.",
+    )
+    args = ap.parse_args()
+
+    global RUTA_DATOS_DEFECTO, SERVIDOR_DEFECTO, BASE_DEFECTO, ORIGEN_DEFECTO
+    if args.ruta:
+        RUTA_DATOS_DEFECTO = str(Path(args.ruta)).rstrip("\\/")
+    if args.servidor:
+        SERVIDOR_DEFECTO = args.servidor
+    if args.base:
+        BASE_DEFECTO = args.base
+    if args.origen:
+        ORIGEN_DEFECTO = args.origen
+
     print("Generando archivos de Power BI para los tres tableros\n")
+    print(f"  origen por defecto : {ORIGEN_DEFECTO}")
+    if ORIGEN_DEFECTO == "Parquet":
+        print(f"  ruta de datos      : {RUTA_DATOS_DEFECTO}")
+    else:
+        print(f"  servidor / base    : {SERVIDOR_DEFECTO} / {BASE_DEFECTO}")
+    print()
     for tablero, cfg in esq.TABLEROS.items():
         medidas = cargar_medidas(cfg["dax"])
         modelo = construir_modelo(f"Adium_{tablero}", medidas)
