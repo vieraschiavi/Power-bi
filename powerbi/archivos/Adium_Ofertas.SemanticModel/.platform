@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "SemanticModel",
+    "displayName": "Adium_Ofertas"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "f199ed1f-ae14-5320-942f-6c679d236862"
+  }
+}

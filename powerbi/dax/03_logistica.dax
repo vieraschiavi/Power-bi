@@ -1,0 +1,249 @@
+// =========================================================================
+// ADIUM PHARMA — Biblioteca DAX · 03 · TABLERO LOGÍSTICA
+//
+// Pregunta que responde:
+//   "¿Estamos entregando bien, cuánto nos cuesta lo que vuelve, y qué
+//    pedidos de los que están por salir van a volver?"
+//
+// Es el único de los tres tableros con una capa operativa en tiempo de
+// decisión: el scoring de riesgo se mira ANTES de despachar, no después
+// de que la devolución ya ocurrió.
+// =========================================================================
+
+
+// -------------------------------------------------------------------------
+// NIVEL DE SERVICIO
+//
+// Todos los promedios de esta sección son PONDERADOS. El modelo expone el
+// numerador (lead time × línea) y no el promedio ya calculado, justamente
+// para poder ponderar bien en cualquier nivel de agregación.
+// Promediar promedios es el error silencioso más caro de un tablero
+// logístico: da un número plausible y equivocado.
+// -------------------------------------------------------------------------
+
+Líneas Despachadas = SUM ( v_fact_ventas[Líneas] )
+
+// OTIF = On Time In Full. El estándar de servicio de la industria:
+// entregado a tiempo Y completo. Las dos condiciones a la vez — de ahí que
+// se mida sobre líneas y no sobre pedidos.
+OTIF % = DIVIDE ( SUM ( v_fact_ventas[Líneas OTIF] ), [Líneas Despachadas] )
+
+Fill Rate % = DIVIDE ( SUM ( v_fact_ventas[Líneas completas] ), [Líneas Despachadas] )
+
+// Puntualidad aislada del completado: separar las dos causas permite saber
+// si el problema es del transportista (tiempo) o del depósito (completitud).
+Entregas a Tiempo % =
+DIVIDE (
+    SUM ( v_fact_ventas[Líneas OTIF] ),
+    SUM ( v_fact_ventas[Líneas completas] )
+)
+
+Lead Time Promedio =
+DIVIDE ( SUM ( v_fact_ventas[Lead time x línea] ), [Líneas Despachadas] )
+
+SLA Objetivo = AVERAGE ( v_dim_filial[SLA entrega (días)] )
+
+Exceso sobre SLA = [Lead Time Promedio] - [SLA Objetivo]
+
+OTIF % AA = CALCULATE ( [OTIF %], SAMEPERIODLASTYEAR ( v_dim_calendario[Fecha] ) )
+
+Var OTIF pp = ( [OTIF %] - [OTIF % AA] ) * 100
+
+Semáforo OTIF =
+VAR O = [OTIF %]
+RETURN
+    SWITCH (
+        TRUE (),
+        ISBLANK ( O ), BLANK (),
+        O >= 0.95, "🟢 En objetivo",
+        O >= 0.88, "🟡 Por debajo del objetivo",
+        "🔴 Nivel de servicio crítico"
+    )
+
+
+// -------------------------------------------------------------------------
+// DEVOLUCIONES
+// -------------------------------------------------------------------------
+
+Unidades Devueltas = SUM ( v_fact_devoluciones[Unidades devueltas] )
+
+Importe Devuelto USD = SUM ( v_fact_devoluciones[Importe devuelto USD] )
+
+// Dos tasas, no una. La tasa en valor es la que impacta el resultado;
+// la tasa en unidades es la que dimensiona el problema operativo.
+// Cuando divergen mucho, se está devolviendo producto caro (o barato) de
+// forma desproporcionada, y eso es en sí mismo un hallazgo.
+Tasa de Devolución Valor % = DIVIDE ( [Importe Devuelto USD], [Ventas Brutas USD] )
+
+Tasa de Devolución Unidades % =
+DIVIDE ( [Unidades Devueltas], CALCULATE ( [Unidades], v_fact_ventas[Tipo documento] = "FC" ) )
+
+Tasa de Devolución Valor % AA =
+CALCULATE ( [Tasa de Devolución Valor %], SAMEPERIODLASTYEAR ( v_dim_calendario[Fecha] ) )
+
+Var Tasa Devolución pp =
+( [Tasa de Devolución Valor %] - [Tasa de Devolución Valor % AA] ) * 100
+
+// Separar lo evitable de lo que pasa y ya. Un 6% de devoluciones donde el
+// 80% es evitable es un problema de gestión; el mismo 6% mayormente no
+// evitable es una característica del negocio. Actuar igual en los dos casos
+// es desperdiciar esfuerzo.
+Devoluciones Evitables USD =
+CALCULATE ( [Importe Devuelto USD], v_dim_motivo_devolucion[Evitabilidad] = "Evitable" )
+
+% Devoluciones Evitables = DIVIDE ( [Devoluciones Evitables USD], [Importe Devuelto USD] )
+
+// Impacto real en el resultado: lo devuelto valuado a margen perdido, no a
+// precio de venta. El costo de una devolución no es solo el margen que se
+// pierde — también hay logística inversa y, muchas veces, destrucción de
+// producto. Acá se reporta la parte medible con el dato disponible.
+Margen Perdido por Devoluciones USD =
+[Importe Devuelto USD] * DIVIDE ( [Margen Bruto USD], [Ventas Netas USD] )
+
+Motivo Principal de Devolución =
+VAR TablaMotivos =
+    ADDCOLUMNS (
+        VALUES ( v_dim_motivo_devolucion[Motivo de devolución] ),
+        "@importe", [Importe Devuelto USD]
+    )
+VAR Top = TOPN ( 1, TablaMotivos, [@importe], DESC )
+RETURN
+    CONCATENATEX ( Top, v_dim_motivo_devolucion[Motivo de devolución] )
+        & " (" & FORMAT ( DIVIDE ( MAXX ( Top, [@importe] ), [Importe Devuelto USD] ), "0%" ) & " del total)"
+
+
+// -------------------------------------------------------------------------
+// STOCK Y VENCIMIENTOS
+// -------------------------------------------------------------------------
+
+Stock Unidades = SUM ( v_fact_stock[Stock unidades] )
+
+Valor de Stock USD = SUM ( v_fact_stock[Valor de stock USD] )
+
+// Cobertura ponderada por stock. Igual que el lead time: el modelo trae el
+// numerador para poder ponderar en cualquier corte.
+Días de Cobertura =
+DIVIDE ( SUM ( v_fact_stock[Cobertura x stock] ), [Stock Unidades] )
+
+Estado de Cobertura =
+VAR D = [Días de Cobertura]
+RETURN
+    SWITCH (
+        TRUE (),
+        ISBLANK ( D ), BLANK (),
+        D < 30,  "🔴 Riesgo de quiebre",
+        D <= 90, "🟢 En rango",
+        D <= 150, "🟡 Sobrestock — candidato a oferta",
+        "🔴 Sobrestock severo"
+    )
+
+Unidades por Vencer = SUM ( v_fact_stock[Unidades por vencer 180d] )
+
+// Valor en riesgo de vencimiento, a costo. Es una pérdida potencial cierta
+// si no se mueve el producto — y es exactamente el input que toma el motor
+// de IA del paso 5 para priorizar qué ofertar.
+Valor en Riesgo de Vencimiento USD =
+SUMX (
+    v_fact_stock,
+    v_fact_stock[Unidades por vencer 180d]
+        * RELATED ( v_dim_producto[Costo estándar USD] )
+)
+
+% de Stock por Vencer = DIVIDE ( [Unidades por Vencer], [Stock Unidades] )
+
+
+// -------------------------------------------------------------------------
+// CAPA PREDICTIVA — scoring del modelo del paso 3
+//
+// Acá está el salto de un tablero descriptivo a uno operativo: el riesgo se
+// consulta ANTES del despacho. Un modelo que solo explica devoluciones que
+// ya ocurrieron es un informe; uno que las anticipa es una herramienta.
+// -------------------------------------------------------------------------
+
+Importe en Riesgo USD = SUM ( v_fact_scoring_devoluciones[Importe en riesgo USD] )
+
+Pedidos en Riesgo Crítico =
+CALCULATE (
+    COUNTROWS ( v_fact_scoring_devoluciones ),
+    v_fact_scoring_devoluciones[Banda de riesgo] = "Crítico"
+)
+
+Probabilidad Media de Devolución =
+AVERAGE ( v_fact_scoring_devoluciones[Probabilidad de devolución] )
+
+// Traducción operativa del modelo. No se comunica "AUC 0,82" a un gerente
+// de logística: se comunica cuántas devoluciones evita revisando el 10% de
+// los pedidos. Es el mismo modelo, dicho en el idioma de quien decide.
+Captura en el Top 10% de Riesgo =
+VAR N = COUNTROWS ( v_fact_scoring_devoluciones )
+VAR Corte =
+    PERCENTILEX.INC (
+        v_fact_scoring_devoluciones,
+        v_fact_scoring_devoluciones[Probabilidad de devolución],
+        0.90
+    )
+VAR DevolucionesEnTop =
+    CALCULATE (
+        SUM ( v_fact_scoring_devoluciones[Devuelta real] ),
+        v_fact_scoring_devoluciones[Probabilidad de devolución] >= Corte
+    )
+VAR DevolucionesTotales = SUM ( v_fact_scoring_devoluciones[Devuelta real] )
+RETURN
+    DIVIDE ( DevolucionesEnTop, DevolucionesTotales )
+
+Lectura del Modelo de Riesgo =
+VAR Captura = [Captura en el Top 10% de Riesgo]
+VAR Monto   = [Importe en Riesgo USD]
+RETURN
+    "Revisando el 10% de pedidos con mayor riesgo se anticipan el "
+        & FORMAT ( Captura, "0%" )
+        & " de las devoluciones. Exposición estimada del período: USD "
+        & FORMAT ( Monto, "#,0" ) & "."
+
+
+// -------------------------------------------------------------------------
+// CAPA PREDICTIVA — proyección mensual del paso 3
+// -------------------------------------------------------------------------
+
+Tasa Devolución Proyectada % = AVERAGE ( v_forecast_devoluciones[Tasa dev proyectada] )
+
+Importe Devuelto Proyectado USD = SUM ( v_forecast_devoluciones[Importe dev proyectado] )
+
+// Provisión sugerida para el mes siguiente, sobre la proyección del modelo.
+// Que la contabilidad y el tablero salgan del MISMO número es, en sí mismo,
+// medio trabajo de Data Steward resuelto.
+Provisión Sugerida USD = [Importe Devuelto Proyectado USD]
+
+
+// -------------------------------------------------------------------------
+// PERFORMANCE DE TRANSPORTISTAS
+// -------------------------------------------------------------------------
+
+// Contribución de cada transportista al problema total de devoluciones.
+// Ordenar por tasa sola premia al que mueve tres pedidos; hay que mirar
+// tasa Y peso a la vez.
+Contribución a Devoluciones % =
+DIVIDE (
+    [Importe Devuelto USD],
+    CALCULATE ( [Importe Devuelto USD], REMOVEFILTERS ( v_dim_transportista ) )
+)
+
+// El cruce que explica buena parte de las devoluciones del negocio: producto
+// que requiere cadena de frío despachado por un operador que no la controla.
+// Es un hallazgo accionable de inmediato — se cambia la asignación y listo.
+Riesgo Frío sin Control USD =
+CALCULATE (
+    [Ventas Netas USD],
+    v_dim_producto[Condición de conservación] = "Cadena de frío",
+    v_dim_transportista[Control de temperatura] = "Sin control de frío"
+)
+
+Alerta de Cadena de Frío =
+VAR Expuesto = [Riesgo Frío sin Control USD]
+RETURN
+    IF (
+        Expuesto > 0,
+        "🔴 USD " & FORMAT ( Expuesto, "#,0" )
+            & " despachados en cadena de frío por operadores sin control de temperatura",
+        "🟢 Todo el producto de frío viaja con control de temperatura"
+    )

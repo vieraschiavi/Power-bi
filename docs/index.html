@@ -1,0 +1,1027 @@
+<title>Adium Pharma · Del dato crudo a la decisión comercial</title>
+
+<style>
+/* ==========================================================================
+   Sistema de diseño — "hoja de especificación técnica"
+   La página trata sobre la distinción entre lo MEDIDO y lo ESTIMADO,
+   así que el sistema de color codifica exactamente eso: petróleo para el
+   hecho observado, oro para todo lo que sale de un modelo. Nunca se mezclan.
+   ========================================================================== */
+
+:root {
+  color-scheme: light dark;
+
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Menlo, Consolas, monospace;
+  --serif: Charter, "Bitstream Charter", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  --paper:    #E9ECE9;
+  --sheet:    #FCFCFB;
+  --sheet-2:  #F3F5F2;
+  --ink:      #131B1C;
+  --ink-2:    #414D4C;
+  --muted:    #6E7A78;
+  --rule:     #C9D0CC;
+  --rule-2:   #DDE2DE;
+
+  --medido:   #0080A0;
+  --modelado: #A8720F;
+
+  --ok:       #2E6B4F;
+  --alerta:   #8A5F10;
+  --critico:  #A32A22;
+
+  --medido-wash:   rgba(0, 128, 160, .10);
+  --modelado-wash: rgba(168, 114, 15, .12);
+
+  --s1: .35rem;  --s2: .7rem;   --s3: 1.1rem;
+  --s4: 1.75rem; --s5: 2.75rem; --s6: 4.25rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper:   #101312;
+    --sheet:   #1A1A19;
+    --sheet-2: #212422;
+    --ink:     #E6EAE7;
+    --ink-2:   #B4BDB9;
+    --muted:   #838E8A;
+    --rule:    #333B38;
+    --rule-2:  #282E2C;
+
+    --medido:   #2BA3C4;
+    --modelado: #B08020;
+
+    --ok:      #4E9A72;
+    --alerta:  #BE9231;
+    --critico: #D2685C;
+
+    --medido-wash:   rgba(43, 163, 196, .14);
+    --modelado-wash: rgba(176, 128, 32, .16);
+  }
+}
+
+:root[data-theme="dark"] {
+  --paper:   #101312;  --sheet:   #1A1A19;  --sheet-2: #212422;
+  --ink:     #E6EAE7;  --ink-2:   #B4BDB9;  --muted:   #838E8A;
+  --rule:    #333B38;  --rule-2:  #282E2C;
+  --medido:  #2BA3C4;  --modelado:#B08020;
+  --ok:      #4E9A72;  --alerta:  #BE9231;  --critico: #D2685C;
+  --medido-wash: rgba(43,163,196,.14); --modelado-wash: rgba(176,128,32,.16);
+}
+:root[data-theme="light"] {
+  --paper:   #E9ECE9;  --sheet:   #FCFCFB;  --sheet-2: #F3F5F2;
+  --ink:     #131B1C;  --ink-2:   #414D4C;  --muted:   #6E7A78;
+  --rule:    #C9D0CC;  --rule-2:  #DDE2DE;
+  --medido:  #0080A0;  --modelado:#A8720F;
+  --ok:      #2E6B4F;  --alerta:  #8A5F10;  --critico: #A32A22;
+  --medido-wash: rgba(0,128,160,.10); --modelado-wash: rgba(168,114,15,.12);
+}
+
+/* -------------------------------------------------------------------- */
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 17px;
+  line-height: 1.62;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 var(--s3); }
+
+/* ---- portada ---- */
+
+.portada {
+  padding: var(--s6) 0 var(--s5);
+  border-bottom: 2px solid var(--ink);
+}
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: .69rem;
+  letter-spacing: .17em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 var(--s3);
+}
+
+h1 {
+  font-family: var(--mono);
+  font-size: clamp(1.85rem, 4.6vw, 3.15rem);
+  font-weight: 600;
+  line-height: 1.08;
+  letter-spacing: -.02em;
+  text-wrap: balance;
+  margin: 0 0 var(--s3);
+  max-width: 20ch;
+}
+h1 em { font-style: normal; color: var(--medido); }
+
+.bajada {
+  font-size: 1.13rem;
+  color: var(--ink-2);
+  max-width: 62ch;
+  margin: 0 0 var(--s4);
+}
+
+.ficha {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+  gap: 1px;
+  background: var(--rule);
+  border: 1px solid var(--rule);
+  margin-bottom: var(--s4);
+}
+.ficha div { background: var(--sheet); padding: var(--s3); }
+.ficha dt {
+  font-family: var(--mono); font-size: .64rem; letter-spacing: .13em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: var(--s1);
+}
+.ficha dd {
+  font-family: var(--mono); font-size: 1.28rem; font-weight: 600;
+  margin: 0; font-variant-numeric: tabular-nums; letter-spacing: -.01em;
+}
+.ficha dd small { display:block; font-size:.72rem; font-weight:400; color: var(--muted); letter-spacing: 0; margin-top: 2px; }
+
+.aviso {
+  border-left: 3px solid var(--modelado);
+  background: var(--modelado-wash);
+  padding: var(--s3) var(--s3) var(--s3) var(--s4);
+  font-size: .95rem;
+  color: var(--ink-2);
+}
+.aviso strong { color: var(--ink); }
+
+/* ---- índice pegajoso ---- */
+
+nav.indice {
+  position: sticky; top: 0; z-index: 20;
+  background: var(--paper);
+  border-bottom: 1px solid var(--rule);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+nav.indice ol {
+  display: flex; gap: 0; list-style: none;
+  margin: 0 auto; padding: 0 var(--s3); max-width: 1120px;
+  min-width: max-content;
+}
+nav.indice a {
+  display: block; padding: var(--s2) var(--s3);
+  font-family: var(--mono); font-size: .7rem; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--muted);
+  text-decoration: none; white-space: nowrap;
+  border-bottom: 2px solid transparent;
+}
+nav.indice a:hover, nav.indice a:focus-visible {
+  color: var(--ink); border-bottom-color: var(--medido); outline: none;
+}
+nav.indice a b { color: var(--ink-2); font-weight: 600; margin-right: .45em; }
+
+/* ---- pasos ---- */
+
+section.paso { padding: var(--s6) 0 var(--s5); border-bottom: 1px solid var(--rule); }
+
+.paso-cab {
+  display: grid; grid-template-columns: 4.5rem 1fr; gap: var(--s3);
+  align-items: start; margin-bottom: var(--s4);
+}
+.paso-num {
+  font-family: var(--mono); font-size: 2.4rem; font-weight: 600;
+  line-height: .9; color: var(--rule);
+  letter-spacing: -.04em; font-variant-numeric: tabular-nums;
+}
+h2 {
+  font-family: var(--mono); font-size: clamp(1.28rem, 2.6vw, 1.72rem);
+  font-weight: 600; letter-spacing: -.015em; line-height: 1.2;
+  margin: 0 0 var(--s2); text-wrap: balance;
+}
+.decide {
+  font-family: var(--sans); font-size: .84rem; color: var(--muted);
+  margin: 0; max-width: 60ch;
+}
+.decide b { color: var(--ink-2); font-weight: 600; }
+
+.prosa { max-width: 68ch; }
+.prosa p { margin: 0 0 var(--s3); }
+.prosa p:last-child { margin-bottom: 0; }
+.prosa strong { font-weight: 600; }
+.prosa code, code.inline {
+  font-family: var(--mono); font-size: .87em;
+  background: var(--sheet-2); padding: .1em .38em;
+  border: 1px solid var(--rule-2); border-radius: 2px;
+}
+
+h3 {
+  font-family: var(--mono); font-size: .74rem; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--muted); font-weight: 600;
+  margin: var(--s5) 0 var(--s3); padding-bottom: var(--s2);
+  border-bottom: 1px solid var(--rule);
+}
+
+/* ---- bloques ---- */
+
+.hoja {
+  background: var(--sheet); border: 1px solid var(--rule);
+  padding: var(--s4); margin: var(--s4) 0;
+}
+
+.dos-col { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s4); align-items: start; }
+@media (max-width: 780px) { .dos-col { grid-template-columns: 1fr; } }
+
+pre {
+  font-family: var(--mono); font-size: .79rem; line-height: 1.65;
+  background: var(--sheet); border: 1px solid var(--rule);
+  border-left: 3px solid var(--medido);
+  padding: var(--s3); margin: var(--s3) 0;
+  overflow-x: auto; color: var(--ink-2);
+}
+pre b { color: var(--ink); font-weight: 600; }
+pre .c { color: var(--muted); }
+
+table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: .78rem; }
+.tabla-wrap { overflow-x: auto; margin: var(--s3) 0; border: 1px solid var(--rule); background: var(--sheet); }
+th {
+  text-align: left; font-weight: 600; font-size: .64rem; letter-spacing: .11em;
+  text-transform: uppercase; color: var(--muted);
+  padding: var(--s2) var(--s3); border-bottom: 1px solid var(--rule); white-space: nowrap;
+}
+td { padding: .55rem var(--s3); border-bottom: 1px solid var(--rule-2); vertical-align: top; }
+tr:last-child td { border-bottom: none; }
+td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.dest { color: var(--ink); font-weight: 600; }
+
+.pill {
+  display: inline-flex; align-items: center; gap: .35em;
+  font-family: var(--mono); font-size: .63rem; letter-spacing: .07em;
+  text-transform: uppercase; font-weight: 600;
+  padding: .18em .5em; border: 1px solid currentColor; border-radius: 2px;
+  white-space: nowrap;
+}
+.pill.ok { color: var(--ok); }
+.pill.al { color: var(--alerta); }
+.pill.cr { color: var(--critico); }
+
+.leyenda { display: flex; flex-wrap: wrap; gap: var(--s3); margin: var(--s2) 0 var(--s3); }
+.leyenda span {
+  display: inline-flex; align-items: center; gap: .45em;
+  font-family: var(--sans); font-size: .74rem; color: var(--ink-2);
+}
+.swatch { width: 14px; height: 3px; border-radius: 2px; flex: none; }
+.swatch.dash { background: none; border-top: 2px dashed currentColor; height: 0; }
+
+figure { margin: var(--s4) 0; }
+figcaption {
+  font-family: var(--sans); font-size: .78rem; color: var(--muted);
+  margin-top: var(--s2); max-width: 62ch;
+}
+figcaption b { color: var(--ink-2); font-weight: 600; }
+
+svg { display: block; max-width: 100%; height: auto; }
+svg text { font-family: var(--mono); fill: var(--muted); }
+.cifra { fill: var(--ink); font-weight: 600; }
+
+.punto { cursor: pointer; }
+.punto:hover circle, .punto:focus-visible circle { r: 7; }
+.punto title { font-family: var(--sans); }
+
+/* ---- tarjeta de recomendación ---- */
+
+.reco { border: 1px solid var(--rule); background: var(--sheet); margin: var(--s4) 0; }
+.reco-cab {
+  display: flex; flex-wrap: wrap; gap: var(--s3); justify-content: space-between;
+  align-items: baseline; padding: var(--s3) var(--s4);
+  border-bottom: 1px solid var(--rule); background: var(--sheet-2);
+  font-family: var(--mono); font-size: .78rem;
+}
+.reco-cab .sku { font-weight: 600; font-size: .95rem; color: var(--ink); }
+.reco-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+  gap: 1px; background: var(--rule-2);
+}
+.reco-grid div { background: var(--sheet); padding: var(--s3); }
+.reco-grid dt {
+  font-family: var(--mono); font-size: .6rem; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 3px;
+}
+.reco-grid dd {
+  font-family: var(--mono); font-size: 1.02rem; font-weight: 600; margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.reco-just {
+  padding: var(--s3) var(--s4); border-top: 1px solid var(--rule);
+  font-size: .93rem; color: var(--ink-2); background: var(--modelado-wash);
+}
+.reco-just b { color: var(--ink); }
+.reco-just .nota {
+  display: block; margin-top: var(--s2); padding-top: var(--s2);
+  border-top: 1px dashed var(--rule); font-family: var(--sans); font-size: .82rem;
+}
+
+/* ---- cadena de decisión ---- */
+
+.cadena { list-style: none; padding: 0; margin: var(--s4) 0; }
+.cadena li {
+  position: relative; padding: 0 0 var(--s4) var(--s5);
+  font-family: var(--mono); font-size: .84rem;
+}
+.cadena li::before {
+  content: ""; position: absolute; left: 9px; top: .55em; bottom: -.55em;
+  width: 1px; background: var(--rule);
+}
+.cadena li:last-child { padding-bottom: 0; }
+.cadena li:last-child::before { display: none; }
+.cadena li::after {
+  content: ""; position: absolute; left: 4px; top: .4em;
+  width: 11px; height: 11px; border-radius: 50%;
+  background: var(--sheet); border: 2px solid var(--medido);
+}
+.cadena b { display: block; color: var(--ink); font-weight: 600; margin-bottom: 2px; }
+.cadena span { font-family: var(--serif); font-size: .97rem; color: var(--ink-2); }
+
+/* ---- límites ---- */
+
+.limites { list-style: none; padding: 0; margin: var(--s3) 0; max-width: 70ch; }
+.limites li {
+  padding: var(--s3) 0; border-bottom: 1px solid var(--rule-2); font-size: .97rem;
+}
+.limites li:last-child { border-bottom: none; }
+.limites b { font-family: var(--mono); font-size: .8rem; display: block; margin-bottom: 3px; }
+
+footer {
+  padding: var(--s5) 0 var(--s6);
+  font-family: var(--mono); font-size: .74rem; color: var(--muted);
+}
+footer a { color: var(--medido); }
+
+a:focus-visible, .punto:focus-visible { outline: 2px solid var(--medido); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+</style>
+
+<div class="wrap">
+
+<header class="portada">
+  <p class="eyebrow">Adium Pharma · Excelencia Comercial Corporativo · Zonamerica</p>
+  <h1>Del dato crudo a la decisión comercial, <em>en cinco pasos reproducibles</em></h1>
+  <p class="bajada">
+    Tres tableros de Power BI —VAR, Ofertas y Logística— sobre un único modelo
+    semántico en estrella, alimentado por un pipeline de Python que limpia,
+    controla, modela y recomienda. Cada número de esta página sale de correr
+    <code class="inline">python src/run_all.py</code>.
+  </p>
+
+  <dl class="ficha">
+    <div><dt>Líneas procesadas</dt><dd>234.724<small>8 filiales · 24 meses</small></dd></div>
+    <div><dt>Controles de calidad</dt><dd>14<small>6 dimensiones canónicas</small></dd></div>
+    <div><dt>Modelo semántico</dt><dd>19,9 MB<small>−57,3% optimizado</small></dd></div>
+    <div><dt>Devoluciones · AUC</dt><dd>0,822<small>98% del techo teórico</small></dd></div>
+    <div><dt>Pipeline completo</dt><dd>51 s<small>semilla fija</small></dd></div>
+  </dl>
+
+  <p class="aviso">
+    <strong>Los datos son sintéticos.</strong> Están generados por código con semilla
+    fija; no hay información real de ninguna compañía. Las métricas de los modelos
+    sí son reales sobre esos datos: se miden con validación temporal, sobre un
+    holdout que el modelo nunca vio. Donde un resultado está limitado por el propio
+    simulador, se dice.
+  </p>
+</header>
+
+</div>
+
+<nav class="indice" aria-label="Índice del proceso">
+  <ol>
+    <li><a href="#p1"><b>01</b>Dataset</a></li>
+    <li><a href="#p2"><b>02</b>Calidad y modelado</a></li>
+    <li><a href="#p3"><b>03</b>ML · Devoluciones</a></li>
+    <li><a href="#p4"><b>04</b>ML · Ofertas</a></li>
+    <li><a href="#p5"><b>05</b>IA · Precio óptimo</a></li>
+    <li><a href="#p6"><b>06</b>Modelo semántico</a></li>
+    <li><a href="#p7"><b>07</b>Los tableros</a></li>
+    <li><a href="#p8"><b>08</b>Límites</a></li>
+  </ol>
+</nav>
+
+<div class="wrap">
+
+<!-- ================================================================= -->
+<section class="paso" id="p1">
+  <div class="paso-cab">
+    <div class="paso-num">01</div>
+    <div>
+      <h2>Simular los sistemas origen como son, no como conviene</h2>
+      <p class="decide">Decide: <b>qué tan real es el resto del proyecto.</b> Un dataset limpio hace que el trabajo de calidad sea decorativo.</p>
+    </div>
+  </div>
+
+  <div class="prosa">
+    <p>
+      El generador produce cuatro sistemas origen: ERP de facturación, panel de
+      auditoría tipo IQVIA, CRM de ofertas y WMS/TMS de logística. 8 filiales LATAM,
+      120 SKU con jerarquía ATC, 900 clientes, 24 meses.
+    </p>
+    <p>
+      Lo que lo separa de un <code>random.rand()</code> es que los defectos están
+      inyectados a propósito y los targets tienen estructura causal. El ERP factura
+      en <strong>moneda local</strong>, así que la normalización FX es trabajo real del ETL.
+      Y el precio mueve la demanda vía <code>q = q_base · (1−d)^ε</code> con una
+      elasticidad propia por SKU — que es justamente lo que el paso 5 tiene que
+      <em>recuperar</em>.
+    </p>
+  </div>
+
+  <h3>Defectos inyectados a propósito</h3>
+  <div class="tabla-wrap">
+    <table>
+      <thead><tr><th>Defecto</th><th>Por qué está</th><th class="num">Incidencia</th></tr></thead>
+      <tbody>
+        <tr><td class="dest">Duplicados por reproceso</td><td>Es lo que pasa cuando una carga se corre dos veces</td><td class="num">0,79%</td></tr>
+        <tr><td class="dest">Fechas en dos formatos</td><td><code>YYYY-MM-DD</code> y <code>DD/MM/YYYY</code> conviviendo</td><td class="num">25%</td></tr>
+        <tr><td class="dest">Importes negativos</td><td>Notas de crédito mal clasificadas como venta</td><td class="num">0,40%</td></tr>
+        <tr><td class="dest">Unidades con un cero de más</td><td>Dedazo de carga manual</td><td class="num">0,14%</td></tr>
+        <tr><td class="dest">Transportista sin informar</td><td>Campo opcional en el sistema origen</td><td class="num">0,60%</td></tr>
+        <tr><td class="dest">Filial-mes sin cargar</td><td>Paraguay no reportó abril al panel</td><td class="num">1 caso</td></tr>
+        <tr><td class="dest">Costo estándar faltante</td><td>SKU nuevos sin costear en Finanzas</td><td class="num">3,33%</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ================================================================= -->
+<section class="paso" id="p2">
+  <div class="paso-cab">
+    <div class="paso-num">02</div>
+    <div>
+      <h2>Data Steward: 14 controles, y los críticos bloquean la publicación</h2>
+      <p class="decide">Decide: <b>si la cifra sale o no sale.</b> Un tablero que no reconcilia cuesta más que un tablero que no existe.</p>
+    </div>
+  </div>
+
+  <div class="prosa">
+    <p>
+      Cada control corre solo y deja evidencia con su acción asociada y su
+      severidad. Los <strong>críticos bloquean el refresh</strong>; el resto alertan.
+      Esa distinción es la que evita que el semáforo esté siempre en rojo y deje
+      de significar algo.
+    </p>
+    <p>
+      Dos criterios que se aplican sin excepción. <strong>Un outlier se marca, no se
+      corrige en silencio</strong> — corregir sin avisar es peor que el error, porque
+      después nadie puede auditarlo. Y <strong>un filial-mes faltante se muestra como
+      «sin dato», nunca como cero</strong>: un cero dice «no vendió», un blanco dice
+      «no reportó», y confundirlos arruina cualquier análisis de market share.
+    </p>
+  </div>
+
+  <div class="tabla-wrap">
+    <table>
+      <thead><tr><th>Dimensión</th><th>Control</th><th class="num">Filas</th><th>Estado</th></tr></thead>
+      <tbody>
+        <tr><td>Completitud</td><td>Filial-mes sin carga del panel de auditoría</td><td class="num">1</td><td><span class="pill cr">▲ Crítico</span></td></tr>
+        <tr><td>Unicidad</td><td>Líneas de factura duplicadas por reproceso</td><td class="num">1.953</td><td><span class="pill cr">▲ Crítico</span></td></tr>
+        <tr><td>Exactitud</td><td>Unidades &gt; 25× la mediana del SKU</td><td class="num">338</td><td><span class="pill cr">▲ Crítico</span></td></tr>
+        <tr><td>Completitud</td><td>SKU sin costo estándar cargado</td><td class="num">4</td><td><span class="pill cr">▲ Crítico</span></td></tr>
+        <tr><td>Validez</td><td>Importes negativos (notas de crédito)</td><td class="num">978</td><td><span class="pill al">● Alerta</span></td></tr>
+        <tr><td>Completitud</td><td>Despachos sin transportista informado</td><td class="num">1.465</td><td><span class="pill al">● Alerta</span></td></tr>
+        <tr><td>Consistencia</td><td>Código de cliente con espacios o minúsculas</td><td class="num">27</td><td><span class="pill al">● Alerta</span></td></tr>
+        <tr><td>Consistencia</td><td>Ventas con SKU inexistente en el maestro</td><td class="num">0</td><td><span class="pill ok">✓ OK</span></td></tr>
+        <tr><td>Consistencia</td><td>Líneas sin tipo de cambio del mes</td><td class="num">0</td><td><span class="pill ok">✓ OK</span></td></tr>
+        <tr><td>Unicidad</td><td>Código de cliente duplicado</td><td class="num">0</td><td><span class="pill ok">✓ OK</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Optimización del modelo — medida, no declarada</h3>
+
+  <div class="dos-col">
+    <figure>
+      <svg viewBox="0 0 400 190" role="img" aria-label="Memoria del modelo semántico: 46,7 MB antes de optimizar, 19,9 MB después, una reducción del 57,3%.">
+        <line x1="60" y1="150" x2="390" y2="150" stroke="var(--rule)" stroke-width="1"/>
+        <text x="60" y="20" font-size="9" letter-spacing="1.2">MEMORIA DEL MODELO · MB</text>
+
+        <rect x="60" y="42" width="264" height="30" rx="4" fill="var(--rule)"/>
+        <text x="60" y="36" font-size="9">ANTES</text>
+        <text x="334" y="63" font-size="14" class="cifra">46,7</text>
+
+        <rect x="60" y="98" width="112" height="30" rx="4" fill="var(--medido)"/>
+        <text x="60" y="92" font-size="9">DESPUÉS</text>
+        <text x="182" y="119" font-size="14" class="cifra">19,9</text>
+
+        <text x="60" y="172" font-size="11" class="cifra">−57,3%</text>
+        <text x="122" y="172" font-size="9">sin perder una sola fila de negocio</text>
+      </svg>
+      <figcaption>
+        El ahorro no viene de tirar datos. Viene de sacar <b>id_linea</b> —234.724
+        valores distintos, la columna más cara de comprimir y que nadie consulta en
+        un tablero— y de ajustar el ancho de cada columna a su rango real.
+      </figcaption>
+    </figure>
+
+    <div>
+      <h3 style="margin-top:0">Por qué eso importa en VertiPaq</h3>
+      <div class="prosa">
+        <p style="font-size:.95rem">
+          Power BI corre sobre un motor columnar en memoria que comprime cada columna
+          con diccionario y run-length. El costo real de una tabla lo manda la
+          <strong>cardinalidad</strong> y el <strong>ancho</strong> de cada columna,
+          no la cantidad de filas. Por eso una tabla de 234 mil filas puede pesar
+          menos que una de 50 mil con un GUID adentro.
+        </p>
+        <p style="font-size:.95rem">
+          El modelo tampoco tiene ninguna columna calculada en DAX: todo lo que se
+          puede resolver aguas arriba se resuelve en SQL o en Python. Base &gt;
+          Power Query &gt; DAX, siempre.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================= -->
+<section class="paso" id="p3">
+  <div class="paso-cab">
+    <div class="paso-num">03</div>
+    <div>
+      <h2>Devoluciones: qué pedido va a volver, y cuánto voy a devolver el mes que viene</h2>
+      <p class="decide">Decide: <b>qué pedido revisar antes de que salga del depósito</b>, y cuánta provisión contable reservar.</p>
+    </div>
+  </div>
+
+  <div class="prosa">
+    <p>
+      Split temporal, nunca aleatorio: entrenamiento hasta el 30/06/2025, validación
+      jul–sep, holdout oct–dic. Todos los features históricos se calculan con
+      <code>expanding + shift(1)</code>, es decir con información estrictamente
+      anterior al mes que se predice. El umbral se calibra en validación y recién
+      después se mide en holdout.
+    </p>
+  </div>
+
+  <div class="tabla-wrap">
+    <table>
+      <thead><tr><th>Métrica · holdout oct–dic 2025</th><th class="num">Valor</th><th>Lectura</th></tr></thead>
+      <tbody>
+        <tr><td>Accuracy</td><td class="num dest">0,877</td><td>Sobre una tasa base de devolución del 11,0%</td></tr>
+        <tr><td>Precision</td><td class="num dest">0,443</td><td>4,0× mejor que elegir al azar</td></tr>
+        <tr><td>Recall</td><td class="num dest">0,483</td><td>Al umbral óptimo de F1</td></tr>
+        <tr><td>ROC-AUC</td><td class="num dest">0,822</td><td>Contra un techo teórico de 0,847</td></tr>
+        <tr><td>Captura en el top 10% de riesgo</td><td class="num dest">43,9%</td><td>Es lo que va al tablero, no el AUC</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="dos-col">
+    <figure>
+      <svg viewBox="0 0 400 260" role="img" aria-label="Curva de captura: revisando el 10% de los pedidos con mayor riesgo se capturan el 43,9% de las devoluciones; el 20%, el 62,2%; el 30%, el 74,8%. La revisión al azar captura una proporción igual al porcentaje revisado.">
+        <text x="0" y="12" font-size="9" letter-spacing="1.2">CURVA DE CAPTURA · % DE DEVOLUCIONES ANTICIPADAS</text>
+
+        <g stroke="var(--rule-2)" stroke-width="1">
+          <line x1="42" y1="30" x2="388" y2="30"/>
+          <line x1="42" y1="82" x2="388" y2="82"/>
+          <line x1="42" y1="134" x2="388" y2="134"/>
+          <line x1="42" y1="186" x2="388" y2="186"/>
+        </g>
+        <line x1="42" y1="238" x2="388" y2="238" stroke="var(--rule)" stroke-width="1"/>
+        <line x1="42" y1="30" x2="42" y2="238" stroke="var(--rule)" stroke-width="1"/>
+
+        <text x="36" y="34" font-size="8" text-anchor="end">100</text>
+        <text x="36" y="86" font-size="8" text-anchor="end">75</text>
+        <text x="36" y="138" font-size="8" text-anchor="end">50</text>
+        <text x="36" y="190" font-size="8" text-anchor="end">25</text>
+        <text x="36" y="242" font-size="8" text-anchor="end">0</text>
+
+        <text x="42" y="254" font-size="8">0%</text>
+        <text x="146" y="254" font-size="8" text-anchor="middle">30%</text>
+        <text x="388" y="254" font-size="8" text-anchor="end">100% de pedidos revisados</text>
+
+        <!-- baseline: azar -->
+        <line x1="42" y1="238" x2="388" y2="30" stroke="var(--muted)" stroke-width="2" stroke-dasharray="5 4"/>
+
+        <!-- modelo -->
+        <path d="M42,238 L77.6,146.7 L112.2,108.7 L146,82.4 L388,30"
+              fill="none" stroke="var(--medido)" stroke-width="2" stroke-linejoin="round"/>
+        <path d="M42,238 L77.6,146.7 L112.2,108.7 L146,82.4 L388,30 L388,238 Z"
+              fill="var(--medido-wash)" stroke="none"/>
+
+        <g class="punto" tabindex="0">
+          <circle cx="77.6" cy="146.7" r="5" fill="var(--medido)" stroke="var(--sheet)" stroke-width="2"/>
+          <title>Revisando el 10% de los pedidos se capturan el 43,9% de las devoluciones (lift 4,4×)</title>
+        </g>
+        <g class="punto" tabindex="0">
+          <circle cx="112.2" cy="108.7" r="5" fill="var(--medido)" stroke="var(--sheet)" stroke-width="2"/>
+          <title>Revisando el 20% se capturan el 62,2% (lift 3,1×)</title>
+        </g>
+        <g class="punto" tabindex="0">
+          <circle cx="146" cy="82.4" r="5" fill="var(--medido)" stroke="var(--sheet)" stroke-width="2"/>
+          <title>Revisando el 30% se capturan el 74,8% (lift 2,5×)</title>
+        </g>
+
+        <text x="86" y="140" font-size="11" class="cifra">43,9%</text>
+        <text x="86" y="152" font-size="8">con solo el 10% revisado</text>
+      </svg>
+      <div class="leyenda">
+        <span><i class="swatch" style="background:var(--medido)"></i>Modelo</span>
+        <span style="color:var(--muted)"><i class="swatch dash"></i>Revisión al azar</span>
+      </div>
+      <figcaption>
+        A un gerente de logística no se le comunica «AUC 0,82». Se le comunica
+        cuántas devoluciones evita revisando 1 de cada 10 pedidos. Es el mismo
+        modelo, dicho de la única forma en que se va a usar.
+      </figcaption>
+    </figure>
+
+    <figure>
+      <svg viewBox="0 0 400 250" role="img" aria-label="El modelo de devoluciones alcanza AUC 0,822 sobre un techo teórico de 0,847, el 98%. El de ofertas alcanza 0,743 sobre un techo de 0,770, el 96%.">
+        <text x="0" y="12" font-size="9" letter-spacing="1.2">MODELO vs TECHO TEÓRICO DEL PROBLEMA</text>
+
+        <text x="0" y="48" font-size="9">DEVOLUCIONES</text>
+        <rect x="0" y="56" width="390" height="26" rx="4" fill="var(--sheet-2)"/>
+        <rect x="0" y="56" width="329" height="26" rx="4" fill="var(--medido)"/>
+        <line x1="352" y1="50" x2="352" y2="88" stroke="var(--ink)" stroke-width="2.5"/>
+        <text x="8" y="74" font-size="12" fill="var(--sheet)" font-weight="600">0,822</text>
+        <text x="358" y="74" font-size="9" class="cifra">techo 0,847</text>
+        <text x="0" y="100" font-size="9">alcanza el 98% del máximo posible</text>
+
+        <text x="0" y="148" font-size="9">OFERTAS</text>
+        <rect x="0" y="156" width="390" height="26" rx="4" fill="var(--sheet-2)"/>
+        <rect x="0" y="156" width="297" height="26" rx="4" fill="var(--medido)"/>
+        <line x1="320" y1="150" x2="320" y2="188" stroke="var(--ink)" stroke-width="2.5"/>
+        <text x="8" y="174" font-size="12" fill="var(--sheet)" font-weight="600">0,743</text>
+        <text x="326" y="174" font-size="9" class="cifra">techo 0,770</text>
+        <text x="0" y="200" font-size="9">alcanza el 96% del máximo posible</text>
+
+        <text x="0" y="232" font-size="8">Escala 0,50 – 0,90 · ROC-AUC sobre holdout temporal</text>
+      </svg>
+      <figcaption>
+        El <b>AUC oráculo</b> es el que lograría alguien que conociera la probabilidad
+        real del proceso generador. Poder decir «lo que falta no es modelo, es ruido
+        irreducible» evita meses de tuning inútil — y es una respuesta que se puede
+        dar en una reunión sin adivinar.
+      </figcaption>
+    </figure>
+  </div>
+
+  <h3>La calibración no era opcional</h3>
+  <div class="prosa">
+    <p>
+      <code>class_weight="balanced"</code> ayuda a aprender un evento minoritario,
+      pero deforma la probabilidad hacia arriba: el modelo separa bien y estima mal.
+      Para ordenar pedidos alcanzaba; para que el motor de precios del paso 5 use
+      ese número como <em>tasa esperada</em>, no.
+    </p>
+  </div>
+  <pre>probabilidad media cruda      <b>0,360</b>
+probabilidad media calibrada  <b>0,119</b>
+tasa real observada           <b>0,119</b>   <span class="c">← calibración isotónica sobre validación</span></pre>
+</section>
+
+<!-- ================================================================= -->
+<section class="paso" id="p4">
+  <div class="paso-cab">
+    <div class="paso-num">04</div>
+    <div>
+      <h2>Ofertas: quién acepta, y cuánto va a costar la política comercial</h2>
+      <p class="decide">Decide: <b>a quién llama el representante primero</b>, y cuánto presupuesto de descuento reservar.</p>
+    </div>
+  </div>
+
+  <div class="prosa">
+    <p>
+      Acá el evento no es raro —57% de aceptación en campañas dirigidas— así que
+      accuracy sí es informativa y no hace falta rebalancear. Se reportan
+      <strong>dos puntos de operación</strong>, porque sirven para cosas distintas:
+      el umbral de F1 arma la lista de llamados (prioriza cobertura) y el de 0,5
+      estima cuántas ofertas se van a aceptar (prioriza exactitud). Forzar un solo
+      umbral para las dos cosas es aceptar un compromiso que no hace falta.
+    </p>
+  </div>
+
+  <div class="tabla-wrap">
+    <table>
+      <thead><tr><th>Métrica · holdout</th><th class="num">Umbral F1</th><th class="num">Umbral 0,5</th><th>Para qué sirve cada uno</th></tr></thead>
+      <tbody>
+        <tr><td>Accuracy</td><td class="num">0,656</td><td class="num dest">0,674</td><td>Estimar volumen de aceptaciones</td></tr>
+        <tr><td>Precision</td><td class="num">0,634</td><td class="num dest">0,691</td><td>No hacer perder tiempo al representante</td></tr>
+        <tr><td>Recall</td><td class="num dest">0,848</td><td class="num">0,707</td><td>No dejar afuera una venta posible</td></tr>
+        <tr><td>ROC-AUC</td><td class="num dest">0,743</td><td class="num dest">0,743</td><td>No depende del umbral</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Proyección de la inversión comercial</h3>
+  <div class="prosa">
+    <p>
+      La serie mensual de descuento otorgado por filial se proyecta con regresión
+      regularizada sobre rezagos y drivers de mix, con el alpha elegido por
+      validación cruzada <strong>temporal</strong>. La comparación contra el método
+      naive es lo que demuestra que el modelo aporta algo.
+    </p>
+  </div>
+  <pre>WMAPE del modelo    <b>0,117</b>   <span class="c">precisión 88,3%</span>
+WMAPE del naive     <b>0,390</b>   <span class="c">precisión 61,0%</span>
+mejora              <b>27,3 pp</b> <span class="c">medida solo sobre holdout — el in-sample no cuenta</span></pre>
+</section>
+
+<!-- ================================================================= -->
+<section class="paso" id="p5">
+  <div class="paso-cab">
+    <div class="paso-num">05</div>
+    <div>
+      <h2>El motor de IA: qué ofertar, a qué precio, en qué segmento y por qué</h2>
+      <p class="decide">Decide: <b>dónde va el próximo peso de descuento.</b> Es el paso que convierte un modelo predictivo en uno de decisión.</p>
+    </div>
+  </div>
+
+  <div class="prosa">
+    <p>
+      Cuatro piezas, ninguna es una caja negra. Primero se <strong>estima la
+      elasticidad precio</strong> por regresión log-log con efectos fijos de mes —
+      controlar por mes es lo que evita confundir estacionalidad con precio,
+      porque justamente se descuenta más fuera de temporada. Cuando un SKU no tiene
+      datos suficientes, hereda de su ATC3, después de su ATC1, y recién al final
+      de la media global.
+    </p>
+    <p>
+      Después se evalúa <strong>contrafácticamente</strong> el modelo de aceptación
+      del paso 4 sobre una grilla de descuentos, se optimiza el margen esperado neto
+      de riesgo de devolución, y se redacta el justificativo con las mismas
+      variables que entraron en la decisión.
+    </p>
+  </div>
+
+  <pre><span class="c">Función objetivo — todo lo que el negocio pidió, explícito</span>
+demanda(d)  = q_base · (1−d)^ε              <span class="c">curva de demanda, tope 3× q_base</span>
+p_acept(d)  = modelo calibrado del paso 4   <span class="c">contrafáctico, no observación</span>
+margen(d)   = p_acept · demanda · (P(1−d) − C)
+riesgo(d)   = riesgo_base · (1 + 1,2·sobrestock + 0,9·lote_corto + 1,5·d)
+<b>objetivo(d) = margen(d) · (1 − riesgo(d)) + valor_de_stock_rescatado</b>
+
+<span class="c">Dos restricciones que no son de modelo sino de negocio:</span>
+  · piso de margen del 15% — los descuentos que lo perforan salen de la grilla
+  · grilla acotada al percentil 95 histórico — el modelo no extrapola</pre>
+
+  <div class="prosa">
+    <p>
+      <strong>La elasticidad estimada correlaciona 0,714 con la real del simulador.</strong>
+      El parámetro se recupera de verdad; no es un número que queda lindo en una tabla.
+      Es la única forma de saber que la optimización no está construida sobre ruido.
+    </p>
+  </div>
+
+  <h3>Una recomendación, como la ve el comercial</h3>
+
+  <div class="reco">
+    <div class="reco-cab">
+      <span class="sku">ADM-0114 · Adium K114</span>
+      <span>AR · Distribuidor · Segmento A · enero 2026</span>
+    </div>
+    <dl class="reco-grid">
+      <div><dt>Descuento óptimo</dt><dd style="color:var(--modelado)">22%</dd></div>
+      <div><dt>Aceptación</dt><dd>80%</dd></div>
+      <div><dt>Riesgo devolución</dt><dd style="color:var(--ok)">10%</dd></div>
+      <div><dt>Elasticidad</dt><dd>−2,88</dd></div>
+      <div><dt>Margen unitario</dt><dd>USD 10,33</dd></div>
+      <div><dt>Ganancia vs no ofertar</dt><dd>+USD 117</dd></div>
+    </dl>
+    <div class="reco-just">
+      Elasticidad estimada −2,88 (nivel producto), con margen unitario de USD 10,33
+      (59% sobre precio neto); probabilidad de aceptación estimada 80%; riesgo de
+      devolución controlado (10%). <b>El 22% maximiza el margen esperado neto: USD 1.475
+      contra USD 1.358 sin oferta (+USD 117).</b>
+      <span class="nota">
+        <b>Nota del motor:</b> el óptimo cae en el borde del rango de descuentos con
+        evidencia histórica. El modelo <b>no extrapola</b> más allá — si se quiere
+        explorar un descuento mayor, corresponde un test controlado sobre un
+        subconjunto de clientes antes de generalizar.
+      </span>
+    </div>
+  </div>
+
+  <div class="prosa">
+    <p>
+      El justificativo ocupa el ancho completo de la tarjeta y no un tooltip, a
+      propósito: <strong>una recomendación que un comercial no puede discutir es una
+      recomendación que no va a aplicar.</strong> El texto expone cada término que entró
+      en la decisión —estacionalidad, cobertura de stock, unidades por vencer,
+      aporte al margen de la filial, elasticidad, riesgo— para que se pueda objetar
+      punto por punto.
+    </p>
+    <p>
+      Para enero 2026 el motor produce <strong>145 recomendaciones sobre 58 segmentos</strong>:
+      USD 17.462 de margen incremental estimado y USD 21.285 de stock crítico
+      rescatado. <strong>112 de las 145 quedan marcadas como «requiere test controlado».</strong>
+      Prefiero un motor que declare dónde deja de saber antes que uno que extrapole
+      y lo presente como certeza.
+    </p>
+  </div>
+</section>
+
+<!-- ================================================================= -->
+<section class="paso" id="p6">
+  <div class="paso-cab">
+    <div class="paso-num">06</div>
+    <div>
+      <h2>Un modelo semántico, tres tableros</h2>
+      <p class="decide">Decide: <b>si «unidades vendidas» significa lo mismo en los tres tableros.</b> Ahí se juega la democratización del dato.</p>
+    </div>
+  </div>
+
+  <figure>
+    <svg viewBox="0 0 720 330" role="img" aria-label="Diagrama del modelo en estrella: la tabla de hechos fact_ventas al centro, rodeada por siete dimensiones conformadas, con relaciones uno a muchos de dirección simple.">
+      <g stroke="var(--rule)" stroke-width="1.5">
+        <line x1="360" y1="70" x2="360" y2="130"/>
+        <line x1="160" y1="90" x2="290" y2="140"/>
+        <line x1="560" y1="90" x2="430" y2="140"/>
+        <line x1="120" y1="165" x2="285" y2="165"/>
+        <line x1="600" y1="165" x2="435" y2="165"/>
+        <line x1="160" y1="245" x2="290" y2="195"/>
+        <line x1="560" y1="245" x2="430" y2="195"/>
+      </g>
+
+      <rect x="285" y="135" width="150" height="62" rx="3" fill="var(--medido)"/>
+      <text x="360" y="160" font-size="12" text-anchor="middle" fill="var(--sheet)" font-weight="600">fact_ventas</text>
+      <text x="360" y="176" font-size="8.5" text-anchor="middle" fill="var(--sheet)" opacity=".85">233.604 filas</text>
+      <text x="360" y="189" font-size="8.5" text-anchor="middle" fill="var(--sheet)" opacity=".85">sin id_linea</text>
+
+      <g font-size="9.5" text-anchor="middle">
+        <rect x="285" y="26" width="150" height="42" rx="3" fill="var(--sheet)" stroke="var(--ink)" stroke-width="1.5"/>
+        <text x="360" y="44" class="cifra">dim_calendario</text>
+        <text x="360" y="58" font-size="8">marcada como tabla de fechas</text>
+
+        <rect x="30" y="66" width="140" height="42" rx="3" fill="var(--sheet)" stroke="var(--rule)" stroke-width="1.5"/>
+        <text x="100" y="84" class="cifra">dim_producto</text>
+        <text x="100" y="98" font-size="8">jerarquía ATC · 120 SKU</text>
+
+        <rect x="550" y="66" width="140" height="42" rx="3" fill="var(--sheet)" stroke="var(--rule)" stroke-width="1.5"/>
+        <text x="620" y="84" class="cifra">dim_cliente</text>
+        <text x="620" y="98" font-size="8">canal · segmento · 900</text>
+
+        <rect x="30" y="144" width="90" height="42" rx="3" fill="var(--sheet)" stroke="var(--rule)" stroke-width="1.5"/>
+        <text x="75" y="162" class="cifra">dim_filial</text>
+        <text x="75" y="176" font-size="8">8 países</text>
+
+        <rect x="600" y="144" width="90" height="42" rx="3" fill="var(--sheet)" stroke="var(--rule)" stroke-width="1.5"/>
+        <text x="645" y="162" class="cifra">dim_transp.</text>
+        <text x="645" y="176" font-size="8">control frío</text>
+
+        <rect x="30" y="224" width="140" height="42" rx="3" fill="var(--sheet)" stroke="var(--rule)" stroke-width="1.5"/>
+        <text x="100" y="242" class="cifra">dim_deposito</text>
+        <text x="100" y="256" font-size="8">10 centros</text>
+
+        <rect x="550" y="224" width="140" height="42" rx="3" fill="var(--sheet)" stroke="var(--rule)" stroke-width="1.5"/>
+        <text x="620" y="242" class="cifra">dim_tipo_oferta</text>
+        <text x="620" y="256" font-size="8">5 instrumentos</text>
+      </g>
+
+      <text x="360" y="300" font-size="9" text-anchor="middle">
+        Las mismas dimensiones sirven a fact_devoluciones · fact_ofertas · fact_sellout
+      </text>
+      <text x="360" y="315" font-size="9" text-anchor="middle">
+        fact_objetivos · fact_stock · fact_recomendaciones · fact_scoring
+      </text>
+    </svg>
+    <figcaption>
+      Ocho hechos sobre un mismo bus dimensional. <b>No son tres modelos: son tres
+      reportes sobre el mismo modelo</b>, y por eso el drill-through entre tableros
+      conserva el contexto de filtro.
+    </figcaption>
+  </figure>
+
+  <h3>Tres decisiones de modelado que conviene poder defender</h3>
+  <div class="tabla-wrap">
+    <table>
+      <thead><tr><th>Decisión</th><th>Razón</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="dest" style="width:34%">Estrella, no copo de nieve</td>
+          <td>VertiPaq ya comprime por columna con diccionario. La normalización ahorra poco espacio y cuesta un salto de relación en cada consulta.</td>
+        </tr>
+        <tr>
+          <td class="dest">Cero relaciones bidireccionales</td>
+          <td>Resuelven un problema puntual y crean dos: caminos de filtro ambiguos y pérdida de performance en <em>todas</em> las consultas. Cuando hace falta, se usa <code>CROSSFILTER()</code> dentro de la medida.</td>
+        </tr>
+        <tr>
+          <td class="dest">Ningún ratio materializado en SQL</td>
+          <td>Un ratio precalculado se promedia mal en cuanto cambia el nivel de agregación. El modelo expone numeradores —<code>lead_time × línea</code>, <code>cobertura × stock</code>— y la división va en DAX con <code>DIVIDE</code>.</td>
+        </tr>
+        <tr>
+          <td class="dest">Power BI se conecta a vistas, no a tablas</td>
+          <td>La capa <code>star.v_*</code> es el contrato: aísla el reporte de cambios físicos, versiona las definiciones en el repositorio y deja el query folding intacto.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ================================================================= -->
+<section class="paso" id="p7">
+  <div class="paso-cab">
+    <div class="paso-num">07</div>
+    <div>
+      <h2>Los tres tableros, y la cadena que los une</h2>
+      <p class="decide">Decide: <b>si el análisis termina en un gráfico o en una acción.</b></p>
+    </div>
+  </div>
+
+  <div class="tabla-wrap">
+    <table>
+      <thead><tr><th style="width:16%">Tablero</th><th style="width:34%">Pregunta que responde</th><th>Pieza que lo distingue</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="dest">VAR</td>
+          <td>¿Cómo venimos contra objetivo, contra el año pasado y contra el mercado?</td>
+          <td>Puente <b>Precio–Volumen–Mix</b> con control de cierre: si la descomposición no cuadra exactamente contra la variación total, el tablero lo dice en rojo. Una descomposición que no cierra es una opinión, no un dato.</td>
+        </tr>
+        <tr>
+          <td class="dest">Ofertas</td>
+          <td>¿Cuánto cuesta la política comercial y dónde poner el próximo peso?</td>
+          <td>La recomendación del motor de IA con su justificativo discutible. Y la advertencia de que el ROI <b>no es causal</b> va fija en la página, no en un tooltip.</td>
+        </tr>
+        <tr>
+          <td class="dest">Logística</td>
+          <td>¿Entregamos bien y qué pedidos van a volver?</td>
+          <td>El scoring de riesgo se consulta <b>antes</b> de despachar. Un modelo que solo explica devoluciones ya ocurridas es un informe; uno que las anticipa es una herramienta.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Cómo se recorre</h3>
+  <ol class="cadena">
+    <li><b>VAR · resumen ejecutivo</b><span>«El market share en Perú cayó 2 pp este trimestre.»</span></li>
+    <li><b>VAR · sell-in vs sell-out</b><span>El sell-in creció y el sell-out no: no hay más demanda, hay stock acumulándose en el canal.</span></li>
+    <li><b>Logística · devoluciones y stock</b><span>Esa carga de canal ya se está devolviendo, y hay lotes entrando en zona de vencimiento.</span></li>
+    <li><b>Ofertas · recomendación del motor</b><span>«Ofertá este SKU al 22% en Distribuidor segmento A: rescatás USD 12.400 de stock crítico con riesgo de devolución controlado.»</span></li>
+  </ol>
+
+  <div class="prosa">
+    <p>
+      Ese recorrido es el argumento del proyecto entero: <strong>de «el share cayó
+      2 pp» a «ofertá este SKU en este segmento a este precio, por estas razones»
+      sin salir de Power BI ni exportar a Excel en el medio.</strong>
+    </p>
+  </div>
+
+  <h3>El estado del dato va visible, en las tres páginas</h3>
+  <pre>🟢 Validado contra origen   ·   Último dato: 28/12/2025   ·   🟢 Al día (SLA 5 días)</pre>
+  <div class="prosa">
+    <p style="font-size:.95rem">
+      Cuando el negocio ve el estado del dato, empieza a cuidarlo. Un tablero que no
+      dice cuándo se actualizó por última vez es un tablero en el que no se puede
+      confiar — y el dato más peligroso no es el que está mal, es el que está viejo
+      y nadie lo sabe.
+    </p>
+  </div>
+</section>
+
+<!-- ================================================================= -->
+<section class="paso" id="p8">
+  <div class="paso-cab">
+    <div class="paso-num">08</div>
+    <div>
+      <h2>Límites, dichos de frente</h2>
+      <p class="decide">Decide: <b>si el trabajo es creíble.</b> Un proyecto sin límites declarados es un proyecto que no se revisó.</p>
+    </div>
+  </div>
+
+  <ul class="limites">
+    <li>
+      <b>Los datos son sintéticos.</b>
+      Las métricas de los modelos son reales sobre esos datos, pero un dataset
+      generado tiene una estructura causal más limpia que la realidad. Por eso se
+      reporta el AUC oráculo: da la referencia de cuánto de lo que falta es ruido
+      del propio problema y cuánto sería mejorable con más modelo.
+    </li>
+    <li>
+      <b>El ROI de ofertas no es causal.</b>
+      Parte de la venta con oferta se habría hecho igual sin descuento — eso es
+      canibalización, y sin grupo de control no se puede separar. Se reporta como
+      comparativo entre filiales e instrumentos, nunca como impacto incremental.
+    </li>
+    <li>
+      <b>La proyección de devoluciones por filial-mes le gana poco al naive: +3,5 pp.</b>
+      La serie es corta y en buena parte ruido; el modelo está cerca del piso.
+      Saber cuándo un modelo no puede ganarle mucho al método simple vale más que
+      forzar una mejora que no se va a sostener en producción.
+    </li>
+    <li>
+      <b>No hay un archivo .pbix binario en el repositorio.</b>
+      Lo que hay es todo lo que lo produce: el modelo semántico documentado, la
+      biblioteca DAX completa, las vistas SQL y el diseño página por página. Un
+      .pbix no se versiona ni se revisa en un diff; esto sí.
+    </li>
+  </ul>
+</section>
+
+<footer>
+  Martín Viera · Data Analyst · Pipeline reproducible con <code class="inline">python src/run_all.py</code><br>
+  Dataset sintético generado por código · Ninguna cifra proviene de una compañía real
+</footer>
+
+</div>

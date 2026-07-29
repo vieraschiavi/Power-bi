@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Report",
+    "displayName": "Adium_VAR"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "b96eb971-cd0d-5234-9dec-5f7b5eb95d55"
+  }
+}

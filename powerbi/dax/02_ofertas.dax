@@ -1,0 +1,233 @@
+// =========================================================================
+// ADIUM PHARMA — Biblioteca DAX · 02 · TABLERO OFERTAS
+//
+// Pregunta que responde:
+//   "¿Cuánto nos cuesta la política comercial, cuánto trae de vuelta, y
+//    dónde conviene poner el próximo peso de descuento?"
+//
+// El tablero cruza tres capas:
+//   1. lo que PASÓ        — ofertas emitidas, aceptadas, inversión, retorno
+//   2. lo que VA A PASAR  — proyección de inversión del modelo del paso 4
+//   3. lo que HABRÍA que hacer — recomendación del motor de IA del paso 5
+//
+// Esa tercera capa es la que convierte el tablero en una herramienta de
+// decisión en vez de un reporte de resultados.
+// =========================================================================
+
+
+// -------------------------------------------------------------------------
+// ACTIVIDAD DE CAMPAÑA
+// -------------------------------------------------------------------------
+
+Ofertas Emitidas = SUM ( v_fact_ofertas[Ofertas] )
+
+Ofertas Aceptadas = SUM ( v_fact_ofertas[Aceptada] )
+
+Tasa de Aceptación % = DIVIDE ( [Ofertas Aceptadas], [Ofertas Emitidas] )
+
+// Ponderado por valor, no por conteo. Que se acepte el 60% de las ofertas
+// no dice nada si el 40% rechazado concentra todo el volumen.
+Tasa de Aceptación por Valor % =
+DIVIDE (
+    CALCULATE ( [Valor Ofertado USD], v_fact_ofertas[Aceptada] = 1 ),
+    [Valor Ofertado USD]
+)
+
+Valor Ofertado USD =
+SUMX (
+    v_fact_ofertas,
+    v_fact_ofertas[Unidades ofertadas] * RELATED ( v_dim_producto[Precio de lista USD] )
+)
+
+
+// -------------------------------------------------------------------------
+// COSTO DE LA POLÍTICA COMERCIAL
+//
+// "Inversión comercial" y no "descuento otorgado" a propósito: el nombre
+// obliga a preguntarse cuál es el retorno. Un descuento sin retorno medido
+// no es una inversión, es una resignación de margen.
+// -------------------------------------------------------------------------
+
+Inversión Comercial USD =
+SUMX (
+    FILTER ( v_fact_ofertas, v_fact_ofertas[Aceptada] = 1 ),
+    v_fact_ofertas[Unidades ofertadas]
+        * RELATED ( v_dim_producto[Precio de lista USD] )
+        * v_fact_ofertas[Descuento %]
+)
+
+// Costo REAL de la oferta según su tipo. Una bonificación en producto no
+// cuesta el precio de venta: cuesta el costo de fabricación. Tratar todas
+// las ofertas igual sobreestima el costo de las bonificaciones ~30% y hace
+// que el negocio elija mal el instrumento.
+Inversión Comercial Ajustada USD =
+SUMX (
+    FILTER ( v_fact_ofertas, v_fact_ofertas[Aceptada] = 1 ),
+    v_fact_ofertas[Unidades ofertadas]
+        * RELATED ( v_dim_producto[Precio de lista USD] )
+        * v_fact_ofertas[Descuento %]
+        * RELATED ( v_dim_tipo_oferta[Costo relativo] )
+)
+
+Descuento Medio Ponderado % =
+DIVIDE ( [Inversión Comercial USD], [Valor Ofertado USD] )
+
+// Inversión como porcentaje de la venta neta: el ratio que se lleva al
+// comité. Una inversión que crece más rápido que la venta es una alarma,
+// aunque el volumen esté subiendo.
+Inversión sobre Ventas % =
+DIVIDE ( [Inversión Comercial USD], [Ventas Netas USD] )
+
+
+// -------------------------------------------------------------------------
+// RETORNO
+// -------------------------------------------------------------------------
+
+// Ventas asociadas a una oferta: solo las líneas con tipo de oferta distinto
+// de "Sin oferta".
+Ventas con Oferta USD =
+CALCULATE (
+    [Ventas Netas USD],
+    v_dim_tipo_oferta[Código] <> "SIN"
+)
+
+Ventas sin Oferta USD =
+CALCULATE ( [Ventas Netas USD], v_dim_tipo_oferta[Código] = "SIN" )
+
+% de Ventas con Oferta = DIVIDE ( [Ventas con Oferta USD], [Ventas Netas USD] )
+
+Margen de Ventas con Oferta USD =
+CALCULATE ( [Margen Bruto USD], v_dim_tipo_oferta[Código] <> "SIN" )
+
+// ROI de la política comercial. Se compara contra 0, no contra 1: acá el
+// numerador ya es margen NETO de la inversión.
+ROI de Ofertas =
+DIVIDE (
+    [Margen de Ventas con Oferta USD] - [Inversión Comercial Ajustada USD],
+    [Inversión Comercial Ajustada USD]
+)
+
+// Advertencia honesta: este ROI NO es causal.
+// Parte de la venta con oferta se habría hecho igual sin descuento — eso es
+// canibalización, y sin un grupo de control no se puede separar. Se muestra
+// como referencia comparativa entre filiales y tipos de oferta, no como
+// medida de impacto incremental.
+Nota Metodológica ROI =
+"ROI comparativo, no causal: incluye ventas que podrían haber ocurrido sin oferta. Para medir impacto incremental hace falta un grupo de control."
+
+Semáforo de ROI =
+VAR R = [ROI de Ofertas]
+RETURN
+    SWITCH (
+        TRUE (),
+        ISBLANK ( R ), BLANK (),
+        R >= 3, "🟢 Alto",
+        R >= 1, "🟡 Aceptable",
+        "🔴 La oferta no se paga"
+    )
+
+
+// -------------------------------------------------------------------------
+// EFICIENCIA POR INSTRUMENTO Y POR SEGMENTO
+// -------------------------------------------------------------------------
+
+// Margen generado por cada dólar invertido en descuento. Es la métrica que
+// permite comparar instrumentos distintos (descuento directo vs bonificación
+// vs rebate) en la misma unidad.
+Margen por USD Invertido =
+DIVIDE ( [Margen de Ventas con Oferta USD], [Inversión Comercial Ajustada USD] )
+
+// Ranking de eficiencia dentro del contexto visible.
+Ranking de Eficiencia =
+RANKX (
+    ALLSELECTED ( v_dim_tipo_oferta[Tipo de oferta] ),
+    [Margen por USD Invertido],
+    ,
+    DESC,
+    DENSE
+)
+
+// Cuánta inversión se concentra en los clientes que MENOS la necesitan.
+// Un cliente segmento A que compraría igual y recibe el descuento más alto
+// es inversión mal asignada — y es el hallazgo más frecuente al abrir por
+// primera vez un tablero de ofertas.
+Inversión en Clientes A % =
+DIVIDE (
+    CALCULATE ( [Inversión Comercial USD], v_dim_cliente[Segmento] = "A" ),
+    CALCULATE ( [Inversión Comercial USD], REMOVEFILTERS ( v_dim_cliente[Segmento] ) )
+)
+
+
+// -------------------------------------------------------------------------
+// CAPA PREDICTIVA — proyección del modelo del paso 4
+// -------------------------------------------------------------------------
+
+Inversión Proyectada USD = SUM ( v_forecast_ofertas[Inversión proyectada USD] )
+
+Desvío del Forecast % =
+DIVIDE (
+    [Inversión Comercial USD] - [Inversión Proyectada USD],
+    [Inversión Proyectada USD]
+)
+
+// Precisión del forecast expresada como 1 - WMAPE, calculada SOLO sobre el
+// holdout. Mostrar la precisión in-sample sería mentir con estadística
+// correcta: el modelo siempre acierta donde entrenó.
+Precisión del Forecast % =
+VAR Holdout = FILTER ( v_forecast_ofertas, v_forecast_ofertas[Es holdout] = 1 )
+VAR Error   = SUMX ( Holdout, ABS ( v_forecast_ofertas[Inversión USD] - v_forecast_ofertas[Inversión proyectada USD] ) )
+VAR Real    = SUMX ( Holdout, v_forecast_ofertas[Inversión USD] )
+RETURN
+    1 - DIVIDE ( Error, Real )
+
+
+// -------------------------------------------------------------------------
+// CAPA PRESCRIPTIVA — motor de IA del paso 5
+// Es lo que hace que el tablero termine en una acción y no en un gráfico.
+// -------------------------------------------------------------------------
+
+Descuento Recomendado % = AVERAGE ( v_fact_recomendaciones[Descuento recomendado] )
+
+Ganancia Estimada USD = SUM ( v_fact_recomendaciones[Ganancia vs no ofertar USD] )
+
+Stock Rescatado USD = SUM ( v_fact_recomendaciones[Valor de stock rescatado USD] )
+
+Recomendaciones Activas = COUNTROWS ( v_fact_recomendaciones )
+
+// Brecha entre lo que el motor recomienda y lo que la filial está haciendo.
+// Es el visual que dispara la conversación: "acá estás dando 8 puntos más de
+// descuento de los que hacen falta".
+Brecha vs Descuento Actual pp =
+( [Descuento Recomendado %] - [Descuento Medio Ponderado %] ) * 100
+
+// El motor nunca extrapola fuera del rango de descuentos con evidencia
+// histórica. Cuando el óptimo cae en ese borde, lo declara: la acción
+// correcta no es aplicarlo a toda la cartera, es testearlo en un subconjunto.
+Recomendaciones que Requieren Test =
+CALCULATE (
+    COUNTROWS ( v_fact_recomendaciones ),
+    v_fact_recomendaciones[Confianza de la recomendación] = "Requiere test controlado"
+)
+
+Justificativo Seleccionado =
+IF (
+    HASONEVALUE ( v_fact_recomendaciones[Justificativo] ),
+    SELECTEDVALUE ( v_fact_recomendaciones[Justificativo] ),
+    "Seleccioná una recomendación para ver por qué el motor la propone."
+)
+
+// Resumen ejecutivo autogenerado para el encabezado del tablero.
+Titular de Recomendaciones =
+VAR N        = [Recomendaciones Activas]
+VAR Ganancia = [Ganancia Estimada USD]
+VAR Rescate  = [Stock Rescatado USD]
+VAR Test     = [Recomendaciones que Requieren Test]
+RETURN
+    IF (
+        N = 0,
+        "No hay recomendaciones para el contexto seleccionado.",
+        FORMAT ( N, "#,0" ) & " recomendaciones · " &
+        FORMAT ( Ganancia, "#,0" ) & " USD de margen incremental estimado · " &
+        FORMAT ( Rescate, "#,0" ) & " USD de stock crítico rescatado" &
+        IF ( Test > 0, " · " & Test & " requieren test controlado antes de generalizar", "" )
+    )

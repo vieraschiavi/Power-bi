@@ -1,0 +1,308 @@
+{
+  "id": 0,
+  "resourcePackages": [],
+  "sections": [
+    {
+      "name": "1dcc8749315c44f28617",
+      "displayName": "1 · Retorno de la política",
+      "displayOption": 1,
+      "width": 1280,
+      "height": 720,
+      "ordinal": 0,
+      "visualContainers": [
+        {
+          "x": 20,
+          "y": 14,
+          "z": 0,
+          "width": 760,
+          "height": 54,
+          "config": "{\"name\": \"f4b69286ee214f258bcd\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 20, \"y\": 14, \"z\": 0, \"width\": 760, \"height\": 54}}], \"singleVisual\": {\"visualType\": \"textbox\", \"drillFilterOtherVisuals\": true, \"objects\": {\"general\": [{\"properties\": {\"paragraphs\": [{\"textRuns\": [{\"value\": \"Ofertas · Retorno de la política comercial\", \"textStyle\": {\"fontSize\": \"20px\"}}]}]}}]}}}"
+        },
+        {
+          "x": 800,
+          "y": 20,
+          "z": 0,
+          "width": 460,
+          "height": 46,
+          "config": "{\"name\": \"144c611ed78c46f59da7\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 800, \"y\": 20, \"z\": 0, \"width\": 460, \"height\": 46}}], \"singleVisual\": {\"visualType\": \"textbox\", \"drillFilterOtherVisuals\": true, \"objects\": {\"general\": [{\"properties\": {\"paragraphs\": [{\"textRuns\": [{\"value\": \"Estado del dato: ver medidas Encabezado de Confianza y Estado de Vigencia\", \"textStyle\": {\"fontSize\": \"10px\"}}]}]}}]}}}"
+        },
+        {
+          "x": 20,
+          "y": 52,
+          "z": 0,
+          "width": 760,
+          "height": 24,
+          "config": "{\"name\": \"6715c1ef92c74756b9ea\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 20, \"y\": 52, \"z\": 0, \"width\": 760, \"height\": 24}}], \"singleVisual\": {\"visualType\": \"textbox\", \"drillFilterOtherVisuals\": true, \"objects\": {\"general\": [{\"properties\": {\"paragraphs\": [{\"textRuns\": [{\"value\": \"Cuánto cuesta el descuento y cuánto margen devuelve\", \"textStyle\": {\"fontSize\": \"11px\"}}]}]}}]}}}"
+        },
+        {
+          "x": 20,
+          "y": 78,
+          "z": 0,
+          "width": 238,
+          "height": 96,
+          "config": "{\"name\": \"26eabde1dea34aa6a683\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 20, \"y\": 78, \"z\": 0, \"width\": 238, \"height\": 96}}], \"singleVisual\": {\"visualType\": \"card\", \"projections\": {\"Values\": [{\"queryRef\": \"_Medidas.Inversión Comercial USD\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"m\", \"Entity\": \"_Medidas\", \"Type\": 0}], \"Select\": [{\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"m\"}}, \"Property\": \"Inversión Comercial USD\"}, \"Name\": \"_Medidas.Inversión Comercial USD\"}]}, \"drillFilterOtherVisuals\": true, \"objects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Inversión Comercial USD'\"}}}, \"fontSize\": {\"expr\": {\"Literal\": {\"Value\": \"11D\"}}}}}]}}}"
+        },
+        {
+          "x": 270,
+          "y": 78,
+          "z": 0,
+          "width": 238,
+          "height": 96,
+          "config": "{\"name\": \"0fb32f0f219244faa897\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 270, \"y\": 78, \"z\": 0, \"width\": 238, \"height\": 96}}], \"singleVisual\": {\"visualType\": \"card\", \"projections\": {\"Values\": [{\"queryRef\": \"_Medidas.Inversión sobre Ventas %\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"m\", \"Entity\": \"_Medidas\", \"Type\": 0}], \"Select\": [{\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"m\"}}, \"Property\": \"Inversión sobre Ventas %\"}, \"Name\": \"_Medidas.Inversión sobre Ventas %\"}]}, \"drillFilterOtherVisuals\": true, \"objects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Inversión sobre Ventas %'\"}}}, \"fontSize\": {\"expr\": {\"Literal\": {\"Value\": \"11D\"}}}}}]}}}"
+        },
+        {
+          "x": 520,
+          "y": 78,
+          "z": 0,
+          "width": 238,
+          "height": 96,
+          "config": "{\"name\": \"3f4c45715db642138aff\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 520, \"y\": 78, \"z\": 0, \"width\": 238, \"height\": 96}}], \"singleVisual\": {\"visualType\": \"card\", \"projections\": {\"Values\": [{\"queryRef\": \"_Medidas.Tasa de Aceptación %\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"m\", \"Entity\": \"_Medidas\", \"Type\": 0}], \"Select\": [{\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"m\"}}, \"Property\": \"Tasa de Aceptación %\"}, \"Name\": \"_Medidas.Tasa de Aceptación %\"}]}, \"drillFilterOtherVisuals\": true, \"objects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Tasa de Aceptación %'\"}}}, \"fontSize\": {\"expr\": {\"Literal\": {\"Value\": \"11D\"}}}}}]}}}"
+        },
+        {
+          "x": 770,
+          "y": 78,
+          "z": 0,
+          "width": 238,
+          "height": 96,
+          "config": "{\"name\": \"df981261392947b794dc\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 770, \"y\": 78, \"z\": 0, \"width\": 238, \"height\": 96}}], \"singleVisual\": {\"visualType\": \"card\", \"projections\": {\"Values\": [{\"queryRef\": \"_Medidas.ROI de Ofertas\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"m\", \"Entity\": \"_Medidas\", \"Type\": 0}], \"Select\": [{\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"m\"}}, \"Property\": \"ROI de Ofertas\"}, \"Name\": \"_Medidas.ROI de Ofertas\"}]}, \"drillFilterOtherVisuals\": true, \"objects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'ROI de Ofertas'\"}}}, \"fontSize\": {\"expr\": {\"Literal\": {\"Value\": \"11D\"}}}}}]}}}"
+        },
+        {
+          "x": 1020,
+          "y": 78,
+          "z": 0,
+          "width": 238,
+          "height": 96,
+          "config": "{\"name\": \"ce614d10855442e3b17e\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 1020, \"y\": 78, \"z\": 0, \"width\": 238, \"height\": 96}}], \"singleVisual\": {\"visualType\": \"card\", \"projections\": {\"Values\": [{\"queryRef\": \"_Medidas.Semáforo de ROI\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"m\", \"Entity\": \"_Medidas\", \"Type\": 0}], \"Select\": [{\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"m\"}}, \"Property\": \"Semáforo de ROI\"}, \"Name\": \"_Medidas.Semáforo de ROI\"}]}, \"drillFilterOtherVisuals\": true, \"objects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Semáforo de ROI'\"}}}, \"fontSize\": {\"expr\": {\"Literal\": {\"Value\": \"11D\"}}}}}]}}}"
+        },
+        {
+          "x": 20,
+          "y": 190,
+          "z": 0,
+          "width": 760,
+          "height": 300,
+          "config": "{\"name\": \"9d42e976d6d446bdb2a1\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 20, \"y\": 190, \"z\": 0, \"width\": 760, \"height\": 300}}], \"singleVisual\": {\"visualType\": \"lineClusteredColumnComboChart\", \"projections\": {\"Category\": [{\"queryRef\": \"v_dim_calendario.Año-Mes\"}], \"Y\": [{\"queryRef\": \"_Medidas.Inversión Comercial USD\"}, {\"queryRef\": \"_Medidas.Ventas con Oferta USD\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"c\", \"Entity\": \"v_dim_calendario\", \"Type\": 0}, {\"Name\": \"m\", \"Entity\": \"_Medidas\", \"Type\": 0}], \"Select\": [{\"Column\": {\"Expression\": {\"SourceRef\": {\"Source\": \"c\"}}, \"Property\": \"Año-Mes\"}, \"Name\": \"v_dim_calendario.Año-Mes\"}, {\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"m\"}}, \"Property\": \"Inversión Comercial USD\"}, \"Name\": \"_Medidas.Inversión Comercial USD\"}, {\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"m\"}}, \"Property\": \"Ventas con Oferta USD\"}, \"Name\": \"_Medidas.Ventas con Oferta USD\"}]}, \"drillFilterOtherVisuals\": true, \"objects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Inversión comercial y ventas con oferta'\"}}}, \"fontSize\": {\"expr\": {\"Literal\": {\"Value\": \"11D\"}}}}}]}}}"
+        },
+        {
+          "x": 796,
+          "y": 190,
+          "z": 0,
+          "width": 464,
+          "height": 300,
+          "config": "{\"name\": \"f88af580e184419fad7e\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 796, \"y\": 190, \"z\": 0, \"width\": 464, \"height\": 300}}], \"singleVisual\": {\"visualType\": \"clusteredBarChart\", \"projections\": {\"Category\": [{\"queryRef\": \"v_dim_tipo_oferta.Tipo de oferta\"}], \"Y\": [{\"queryRef\": \"_Medidas.Margen por USD Invertido\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"c\", \"Entity\": \"v_dim_tipo_oferta\", \"Type\": 0}, {\"Name\": \"m\", \"Entity\": \"_Medidas\", \"Type\": 0}], \"Select\": [{\"Column\": {\"Expression\": {\"SourceRef\": {\"Source\": \"c\"}}, \"Property\": \"Tipo de oferta\"}, \"Name\": \"v_dim_tipo_oferta.Tipo de oferta\"}, {\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"m\"}}, \"Property\": \"Margen por USD Invertido\"}, \"Name\": \"_Medidas.Margen por USD Invertido\"}]}, \"drillFilterOtherVisuals\": true, \"objects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Eficiencia por instrumento'\"}}}, \"fontSize\": {\"expr\": {\"Literal\": {\"Value\": \"11D\"}}}}}]}}}"
+        },
+        {
+          "x": 20,
+          "y": 502,
+          "z": 0,
+          "width": 496,
+          "height": 148,
+          "config": "{\"name\": \"440dd17ded6a434b9e2f\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 20, \"y\": 502, \"z\": 0, \"width\": 496, \"height\": 148}}], \"singleVisual\": {\"visualType\": \"clusteredColumnChart\", \"projections\": {\"Category\": [{\"queryRef\": \"v_dim_cliente.Segmento\"}], \"Y\": [{\"queryRef\": \"_Medidas.Inversión Comercial USD\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"c\", \"Entity\": \"v_dim_cliente\", \"Type\": 0}, {\"Name\": \"m\", \"Entity\": \"_Medidas\", \"Type\": 0}], \"Select\": [{\"Column\": {\"Expression\": {\"SourceRef\": {\"Source\": \"c\"}}, \"Property\": \"Segmento\"}, \"Name\": \"v_dim_cliente.Segmento\"}, {\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"m\"}}, \"Property\": \"Inversión Comercial USD\"}, \"Name\": \"_Medidas.Inversión Comercial USD\"}]}, \"drillFilterOtherVisuals\": true, \"objects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Inversión por segmento de cliente'\"}}}, \"fontSize\": {\"expr\": {\"Literal\": {\"Value\": \"11D\"}}}}}]}}}"
+        },
+        {
+          "x": 532,
+          "y": 502,
+          "z": 0,
+          "width": 728,
+          "height": 148,
+          "config": "{\"name\": \"e04014aefc5249f5aee4\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 532, \"y\": 502, \"z\": 0, \"width\": 728, \"height\": 148}}], \"singleVisual\": {\"visualType\": \"tableEx\", \"projections\": {\"Values\": [{\"queryRef\": \"v_dim_filial.País\"}, {\"queryRef\": \"_Medidas.Inversión Comercial USD\"}, {\"queryRef\": \"_Medidas.Tasa de Aceptación %\"}, {\"queryRef\": \"_Medidas.ROI de Ofertas\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"c\", \"Entity\": \"v_dim_filial\", \"Type\": 0}, {\"Name\": \"m\", \"Entity\": \"_Medidas\", \"Type\": 0}], \"Select\": [{\"Column\": {\"Expression\": {\"SourceRef\": {\"Source\": \"c\"}}, \"Property\": \"País\"}, \"Name\": \"v_dim_filial.País\"}, {\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"m\"}}, \"Property\": \"Inversión Comercial USD\"}, \"Name\": \"_Medidas.Inversión Comercial USD\"}, {\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"m\"}}, \"Property\": \"Tasa de Aceptación %\"}, \"Name\": \"_Medidas.Tasa de Aceptación %\"}, {\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"m\"}}, \"Property\": \"ROI de Ofertas\"}, \"Name\": \"_Medidas.ROI de Ofertas\"}]}, \"drillFilterOtherVisuals\": true, \"objects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Detalle por filial'\"}}}, \"fontSize\": {\"expr\": {\"Literal\": {\"Value\": \"11D\"}}}}}]}}}"
+        },
+        {
+          "x": 20,
+          "y": 658,
+          "z": 0,
+          "width": 1240,
+          "height": 44,
+          "config": "{\"name\": \"9fda58e42f1a4559a6a6\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 20, \"y\": 658, \"z\": 0, \"width\": 1240, \"height\": 44}}], \"singleVisual\": {\"visualType\": \"textbox\", \"drillFilterOtherVisuals\": true, \"objects\": {\"general\": [{\"properties\": {\"paragraphs\": [{\"textRuns\": [{\"value\": \"ROI comparativo, no causal: incluye ventas que podrían haber ocurrido sin oferta. Para medir impacto incremental hace falta un grupo de control.\", \"textStyle\": {\"fontSize\": \"10px\"}}]}]}}]}}}"
+        }
+      ],
+      "config": "{}",
+      "filters": "[]"
+    },
+    {
+      "name": "6d7f3497a8374f7bab14",
+      "displayName": "2 · Recomendación de IA",
+      "displayOption": 1,
+      "width": 1280,
+      "height": 720,
+      "ordinal": 1,
+      "visualContainers": [
+        {
+          "x": 20,
+          "y": 14,
+          "z": 0,
+          "width": 760,
+          "height": 54,
+          "config": "{\"name\": \"7e377bb6cbfe438a9f97\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 20, \"y\": 14, \"z\": 0, \"width\": 760, \"height\": 54}}], \"singleVisual\": {\"visualType\": \"textbox\", \"drillFilterOtherVisuals\": true, \"objects\": {\"general\": [{\"properties\": {\"paragraphs\": [{\"textRuns\": [{\"value\": \"Ofertas · Recomendación del motor de IA\", \"textStyle\": {\"fontSize\": \"20px\"}}]}]}}]}}}"
+        },
+        {
+          "x": 800,
+          "y": 20,
+          "z": 0,
+          "width": 460,
+          "height": 46,
+          "config": "{\"name\": \"71e214e79a06470eb6c9\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 800, \"y\": 20, \"z\": 0, \"width\": 460, \"height\": 46}}], \"singleVisual\": {\"visualType\": \"textbox\", \"drillFilterOtherVisuals\": true, \"objects\": {\"general\": [{\"properties\": {\"paragraphs\": [{\"textRuns\": [{\"value\": \"Estado del dato: ver medidas Encabezado de Confianza y Estado de Vigencia\", \"textStyle\": {\"fontSize\": \"10px\"}}]}]}}]}}}"
+        },
+        {
+          "x": 20,
+          "y": 52,
+          "z": 0,
+          "width": 760,
+          "height": 24,
+          "config": "{\"name\": \"a4440f9210c24464946a\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 20, \"y\": 52, \"z\": 0, \"width\": 760, \"height\": 24}}], \"singleVisual\": {\"visualType\": \"textbox\", \"drillFilterOtherVisuals\": true, \"objects\": {\"general\": [{\"properties\": {\"paragraphs\": [{\"textRuns\": [{\"value\": \"Qué ofertar, a qué precio, en qué segmento y por qué\", \"textStyle\": {\"fontSize\": \"11px\"}}]}]}}]}}}"
+        },
+        {
+          "x": 20,
+          "y": 78,
+          "z": 0,
+          "width": 238,
+          "height": 96,
+          "config": "{\"name\": \"b12d2e9a364b43148961\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 20, \"y\": 78, \"z\": 0, \"width\": 238, \"height\": 96}}], \"singleVisual\": {\"visualType\": \"card\", \"projections\": {\"Values\": [{\"queryRef\": \"_Medidas.Recomendaciones Activas\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"m\", \"Entity\": \"_Medidas\", \"Type\": 0}], \"Select\": [{\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"m\"}}, \"Property\": \"Recomendaciones Activas\"}, \"Name\": \"_Medidas.Recomendaciones Activas\"}]}, \"drillFilterOtherVisuals\": true, \"objects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Recomendaciones Activas'\"}}}, \"fontSize\": {\"expr\": {\"Literal\": {\"Value\": \"11D\"}}}}}]}}}"
+        },
+        {
+          "x": 270,
+          "y": 78,
+          "z": 0,
+          "width": 238,
+          "height": 96,
+          "config": "{\"name\": \"1468d02c198343ec8704\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 270, \"y\": 78, \"z\": 0, \"width\": 238, \"height\": 96}}], \"singleVisual\": {\"visualType\": \"card\", \"projections\": {\"Values\": [{\"queryRef\": \"_Medidas.Ganancia Estimada USD\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"m\", \"Entity\": \"_Medidas\", \"Type\": 0}], \"Select\": [{\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"m\"}}, \"Property\": \"Ganancia Estimada USD\"}, \"Name\": \"_Medidas.Ganancia Estimada USD\"}]}, \"drillFilterOtherVisuals\": true, \"objects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Ganancia Estimada USD'\"}}}, \"fontSize\": {\"expr\": {\"Literal\": {\"Value\": \"11D\"}}}}}]}}}"
+        },
+        {
+          "x": 520,
+          "y": 78,
+          "z": 0,
+          "width": 238,
+          "height": 96,
+          "config": "{\"name\": \"5eb4e2607be345d59736\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 520, \"y\": 78, \"z\": 0, \"width\": 238, \"height\": 96}}], \"singleVisual\": {\"visualType\": \"card\", \"projections\": {\"Values\": [{\"queryRef\": \"_Medidas.Stock Rescatado USD\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"m\", \"Entity\": \"_Medidas\", \"Type\": 0}], \"Select\": [{\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"m\"}}, \"Property\": \"Stock Rescatado USD\"}, \"Name\": \"_Medidas.Stock Rescatado USD\"}]}, \"drillFilterOtherVisuals\": true, \"objects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Stock Rescatado USD'\"}}}, \"fontSize\": {\"expr\": {\"Literal\": {\"Value\": \"11D\"}}}}}]}}}"
+        },
+        {
+          "x": 770,
+          "y": 78,
+          "z": 0,
+          "width": 238,
+          "height": 96,
+          "config": "{\"name\": \"d6666e78d10444aea944\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 770, \"y\": 78, \"z\": 0, \"width\": 238, \"height\": 96}}], \"singleVisual\": {\"visualType\": \"card\", \"projections\": {\"Values\": [{\"queryRef\": \"_Medidas.Descuento Recomendado %\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"m\", \"Entity\": \"_Medidas\", \"Type\": 0}], \"Select\": [{\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"m\"}}, \"Property\": \"Descuento Recomendado %\"}, \"Name\": \"_Medidas.Descuento Recomendado %\"}]}, \"drillFilterOtherVisuals\": true, \"objects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Descuento Recomendado %'\"}}}, \"fontSize\": {\"expr\": {\"Literal\": {\"Value\": \"11D\"}}}}}]}}}"
+        },
+        {
+          "x": 1020,
+          "y": 78,
+          "z": 0,
+          "width": 238,
+          "height": 96,
+          "config": "{\"name\": \"9112f1bd03414fdea787\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 1020, \"y\": 78, \"z\": 0, \"width\": 238, \"height\": 96}}], \"singleVisual\": {\"visualType\": \"card\", \"projections\": {\"Values\": [{\"queryRef\": \"_Medidas.Recomendaciones que Requieren Test\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"m\", \"Entity\": \"_Medidas\", \"Type\": 0}], \"Select\": [{\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"m\"}}, \"Property\": \"Recomendaciones que Requieren Test\"}, \"Name\": \"_Medidas.Recomendaciones que Requieren Test\"}]}, \"drillFilterOtherVisuals\": true, \"objects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Recomendaciones que Requieren Test'\"}}}, \"fontSize\": {\"expr\": {\"Literal\": {\"Value\": \"11D\"}}}}}]}}}"
+        },
+        {
+          "x": 20,
+          "y": 190,
+          "z": 0,
+          "width": 760,
+          "height": 320,
+          "config": "{\"name\": \"3ef38d4df9c24a239d5f\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 20, \"y\": 190, \"z\": 0, \"width\": 760, \"height\": 320}}], \"singleVisual\": {\"visualType\": \"tableEx\", \"projections\": {\"Values\": [{\"queryRef\": \"v_fact_recomendaciones.SKU recomendado\"}, {\"queryRef\": \"_Medidas.Descuento Recomendado %\"}, {\"queryRef\": \"_Medidas.Ganancia Estimada USD\"}, {\"queryRef\": \"_Medidas.Stock Rescatado USD\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"c\", \"Entity\": \"v_fact_recomendaciones\", \"Type\": 0}, {\"Name\": \"m\", \"Entity\": \"_Medidas\", \"Type\": 0}], \"Select\": [{\"Column\": {\"Expression\": {\"SourceRef\": {\"Source\": \"c\"}}, \"Property\": \"SKU recomendado\"}, \"Name\": \"v_fact_recomendaciones.SKU recomendado\"}, {\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"m\"}}, \"Property\": \"Descuento Recomendado %\"}, \"Name\": \"_Medidas.Descuento Recomendado %\"}, {\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"m\"}}, \"Property\": \"Ganancia Estimada USD\"}, \"Name\": \"_Medidas.Ganancia Estimada USD\"}, {\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"m\"}}, \"Property\": \"Stock Rescatado USD\"}, \"Name\": \"_Medidas.Stock Rescatado USD\"}]}, \"drillFilterOtherVisuals\": true, \"objects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Recomendaciones por SKU'\"}}}, \"fontSize\": {\"expr\": {\"Literal\": {\"Value\": \"11D\"}}}}}]}}}"
+        },
+        {
+          "x": 796,
+          "y": 190,
+          "z": 0,
+          "width": 464,
+          "height": 320,
+          "config": "{\"name\": \"54550c52100d463986d3\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 796, \"y\": 190, \"z\": 0, \"width\": 464, \"height\": 320}}], \"singleVisual\": {\"visualType\": \"clusteredBarChart\", \"projections\": {\"Category\": [{\"queryRef\": \"v_fact_recomendaciones.Segmento recomendado\"}], \"Y\": [{\"queryRef\": \"_Medidas.Ganancia Estimada USD\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"c\", \"Entity\": \"v_fact_recomendaciones\", \"Type\": 0}, {\"Name\": \"m\", \"Entity\": \"_Medidas\", \"Type\": 0}], \"Select\": [{\"Column\": {\"Expression\": {\"SourceRef\": {\"Source\": \"c\"}}, \"Property\": \"Segmento recomendado\"}, \"Name\": \"v_fact_recomendaciones.Segmento recomendado\"}, {\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"m\"}}, \"Property\": \"Ganancia Estimada USD\"}, \"Name\": \"_Medidas.Ganancia Estimada USD\"}]}, \"drillFilterOtherVisuals\": true, \"objects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Ganancia estimada por segmento'\"}}}, \"fontSize\": {\"expr\": {\"Literal\": {\"Value\": \"11D\"}}}}}]}}}"
+        },
+        {
+          "x": 20,
+          "y": 522,
+          "z": 0,
+          "width": 1240,
+          "height": 180,
+          "config": "{\"name\": \"b111a66f7a69497a9a11\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 20, \"y\": 522, \"z\": 0, \"width\": 1240, \"height\": 180}}], \"singleVisual\": {\"visualType\": \"card\", \"projections\": {\"Values\": [{\"queryRef\": \"_Medidas.Justificativo Seleccionado\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"m\", \"Entity\": \"_Medidas\", \"Type\": 0}], \"Select\": [{\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"m\"}}, \"Property\": \"Justificativo Seleccionado\"}, \"Name\": \"_Medidas.Justificativo Seleccionado\"}]}, \"drillFilterOtherVisuals\": true, \"objects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Por qué el motor propone esta oferta'\"}}}, \"fontSize\": {\"expr\": {\"Literal\": {\"Value\": \"11D\"}}}}}]}}}"
+        }
+      ],
+      "config": "{}",
+      "filters": "[]"
+    },
+    {
+      "name": "3ae1bc7da1d447ffb8b8",
+      "displayName": "3 · Proyección de inversión",
+      "displayOption": 1,
+      "width": 1280,
+      "height": 720,
+      "ordinal": 2,
+      "visualContainers": [
+        {
+          "x": 20,
+          "y": 14,
+          "z": 0,
+          "width": 760,
+          "height": 54,
+          "config": "{\"name\": \"7753782d160647f4bbd9\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 20, \"y\": 14, \"z\": 0, \"width\": 760, \"height\": 54}}], \"singleVisual\": {\"visualType\": \"textbox\", \"drillFilterOtherVisuals\": true, \"objects\": {\"general\": [{\"properties\": {\"paragraphs\": [{\"textRuns\": [{\"value\": \"Ofertas · Proyección de inversión\", \"textStyle\": {\"fontSize\": \"20px\"}}]}]}}]}}}"
+        },
+        {
+          "x": 800,
+          "y": 20,
+          "z": 0,
+          "width": 460,
+          "height": 46,
+          "config": "{\"name\": \"2f68486faa2d42269e6a\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 800, \"y\": 20, \"z\": 0, \"width\": 460, \"height\": 46}}], \"singleVisual\": {\"visualType\": \"textbox\", \"drillFilterOtherVisuals\": true, \"objects\": {\"general\": [{\"properties\": {\"paragraphs\": [{\"textRuns\": [{\"value\": \"Estado del dato: ver medidas Encabezado de Confianza y Estado de Vigencia\", \"textStyle\": {\"fontSize\": \"10px\"}}]}]}}]}}}"
+        },
+        {
+          "x": 20,
+          "y": 52,
+          "z": 0,
+          "width": 760,
+          "height": 24,
+          "config": "{\"name\": \"8824bfb7fd364983b032\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 20, \"y\": 52, \"z\": 0, \"width\": 760, \"height\": 24}}], \"singleVisual\": {\"visualType\": \"textbox\", \"drillFilterOtherVisuals\": true, \"objects\": {\"general\": [{\"properties\": {\"paragraphs\": [{\"textRuns\": [{\"value\": \"Cuánto va a costar la política comercial el mes que viene\", \"textStyle\": {\"fontSize\": \"11px\"}}]}]}}]}}}"
+        },
+        {
+          "x": 20,
+          "y": 78,
+          "z": 0,
+          "width": 301,
+          "height": 96,
+          "config": "{\"name\": \"b83510e9e993492c8d8e\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 20, \"y\": 78, \"z\": 0, \"width\": 301, \"height\": 96}}], \"singleVisual\": {\"visualType\": \"card\", \"projections\": {\"Values\": [{\"queryRef\": \"_Medidas.Inversión Comercial USD\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"m\", \"Entity\": \"_Medidas\", \"Type\": 0}], \"Select\": [{\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"m\"}}, \"Property\": \"Inversión Comercial USD\"}, \"Name\": \"_Medidas.Inversión Comercial USD\"}]}, \"drillFilterOtherVisuals\": true, \"objects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Inversión Comercial USD'\"}}}, \"fontSize\": {\"expr\": {\"Literal\": {\"Value\": \"11D\"}}}}}]}}}"
+        },
+        {
+          "x": 333,
+          "y": 78,
+          "z": 0,
+          "width": 301,
+          "height": 96,
+          "config": "{\"name\": \"2db40792816448199d5d\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 333, \"y\": 78, \"z\": 0, \"width\": 301, \"height\": 96}}], \"singleVisual\": {\"visualType\": \"card\", \"projections\": {\"Values\": [{\"queryRef\": \"_Medidas.Inversión Proyectada USD\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"m\", \"Entity\": \"_Medidas\", \"Type\": 0}], \"Select\": [{\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"m\"}}, \"Property\": \"Inversión Proyectada USD\"}, \"Name\": \"_Medidas.Inversión Proyectada USD\"}]}, \"drillFilterOtherVisuals\": true, \"objects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Inversión Proyectada USD'\"}}}, \"fontSize\": {\"expr\": {\"Literal\": {\"Value\": \"11D\"}}}}}]}}}"
+        },
+        {
+          "x": 646,
+          "y": 78,
+          "z": 0,
+          "width": 301,
+          "height": 96,
+          "config": "{\"name\": \"c86367176275412d90e2\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 646, \"y\": 78, \"z\": 0, \"width\": 301, \"height\": 96}}], \"singleVisual\": {\"visualType\": \"card\", \"projections\": {\"Values\": [{\"queryRef\": \"_Medidas.Desvío del Forecast %\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"m\", \"Entity\": \"_Medidas\", \"Type\": 0}], \"Select\": [{\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"m\"}}, \"Property\": \"Desvío del Forecast %\"}, \"Name\": \"_Medidas.Desvío del Forecast %\"}]}, \"drillFilterOtherVisuals\": true, \"objects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Desvío del Forecast %'\"}}}, \"fontSize\": {\"expr\": {\"Literal\": {\"Value\": \"11D\"}}}}}]}}}"
+        },
+        {
+          "x": 959,
+          "y": 78,
+          "z": 0,
+          "width": 301,
+          "height": 96,
+          "config": "{\"name\": \"7e7833047c7f4e568c09\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 959, \"y\": 78, \"z\": 0, \"width\": 301, \"height\": 96}}], \"singleVisual\": {\"visualType\": \"card\", \"projections\": {\"Values\": [{\"queryRef\": \"_Medidas.Precisión del Forecast %\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"m\", \"Entity\": \"_Medidas\", \"Type\": 0}], \"Select\": [{\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"m\"}}, \"Property\": \"Precisión del Forecast %\"}, \"Name\": \"_Medidas.Precisión del Forecast %\"}]}, \"drillFilterOtherVisuals\": true, \"objects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Precisión del Forecast %'\"}}}, \"fontSize\": {\"expr\": {\"Literal\": {\"Value\": \"11D\"}}}}}]}}}"
+        },
+        {
+          "x": 20,
+          "y": 190,
+          "z": 0,
+          "width": 1240,
+          "height": 320,
+          "config": "{\"name\": \"71aeb58017c04c8ea303\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 20, \"y\": 190, \"z\": 0, \"width\": 1240, \"height\": 320}}], \"singleVisual\": {\"visualType\": \"lineChart\", \"projections\": {\"Category\": [{\"queryRef\": \"v_dim_calendario.Año-Mes\"}], \"Y\": [{\"queryRef\": \"_Medidas.Inversión Comercial USD\"}, {\"queryRef\": \"_Medidas.Inversión Proyectada USD\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"c\", \"Entity\": \"v_dim_calendario\", \"Type\": 0}, {\"Name\": \"m\", \"Entity\": \"_Medidas\", \"Type\": 0}], \"Select\": [{\"Column\": {\"Expression\": {\"SourceRef\": {\"Source\": \"c\"}}, \"Property\": \"Año-Mes\"}, \"Name\": \"v_dim_calendario.Año-Mes\"}, {\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"m\"}}, \"Property\": \"Inversión Comercial USD\"}, \"Name\": \"_Medidas.Inversión Comercial USD\"}, {\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"m\"}}, \"Property\": \"Inversión Proyectada USD\"}, \"Name\": \"_Medidas.Inversión Proyectada USD\"}]}, \"drillFilterOtherVisuals\": true, \"objects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Inversión real vs proyectada'\"}}}, \"fontSize\": {\"expr\": {\"Literal\": {\"Value\": \"11D\"}}}}}]}}}"
+        },
+        {
+          "x": 20,
+          "y": 522,
+          "z": 0,
+          "width": 1240,
+          "height": 180,
+          "config": "{\"name\": \"276889120cb549ab8db8\", \"layouts\": [{\"id\": 0, \"position\": {\"x\": 20, \"y\": 522, \"z\": 0, \"width\": 1240, \"height\": 180}}], \"singleVisual\": {\"visualType\": \"tableEx\", \"projections\": {\"Values\": [{\"queryRef\": \"v_dim_filial.País\"}, {\"queryRef\": \"_Medidas.Inversión Comercial USD\"}, {\"queryRef\": \"_Medidas.Inversión Proyectada USD\"}, {\"queryRef\": \"_Medidas.Desvío del Forecast %\"}]}, \"prototypeQuery\": {\"Version\": 2, \"From\": [{\"Name\": \"c\", \"Entity\": \"v_dim_filial\", \"Type\": 0}, {\"Name\": \"m\", \"Entity\": \"_Medidas\", \"Type\": 0}], \"Select\": [{\"Column\": {\"Expression\": {\"SourceRef\": {\"Source\": \"c\"}}, \"Property\": \"País\"}, \"Name\": \"v_dim_filial.País\"}, {\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"m\"}}, \"Property\": \"Inversión Comercial USD\"}, \"Name\": \"_Medidas.Inversión Comercial USD\"}, {\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"m\"}}, \"Property\": \"Inversión Proyectada USD\"}, \"Name\": \"_Medidas.Inversión Proyectada USD\"}, {\"Measure\": {\"Expression\": {\"SourceRef\": {\"Source\": \"m\"}}, \"Property\": \"Desvío del Forecast %\"}, \"Name\": \"_Medidas.Desvío del Forecast %\"}]}, \"drillFilterOtherVisuals\": true, \"objects\": {\"title\": [{\"properties\": {\"show\": {\"expr\": {\"Literal\": {\"Value\": \"true\"}}}, \"text\": {\"expr\": {\"Literal\": {\"Value\": \"'Desvío por filial'\"}}}, \"fontSize\": {\"expr\": {\"Literal\": {\"Value\": \"11D\"}}}}}]}}}"
+        }
+      ],
+      "config": "{}",
+      "filters": "[]"
+    }
+  ],
+  "config": "{\"activeSectionIndex\": 0, \"defaultDrillFilterOtherVisuals\": true}",
+  "layoutOptimization": 0
+}

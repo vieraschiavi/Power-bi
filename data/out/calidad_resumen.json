@@ -1,0 +1,13 @@
+{
+  "controles_ejecutados": 14,
+  "controles_ok": 5,
+  "controles_alerta": 4,
+  "controles_criticos": 5,
+  "filas_hecho_origen": 234724,
+  "filas_hecho_modelo": 233604,
+  "reduccion_filas_pct": 0.48,
+  "memoria_modelo_mb_antes": 46.4,
+  "memoria_modelo_mb_despues": 19.8,
+  "reduccion_memoria_pct": 57.3,
+  "ultimo_dato": "2025-12-28"
+}

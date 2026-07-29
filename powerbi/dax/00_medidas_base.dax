@@ -1,0 +1,180 @@
+// =========================================================================
+// ADIUM PHARMA — Biblioteca DAX · 00 · MEDIDAS BASE
+//
+// Estas medidas las comparten los tres tableros (VAR, Ofertas, Logística).
+// Viven en una tabla vacía llamada `_Medidas` para que el panel de campos
+// muestre el modelo separado de los cálculos.
+//
+// Dos criterios que se aplican en TODA la biblioteca:
+//
+//   1. Ningún ratio se materializa en SQL. Se calcula acá, con DIVIDE, en el
+//      contexto de filtro del visual. Un ratio precalculado se promedia mal
+//      en cuanto el usuario cambia de nivel de agregación.
+//
+//   2. Toda división usa DIVIDE(), nunca "/". DIVIDE devuelve BLANK ante
+//      denominador cero en vez de un error que rompe el visual entero.
+//
+// Nomenclatura: nombre de negocio, sin prefijos técnicos, con la unidad
+// explícita entre paréntesis cuando puede haber ambigüedad.
+// =========================================================================
+
+
+// -------------------------------------------------------------------------
+// VENTAS
+// -------------------------------------------------------------------------
+
+// Ventas brutas: toda la facturación, sin restar notas de crédito.
+Ventas Brutas USD =
+CALCULATE (
+    SUM ( v_fact_ventas[Importe USD] ),
+    v_fact_ventas[Tipo documento] = "FC"
+)
+
+// Ventas netas: LA cifra oficial de la compañía.
+// El signo viene como columna del modelo (+1 factura / -1 nota de crédito),
+// así que una sola SUMX resuelve netas sin repetir la regla en cada medida.
+// Si mañana cambia el criterio de qué resta, se cambia en el ETL y todas las
+// medidas quedan consistentes automáticamente.
+Ventas Netas USD =
+SUMX ( v_fact_ventas, v_fact_ventas[Importe USD] * v_fact_ventas[Signo] )
+
+Unidades =
+SUMX ( v_fact_ventas, v_fact_ventas[Unidades] * v_fact_ventas[Signo] )
+
+Costo USD =
+SUMX ( v_fact_ventas, v_fact_ventas[Costo USD] * v_fact_ventas[Signo] )
+
+Margen Bruto USD = [Ventas Netas USD] - [Costo USD]
+
+Margen Bruto % = DIVIDE ( [Margen Bruto USD], [Ventas Netas USD] )
+
+// Precio promedio REALIZADO, no el de lista. Es un promedio ponderado por
+// volumen: dividir la venta por las unidades. Promediar la columna de precio
+// daría el precio "promedio de las líneas", que no significa nada.
+Precio Promedio USD = DIVIDE ( [Ventas Netas USD], [Unidades] )
+
+// Descuento efectivo: cuánto se resignó respecto del precio de lista.
+// Es la métrica que el área comercial mira antes que cualquier otra.
+Descuento Efectivo % =
+VAR VentaALista =
+    SUMX (
+        v_fact_ventas,
+        v_fact_ventas[Unidades] * v_fact_ventas[Signo]
+            * RELATED ( v_dim_producto[Precio de lista USD] )
+    )
+RETURN
+    DIVIDE ( VentaALista - [Ventas Netas USD], VentaALista )
+
+
+// -------------------------------------------------------------------------
+// INTELIGENCIA DE TIEMPO
+// Todo apoyado en v_dim_calendario, marcada como tabla de fechas.
+// Nunca sobre la fecha de la tabla de hechos: ahí las funciones de time
+// intelligence dan resultados silenciosamente incorrectos.
+// -------------------------------------------------------------------------
+
+Ventas Netas USD AA =
+CALCULATE ( [Ventas Netas USD], SAMEPERIODLASTYEAR ( v_dim_calendario[Fecha] ) )
+
+Var % vs AA = DIVIDE ( [Ventas Netas USD] - [Ventas Netas USD AA], [Ventas Netas USD AA] )
+
+Var USD vs AA = [Ventas Netas USD] - [Ventas Netas USD AA]
+
+Ventas Netas USD YTD =
+TOTALYTD ( [Ventas Netas USD], v_dim_calendario[Fecha] )
+
+// MAT — Moving Annual Total. Es EL estándar de reporte de la industria
+// farmacéutica: total móvil de 12 meses, que neutraliza la estacionalidad.
+// Sin MAT, una caída de julio en respiratorios parece un problema comercial
+// cuando en realidad es que julio del año pasado también fue alto.
+MAT Ventas USD =
+CALCULATE (
+    [Ventas Netas USD],
+    DATESINPERIOD (
+        v_dim_calendario[Fecha],
+        MAX ( v_dim_calendario[Fecha] ),
+        -12,
+        MONTH
+    )
+)
+
+MAT Ventas USD AA =
+CALCULATE ( [MAT Ventas USD], SAMEPERIODLASTYEAR ( v_dim_calendario[Fecha] ) )
+
+MAT Var % = DIVIDE ( [MAT Ventas USD] - [MAT Ventas USD AA], [MAT Ventas USD AA] )
+
+Ventas Netas USD MA3 =
+AVERAGEX (
+    DATESINPERIOD ( v_dim_calendario[Fecha], MAX ( v_dim_calendario[Fecha] ), -3, MONTH ),
+    CALCULATE ( [Ventas Netas USD] )
+)
+
+
+// -------------------------------------------------------------------------
+// GOBIERNO DEL DATO
+// El estado de la información va VISIBLE en el tablero, no escondido.
+// Cuando el negocio ve el estado del dato, empieza a cuidarlo.
+// -------------------------------------------------------------------------
+
+Último Dato =
+CALCULATE ( MAX ( v_fact_ventas[Fecha] ), REMOVEFILTERS () )
+
+Días de Atraso = DATEDIFF ( [Último Dato], TODAY (), DAY )
+
+// Semáforo de vigencia con el SLA de carga acordado (5 días hábiles).
+Estado de Vigencia =
+VAR Atraso = [Días de Atraso]
+RETURN
+    SWITCH (
+        TRUE (),
+        Atraso <= 5,  "🟢 Al día",
+        Atraso <= 10, "🟡 Con atraso",
+        "🔴 Fuera de SLA"
+    )
+
+// Porcentaje de la venta que descansa sobre líneas marcadas para revisión.
+// No es lo mismo que 300 líneas estén marcadas a que esas 300 líneas sean
+// el 40% de la facturación del mes.
+Ventas en Revisión % =
+DIVIDE (
+    CALCULATE ( [Ventas Netas USD], v_fact_ventas[Líneas en revisión] > 0 ),
+    [Ventas Netas USD]
+)
+
+Encabezado de Confianza =
+VAR Critico = MAX ( v_estado_datos[Controles críticos] )
+VAR Alerta  = MAX ( v_estado_datos[Controles en alerta] )
+RETURN
+    SWITCH (
+        TRUE (),
+        Critico > 0, "🔴 " & Critico & " control(es) crítico(s) — cifra no publicable",
+        Alerta > 0,  "🟡 " & Alerta & " alerta(s) de calidad — revisar antes de decidir",
+        "🟢 Validado contra origen"
+    )
+
+
+// -------------------------------------------------------------------------
+// UTILIDADES DE PRESENTACIÓN
+// -------------------------------------------------------------------------
+
+// Título dinámico: el usuario siempre sabe qué está mirando, aunque haya
+// llegado por drill-through desde otra página.
+Título del Contexto =
+VAR Filial   = SELECTEDVALUE ( v_dim_filial[País], "todas las filiales" )
+VAR Periodo  = SELECTEDVALUE ( v_dim_calendario[Año-Mes], "el período seleccionado" )
+VAR Clase    = SELECTEDVALUE ( v_dim_producto[Clase terapéutica], "todas las clases" )
+RETURN
+    "Ventas de " & Clase & " en " & Filial & " · " & Periodo
+
+// Etiqueta compacta para KPI cards. Evita que un visual muestre
+// "1.234.567,89" donde entra "1,2 M".
+Ventas Netas (etiqueta) =
+VAR V = [Ventas Netas USD]
+RETURN
+    SWITCH (
+        TRUE (),
+        ABS ( V ) >= 1e9, FORMAT ( V / 1e9, "0.0" ) & " MM USD",
+        ABS ( V ) >= 1e6, FORMAT ( V / 1e6, "0.0" ) & " M USD",
+        ABS ( V ) >= 1e3, FORMAT ( V / 1e3, "0" ) & " k USD",
+        FORMAT ( V, "0" ) & " USD"
+    )

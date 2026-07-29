@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "SemanticModel",
+    "displayName": "Adium_VAR"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "db525ee6-0ce1-5ea6-bff9-b80e15bdf0dc"
+  }
+}
