@@ -22,7 +22,9 @@ predictivos con validación temporal honesta y termina en un motor que recomiend
 |---|---|
 | `src/` | Pipeline Python: generación, transformación, ML y motor de IA |
 | `sql/` | DDL del modelo estrella, ETL, controles de calidad y vistas semánticas (T-SQL) |
+| `powerbi/archivos/` | **Los tres tableros listos para abrir** (`.pbit` y PBIP) |
 | `powerbi/dax/` | Biblioteca DAX: medidas base + una por tablero |
+| `powerbi/generar_pbit.py` | Genera los archivos de Power BI desde el contrato de `esquema.py` |
 | `powerbi/modelo/` | Modelo semántico: relaciones, RLS, optimización, diccionario de métricas |
 | `powerbi/diseno_tableros.md` | Diseño página por página de los tres tableros |
 | `docs/` | Documentación visual del proceso completo |
@@ -34,12 +36,18 @@ predictivos con validación temporal honesta y termina en un motor que recomiend
 
 ```bash
 pip install -r requirements.txt
-python src/run_all.py          # ~50 segundos, reproducible
+python src/run_all.py               # ~75 segundos, reproducible
+python powerbi/generar_pbit.py      # regenera los tres archivos de Power BI
 ```
 
-Genera todo en `data/`. El modelo estrella queda en `data/star/` listo para
-conectar desde Power BI Desktop (*Get Data → Parquet*), o se despliega en SQL
-Server con los scripts de `sql/`.
+Genera todo en `data/`. Después, doble clic en
+`powerbi/archivos/Adium_VAR.pbit`: Power BI Desktop pide la ruta de
+`data/star`, carga, y con *Archivo → Guardar como* queda el `.pbix`.
+Instrucciones completas en [`powerbi/archivos/LEEME.md`](powerbi/archivos/LEEME.md).
+
+El modelo estrella también se despliega en SQL Server con los scripts de
+`sql/`; los nombres de columna del modelo son exactamente los que devuelven las
+vistas `star.v_*`, así que las 117 medidas funcionan igual sin tocar DAX.
 
 ---
 
@@ -297,7 +305,12 @@ repositorio y deja el query folding intacto.
   naive** (+3,5 pp). La serie es corta y en buena parte ruido; el modelo está
   cerca del piso. Saber cuándo un modelo no puede ganarle mucho al método simple
   vale más que forzar una mejora que no se va a sostener en producción.
-- **No hay un `.pbix` binario en el repositorio.** Lo que hay es todo lo que lo
-  produce: modelo semántico documentado, biblioteca DAX completa, vistas SQL y
-  el diseño página por página. Un `.pbix` no se versiona ni se revisa en un
-  diff; esto sí.
+- **Los archivos de Power BI son `.pbit` y PBIP, no `.pbix` binario.** Un
+  `.pbix` guarda el modelo tabular como un binario propietario de Analysis
+  Services: no se puede autorizar desde afuera de Power BI y es una caja negra
+  para el control de versiones. Los tres archivos de `powerbi/archivos/` llevan
+  todo adentro —20 tablas, 38 relaciones, 117 medidas, RLS y las páginas— y
+  desde cualquiera de los dos formatos, llegar al `.pbix` es un *Guardar como*.
+  Se validaron por código (estructura, codificación, sintaxis M, cero
+  referencias rotas), pero **no se pudieron abrir en Power BI Desktop**, que no
+  corre en el entorno donde se generaron.
