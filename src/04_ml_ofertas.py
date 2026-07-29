@@ -316,6 +316,9 @@ def main() -> None:
 
     scoring.to_parquet(cfg.ML / "scoring_ofertas.parquet", index=False)
     fc.to_parquet(cfg.ML / "forecast_ofertas.parquet", index=False)
+    fc.rename(columns={"fecha_mes": "fecha"}).to_parquet(
+        cfg.STAR / "fact_forecast_ofertas.parquet", index=False
+    )
     imp.to_csv(cfg.ML / "ofertas_importancia.csv", index=False)
     (cfg.ML / "ofertas_metricas.json").write_text(
         json.dumps({"clasificacion": res, "umbral": umbral,

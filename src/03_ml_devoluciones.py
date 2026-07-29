@@ -348,6 +348,14 @@ def main() -> None:
     # ---- persistencia ----
     scoring.to_parquet(cfg.ML / "scoring_devoluciones.parquet", index=False)
     fc.to_parquet(cfg.ML / "forecast_devoluciones.parquet", index=False)
+
+    # Las salidas del modelo son hechos del modelo estrella como cualquier otro:
+    # se consultan desde el mismo tablero, con las mismas dimensiones y el mismo
+    # contexto de filtro. Si vivieran en un Excel aparte, nadie las usaría.
+    scoring.to_parquet(cfg.STAR / "fact_scoring_devoluciones.parquet", index=False)
+    fc.rename(columns={"fecha_mes": "fecha"}).to_parquet(
+        cfg.STAR / "fact_forecast_devoluciones.parquet", index=False
+    )
     imp.to_csv(cfg.ML / "devoluciones_importancia.csv", index=False)
     (cfg.ML / "devoluciones_metricas.json").write_text(
         json.dumps(

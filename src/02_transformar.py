@@ -391,6 +391,10 @@ def main() -> None:
         d_tipo_of[["id_tipo_oferta", "cod_tipo_oferta"]],
         left_on="tipo_oferta", right_on="cod_tipo_oferta", how="left",
     ).drop(columns=["fecha_oferta", "tipo_oferta", "cod_tipo_oferta"])
+    # `_p_real` es la probabilidad verdadera del simulador. Se usa SOLO para
+    # medir el techo teórico del problema (AUC oráculo) y no puede llegar ni al
+    # modelo ni al tablero: en la realidad ese dato no existe.
+    ofertas = ofertas.drop(columns=[c for c in ofertas.columns if c.startswith("_")])
 
     star = {
         "dim_calendario": dim_calendario(),
@@ -409,10 +413,15 @@ def main() -> None:
         "fact_ventas": fact_ventas,
         "fact_devoluciones": fact_dev,
         "fact_ofertas": ofertas,
-        "fact_sellout": sellout,
+        # Una sola columna de fecha, con el mismo nombre y el mismo tipo en
+        # TODOS los hechos. Es lo que permite que una única dim_calendario
+        # filtre los ocho hechos sin relaciones inactivas ni columnas puente.
+        "fact_sellout": sellout.rename(columns={"fecha_mes": "fecha"}),
         "fact_objetivos": raw["objetivos"].rename(columns={"fecha_mes": "fecha"}),
         "fact_stock": raw["stock"].rename(columns={"fecha_mes": "fecha"}),
-        "fact_tipo_cambio": tc.rename(columns={"fecha_mes": "fecha"}),
+        "fact_tipo_cambio": tc.rename(columns={"fecha_mes": "fecha"}).assign(
+            fecha=lambda x: pd.to_datetime(x["fecha"])
+        ),
     }
     # ---------------- optimización de tipos y medición ----------------
     mb_antes = sum(peso_mb(df) for df in star.values())
@@ -453,6 +462,17 @@ def main() -> None:
     (cfg.OUT / "calidad_resumen.json").write_text(
         json.dumps(resumen, indent=2, ensure_ascii=False), encoding="utf-8"
     )
+
+    # Tabla de una fila que alimenta el encabezado de confianza de los tres
+    # tableros. El estado del dato es parte del modelo, no un anexo: si vive
+    # fuera, nadie lo mira y el semáforo deja de existir.
+    pd.DataFrame([{
+        "ultimo_dato": sellin["fecha"].max(),
+        "controles_criticos": resumen["controles_criticos"],
+        "controles_alerta": resumen["controles_alerta"],
+        "controles_ok": resumen["controles_ok"],
+        "ultima_validacion": pd.Timestamp.utcnow().tz_localize(None).floor("s"),
+    }]).to_parquet(cfg.STAR / "fact_estado_datos.parquet", index=False)
 
     print("\n  Controles de calidad (Data Steward):")
     for _, r in cal.iterrows():
