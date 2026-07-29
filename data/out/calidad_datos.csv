@@ -1,0 +1,15 @@
+dimension,control,tabla,filas_afectadas,filas_totales,pct_afectado,accion,severidad,estado
+Completitud,SKU sin costo estándar cargado,dim_producto,4,120,3.3333,Imputar con la mediana del ATC3 y marcar costo_imputado=1,alta,CRÍTICO
+Validez,SKU con costo >= precio de lista (margen negativo),dim_producto,1,120,0.8333,Marcar para revisión de Finanzas,alta,CRÍTICO
+Consistencia,Código de cliente con espacios / minúsculas,dim_cliente,27,900,3.0,TRIM + UPPER — la clave de negocio se normaliza siempre,media,ALERTA
+Unicidad,Código de cliente duplicado,dim_cliente,0,900,0.0,Clave de negocio única — bloquea la carga,alta,OK
+Validez,Fechas parseables (2 formatos conviviendo),sellin,0,236602,0.0,Descartar fila sin fecha resoluble,alta,OK
+Unicidad,Líneas de factura duplicadas por reproceso,sellin,1878,236602,0.7937,Deduplicar por id_linea conservando la primera,alta,CRÍTICO
+Validez,Importes/unidades negativos (notas de crédito),sellin,942,234724,0.4013,Reclasificar a tipo_documento='NC' y pasar a positivo,media,ALERTA
+Exactitud,Unidades > 25x la mediana del SKU (dedazo de carga),sellin,284,234724,0.121,Marcar flag_revision=1; NO se corrige en silencio,alta,CRÍTICO
+Completitud,Despachos sin transportista informado,sellin,1408,234724,0.5999,Imputar a 'No informado' (id 99) y reportar al origen,media,ALERTA
+Consistencia,Líneas sin tipo de cambio del mes,sellin,0,234724,0.0,Bloquear publicación: sin FX no hay cifra corporativa,alta,OK
+Vigencia,Antigüedad del último dato cargado,sellin,3,234724,0.0013,Último dato: 2025-12-28 — SLA de carga: 5 días,media,ALERTA
+Completitud,Filial-mes sin carga del panel de auditoría,sellout,1,192,0.5208,Marcar el mes como 'sin dato' en el tablero — NUNCA como cero,alta,CRÍTICO
+Consistencia,Ventas con SKU inexistente en el maestro,sellin,0,234724,0.0,En Power BI aparecerían agrupadas en una fila en blanco,alta,OK
+Consistencia,Ventas con cliente inexistente en el maestro,sellin,0,234724,0.0,Bloquea la carga hasta dar de alta el cliente,alta,OK

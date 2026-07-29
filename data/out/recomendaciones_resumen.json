@@ -1,0 +1,14 @@
+{
+  "mes_objetivo": "2026-01",
+  "segmentos_cubiertos": 58,
+  "recomendaciones": 145,
+  "descuento_medio_recomendado": 0.2004,
+  "ganancia_total_estimada_usd": 17462.26,
+  "valor_stock_rescatado_usd": 21284.82,
+  "recomendaciones_en_borde_de_soporte": 112,
+  "grilla_descuento_evaluada": [
+    0.02,
+    0.22
+  ],
+  "correlacion_elasticidad_estimada_vs_real": 0.714
+}

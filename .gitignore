@@ -1,0 +1,12 @@
+# Los datos se regeneran con `python src/run_all.py` (semilla fija en config.py).
+# No se versionan: el repo guarda el CÓDIGO que los produce, no el resultado.
+data/raw/
+data/stage/
+data/star/
+data/ml/*.parquet
+data/ml/*.joblib
+
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.venv/
