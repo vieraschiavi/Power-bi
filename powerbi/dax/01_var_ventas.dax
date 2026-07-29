@@ -1,0 +1,241 @@
+// =========================================================================
+// ADIUM PHARMA — Biblioteca DAX · 01 · TABLERO VAR
+// (Ventas · Análisis · Rentabilidad)
+//
+// Pregunta que responde el tablero:
+//   "¿Cómo venimos contra objetivo, contra el año pasado y contra el mercado,
+//    y de dónde viene exactamente la diferencia?"
+//
+// La pieza que separa este tablero de un reporte de ventas común es el
+// puente Precio–Volumen–Mix: no alcanza con decir que las ventas cayeron
+// 8%; hay que decir cuánto de esa caída es precio, cuánto volumen y cuánto
+// cambio de mezcla de productos. Son tres problemas distintos con tres
+// dueños distintos.
+// =========================================================================
+
+
+// -------------------------------------------------------------------------
+// OBJETIVO Y CUMPLIMIENTO
+// -------------------------------------------------------------------------
+
+Objetivo USD = SUM ( v_fact_objetivos[Objetivo USD] )
+
+Cumplimiento % = DIVIDE ( [Ventas Netas USD], [Objetivo USD] )
+
+Gap vs Objetivo USD = [Ventas Netas USD] - [Objetivo USD]
+
+// Cumplimiento proyectado a fin de mes, usando el ritmo de días hábiles
+// transcurridos. Sirve para actuar DURANTE el mes, no para lamentarse
+// después: es la diferencia entre un tablero de gestión y uno de autopsia.
+Cumplimiento Proyectado % =
+VAR HabilesTranscurridos =
+    CALCULATE (
+        COUNTROWS ( v_dim_calendario ),
+        v_dim_calendario[Es día hábil] = TRUE (),
+        v_dim_calendario[Fecha] <= [Último Dato]
+    )
+VAR HabilesDelMes =
+    CALCULATE (
+        COUNTROWS ( v_dim_calendario ),
+        v_dim_calendario[Es día hábil] = TRUE (),
+        REMOVEFILTERS ( v_dim_calendario[Fecha] ),
+        VALUES ( v_dim_calendario[Año-Mes] )
+    )
+VAR Proyeccion = DIVIDE ( [Ventas Netas USD] * HabilesDelMes, HabilesTranscurridos )
+RETURN
+    DIVIDE ( Proyeccion, [Objetivo USD] )
+
+Semáforo de Cumplimiento =
+VAR C = [Cumplimiento %]
+RETURN
+    SWITCH (
+        TRUE (),
+        ISBLANK ( C ), BLANK (),
+        C >= 1,    "🟢",
+        C >= 0.90, "🟡",
+        "🔴"
+    )
+
+
+// -------------------------------------------------------------------------
+// SELL-IN vs SELL-OUT — el análisis que define a un analista de farma
+//
+// Sell-in  = lo que el laboratorio le factura al distribuidor
+// Sell-out = lo que la farmacia le vende al paciente (demanda real)
+//
+// Si el sell-in crece y el sell-out no, no hay más demanda: hay stock
+// acumulándose en el canal, y esa venta va a volver como devolución o como
+// caída del mes siguiente.
+// -------------------------------------------------------------------------
+
+Sell-out USD = SUM ( v_fact_sellout[Importe sell-out USD] )
+
+Sell-out Unidades = SUM ( v_fact_sellout[Unidades sell-out] )
+
+Brecha Sell-in vs Sell-out % =
+DIVIDE ( [Unidades] - [Sell-out Unidades], [Sell-out Unidades] )
+
+// Alerta de carga de canal: se dispara cuando el sell-in corre muy por
+// encima del sell-out de forma sostenida.
+Alerta de Carga de Canal =
+VAR Brecha = [Brecha Sell-in vs Sell-out %]
+RETURN
+    SWITCH (
+        TRUE (),
+        ISBLANK ( Brecha ), BLANK (),
+        Brecha > 0.25, "🔴 Carga de canal: el sell-in supera la demanda real en más de 25%",
+        Brecha > 0.12, "🟡 Sell-in por encima del sell-out — vigilar stock del canal",
+        Brecha < -0.15, "🔵 El canal está desabastecido: se vende más de lo que se le entrega",
+        "🟢 Sell-in alineado con la demanda"
+    )
+
+
+// -------------------------------------------------------------------------
+// MARKET SHARE — la métrica reina, y la más fácil de calcular mal
+//
+// Share es un cociente. Puede caer porque vendí menos O porque el mercado
+// creció y yo crecí menos. Son dos historias distintas, con dos acciones
+// distintas. Por eso siempre se muestra el share JUNTO a la venta absoluta.
+// -------------------------------------------------------------------------
+
+Mercado USD = SUM ( v_fact_sellout[Importe mercado USD] )
+
+Mercado Unidades = SUM ( v_fact_sellout[Unidades mercado] )
+
+// Share en valores y en unidades: NUNCA uno solo.
+// Se puede ganar share en unidades y perderlo en valores — eso significa
+// que se está creciendo a costa de precio, que es una noticia mala
+// disfrazada de buena.
+Market Share Valores % = DIVIDE ( [Sell-out USD], [Mercado USD] )
+
+Market Share Unidades % = DIVIDE ( [Sell-out Unidades], [Mercado Unidades] )
+
+Market Share Valores % AA =
+CALCULATE ( [Market Share Valores %], SAMEPERIODLASTYEAR ( v_dim_calendario[Fecha] ) )
+
+// La variación de un porcentaje se expresa en PUNTOS PORCENTUALES, no en
+// porcentaje. "El share cayó 10%" es ambiguo; "cayó 2 pp" no lo es.
+Var Share pp = ( [Market Share Valores %] - [Market Share Valores % AA] ) * 100
+
+// Descomposición de la variación de share: ¿fue porque yo caí o porque el
+// mercado creció? Es la primera pregunta que hay que responder y casi nunca
+// está en el tablero.
+Origen de la Variación de Share =
+VAR MiVar      = DIVIDE ( [Sell-out USD], CALCULATE ( [Sell-out USD], SAMEPERIODLASTYEAR ( v_dim_calendario[Fecha] ) ) ) - 1
+VAR MercadoVar = DIVIDE ( [Mercado USD], CALCULATE ( [Mercado USD], SAMEPERIODLASTYEAR ( v_dim_calendario[Fecha] ) ) ) - 1
+RETURN
+    SWITCH (
+        TRUE (),
+        ISBLANK ( MiVar ) || ISBLANK ( MercadoVar ), BLANK (),
+        MiVar < 0 && MercadoVar < 0,
+            "Cae el mercado y caemos con él (" & FORMAT ( MercadoVar, "0.0%" ) & " el mercado)",
+        MiVar < 0 && MercadoVar >= 0,
+            "Problema propio: el mercado creció " & FORMAT ( MercadoVar, "0.0%" ) & " y nosotros " & FORMAT ( MiVar, "0.0%" ),
+        MiVar >= 0 && MercadoVar > MiVar,
+            "Crecemos menos que el mercado (" & FORMAT ( MiVar, "0.0%" ) & " vs " & FORMAT ( MercadoVar, "0.0%" ) & ")",
+        "Ganamos share: crecemos " & FORMAT ( MiVar, "0.0%" ) & " contra un mercado de " & FORMAT ( MercadoVar, "0.0%" )
+    )
+
+
+// -------------------------------------------------------------------------
+// PUENTE PRECIO – VOLUMEN – MIX
+//
+// Descompone la variación de ventas vs año anterior en tres efectos:
+//
+//   Volumen : vendí más o menos unidades, a la mezcla y precio del año pasado
+//   Precio  : las mismas unidades, a distinto precio
+//   Mix     : cambió la composición hacia productos más caros o más baratos
+//
+// La suma de los tres reconstruye exactamente la variación total. Ese cierre
+// es lo que hace que el comité confíe en la descomposición: si no cierra,
+// es un modelo de opinión, no de datos.
+// -------------------------------------------------------------------------
+
+Efecto Volumen USD =
+VAR PrecioAA   = CALCULATE ( [Precio Promedio USD], SAMEPERIODLASTYEAR ( v_dim_calendario[Fecha] ) )
+VAR UnidadesAA = CALCULATE ( [Unidades], SAMEPERIODLASTYEAR ( v_dim_calendario[Fecha] ) )
+RETURN
+    ( [Unidades] - UnidadesAA ) * PrecioAA
+
+Efecto Precio USD =
+VAR PrecioAA = CALCULATE ( [Precio Promedio USD], SAMEPERIODLASTYEAR ( v_dim_calendario[Fecha] ) )
+RETURN
+    ( [Precio Promedio USD] - PrecioAA ) * [Unidades]
+
+// El mix es el residuo: lo que la variación total tiene y que volumen y
+// precio a nivel agregado no explican. Se calcula como residuo a propósito
+// — así el puente cierra por construcción y no hay que "ajustar" nada.
+Efecto Mix USD = [Var USD vs AA] - [Efecto Volumen USD] - [Efecto Precio USD]
+
+// Control de cierre. Si esta medida no da cero, el puente está mal y hay
+// que decirlo, no maquillarlo.
+Control Cierre del Puente =
+VAR Suma = [Efecto Volumen USD] + [Efecto Precio USD] + [Efecto Mix USD]
+VAR Dif  = ABS ( Suma - [Var USD vs AA] )
+RETURN
+    IF ( Dif < 0.01, "🟢 El puente cierra", "🔴 Descuadre de " & FORMAT ( Dif, "#,0.00" ) )
+
+
+// -------------------------------------------------------------------------
+// CONCENTRACIÓN Y MIX DE PORTAFOLIO
+// -------------------------------------------------------------------------
+
+// Regla de Pareto sobre el portafolio: cuántos SKU explican el 80% de la venta.
+// En farma la concentración suele ser brutal, y saber el número exacto cambia
+// la conversación sobre dónde poner la fuerza de ventas.
+SKU que explican el 80% =
+VAR TablaSKU =
+    ADDCOLUMNS (
+        VALUES ( v_dim_producto[SKU] ),
+        "@venta", [Ventas Netas USD]
+    )
+VAR Total = SUMX ( TablaSKU, [@venta] )
+VAR ConAcumulado =
+    ADDCOLUMNS (
+        TablaSKU,
+        "@acum",
+            VAR VentaActual = [@venta]
+            RETURN
+                SUMX ( FILTER ( TablaSKU, [@venta] >= VentaActual ), [@venta] )
+    )
+RETURN
+    COUNTROWS ( FILTER ( ConAcumulado, DIVIDE ( [@acum], Total ) <= 0.80 ) ) + 1
+
+// Participación del elemento en el total visible. ALLSELECTED —y no ALL—
+// para que el porcentaje se calcule sobre lo que el usuario seleccionó en
+// los slicers, no sobre la base entera. Es la diferencia entre "20% del
+// portafolio" y "20% de lo que estoy mirando".
+% del Total Visible =
+DIVIDE (
+    [Ventas Netas USD],
+    CALCULATE ( [Ventas Netas USD], ALLSELECTED ( v_dim_producto ) )
+)
+
+// Share de la filial dentro del total corporativo, INMUNE al filtro de
+// producto. ALLEXCEPT conserva la filial y quita el resto: así el share por
+// filial no se rompe cuando el usuario filtra una clase terapéutica.
+// Sin este cuidado, el comercial ve un número que no cuadra y deja de
+// confiar en el tablero — y con razón.
+Share de la Filial % =
+DIVIDE (
+    [Ventas Netas USD],
+    CALCULATE ( [Ventas Netas USD], ALLEXCEPT ( v_dim_filial, v_dim_filial[Filial] ) )
+)
+
+
+// -------------------------------------------------------------------------
+// RENTABILIDAD
+// -------------------------------------------------------------------------
+
+Margen Bruto USD AA =
+CALCULATE ( [Margen Bruto USD], SAMEPERIODLASTYEAR ( v_dim_calendario[Fecha] ) )
+
+Var Margen pp = ( [Margen Bruto %] - DIVIDE ( [Margen Bruto USD AA], [Ventas Netas USD AA] ) ) * 100
+
+// Margen neto de devoluciones: el margen que efectivamente queda después de
+// que el canal devuelve. Es el número que importa y casi nunca se reporta.
+Margen Neto de Devoluciones USD =
+[Margen Bruto USD] - SUM ( v_fact_ventas[Importe devuelto USD] )
+
+Margen Neto de Devoluciones % =
+DIVIDE ( [Margen Neto de Devoluciones USD], [Ventas Netas USD] )
