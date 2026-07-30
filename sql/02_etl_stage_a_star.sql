@@ -213,7 +213,7 @@ GO
    y confundirlos arruina cualquier análisis de share.
    ------------------------------------------------------------------------- */
 INSERT INTO star.fact_sellout
-SELECT fecha_mes, id_filial, id_producto,
+SELECT fecha_mes AS fecha, id_filial, id_producto,
        unidades_sellout, importe_sellout, unidades_mercado, importe_mercado
 FROM stg.sellout;
 GO

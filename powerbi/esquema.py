@@ -358,40 +358,65 @@ TABLAS: dict[str, dict] = {
 # Columnas derivadas en Power Query (M).
 # Se calculan al cargar, no en DAX: transformar lo más arriba posible.
 # --------------------------------------------------------------------------
-DERIVADAS: dict[str, list[tuple[str, str, str]]] = {
-    # tabla: [(nombre visible, expresión M sobre [_], tipo M)]
+# Cada derivada se declara UNA vez, con su expresión en los dos dialectos:
+# M para el archivo de Power BI y T-SQL para la vista del data warehouse.
+#
+# Que las dos versiones vivan en la misma línea no es prolijidad: es lo que
+# permite que `powerbi/validar_contrato.py` verifique que no divergieron. Una
+# regla escrita dos veces en dos archivos distintos se desincroniza sola, y el
+# día que pasa nadie se entera hasta que dos tableros dan números distintos.
+DERIVADAS: dict[str, list[dict]] = {
     "v_dim_producto": [
-        ("Condición de conservación",
-         'if [cadena_frio] then "Cadena de frío" else "Temperatura ambiente"', "type text"),
-        ("Origen del costo",
-         'if [costo_imputado] = 1 then "Costo imputado" else "Costo real"', "type text"),
+        {"nombre": "Condición de conservación", "tipo_m": "type text",
+         "m": 'if [cadena_frio] then "Cadena de frío" else "Temperatura ambiente"',
+         "sql": "CASE WHEN cadena_frio = 1 THEN 'Cadena de frío' "
+                "ELSE 'Temperatura ambiente' END"},
+        {"nombre": "Origen del costo", "tipo_m": "type text",
+         "m": 'if [costo_imputado] = 1 then "Costo imputado" else "Costo real"',
+         "sql": "CASE WHEN costo_imputado = 1 THEN 'Costo imputado' "
+                "ELSE 'Costo real' END"},
     ],
     "v_dim_deposito": [
-        ("Capacidad de frío",
-         'if [tiene_camara_frio] then "Con cámara de frío" else "Sin cámara de frío"', "type text"),
+        {"nombre": "Capacidad de frío", "tipo_m": "type text",
+         "m": 'if [tiene_camara_frio] then "Con cámara de frío" else "Sin cámara de frío"',
+         "sql": "CASE WHEN tiene_camara_frio = 1 THEN 'Con cámara de frío' "
+                "ELSE 'Sin cámara de frío' END"},
     ],
     "v_dim_transportista": [
-        ("Control de temperatura",
-         'if [control_frio] then "Con control de frío" else "Sin control de frío"', "type text"),
+        {"nombre": "Control de temperatura", "tipo_m": "type text",
+         "m": 'if [control_frio] then "Con control de frío" else "Sin control de frío"',
+         "sql": "CASE WHEN control_frio = 1 THEN 'Con control de frío' "
+                "ELSE 'Sin control de frío' END"},
     ],
     "v_dim_motivo_devolucion": [
-        ("Evitabilidad",
-         'if [es_evitable] = 1 then "Evitable" else "No evitable"', "type text"),
+        {"nombre": "Evitabilidad", "tipo_m": "type text",
+         "m": 'if [es_evitable] = 1 then "Evitable" else "No evitable"',
+         "sql": "CASE WHEN es_evitable = 1 THEN 'Evitable' ELSE 'No evitable' END"},
     ],
     "v_fact_ventas": [
-        ("Signo", 'if [tipo_documento] = "NC" then -1 else 1', "Int64.Type"),
+        # +1 factura / −1 nota de crédito. Como columna y no como filtro dentro
+        # de cada medida: así la regla vive en un solo lugar.
+        {"nombre": "Signo", "tipo_m": "Int64.Type",
+         "m": 'if [tipo_documento] = "NC" then -1 else 1',
+         "sql": "CASE WHEN tipo_documento = 'NC' THEN -1 ELSE 1 END"},
     ],
     "v_fact_ofertas": [
-        ("Ofertas", "1", "Int64.Type"),
+        {"nombre": "Ofertas", "tipo_m": "Int64.Type", "m": "1", "sql": "1"},
     ],
     "v_fact_stock": [
-        ("Cobertura x stock",
-         "[dias_cobertura] * [stock_unidades]", "type number"),
+        # Numerador del promedio ponderado de cobertura. Se expone el numerador
+        # y no el promedio: promediar promedios da mal en cuanto se cambia el
+        # nivel de agregación.
+        {"nombre": "Cobertura x stock", "tipo_m": "type number",
+         "m": "[dias_cobertura] * [stock_unidades]",
+         "sql": "dias_cobertura * stock_unidades"},
     ],
     "v_fact_recomendaciones": [
-        ("Confianza de la recomendación",
-         'if [en_borde_de_soporte] = 1 then "Requiere test controlado" '
-         'else "Dentro de evidencia histórica"', "type text"),
+        {"nombre": "Confianza de la recomendación", "tipo_m": "type text",
+         "m": 'if [en_borde_de_soporte] = 1 then "Requiere test controlado" '
+              'else "Dentro de evidencia histórica"',
+         "sql": "CASE WHEN en_borde_de_soporte = 1 THEN 'Requiere test controlado' "
+                "ELSE 'Dentro de evidencia histórica' END"},
     ],
 }
 

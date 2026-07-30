@@ -1,0 +1,123 @@
+{
+  "name": "Adium · Excelencia Comercial",
+  "dataColors": [
+    "#0B3C5D",
+    "#1D7874",
+    "#A8720F",
+    "#5A6B7B",
+    "#3C6E9F",
+    "#2E8B57",
+    "#8C6D3F",
+    "#7A8C99"
+  ],
+  "good": "#2E8B57",
+  "neutral": "#E4A020",
+  "bad": "#C1443C",
+  "maximum": "#0B3C5D",
+  "center": "#C9D0CC",
+  "minimum": "#F2F4F3",
+  "null": "#8A9491",
+  "background": "#FFFFFF",
+  "secondaryBackground": "#F3F5F2",
+  "tableAccent": "#0B3C5D",
+  "foreground": "#131B1C",
+  "foregroundNeutralSecondary": "#414D4C",
+  "foregroundNeutralTertiary": "#6E7A78",
+
+  "textClasses": {
+    "title":      { "fontSize": 16, "fontFace": "Segoe UI Semibold", "color": "#131B1C" },
+    "largeTitle": { "fontSize": 20, "fontFace": "Segoe UI Semibold", "color": "#131B1C" },
+    "header":     { "fontSize": 11, "fontFace": "Segoe UI Semibold", "color": "#414D4C" },
+    "label":      { "fontSize": 10, "fontFace": "Segoe UI",          "color": "#414D4C" },
+    "callout":    { "fontSize": 32, "fontFace": "Segoe UI Light",    "color": "#0B3C5D" },
+    "labelSmall": { "fontSize":  9, "fontFace": "Segoe UI",          "color": "#6E7A78" }
+  },
+
+  "visualStyles": {
+    "*": {
+      "*": {
+        "background":    [{ "show": true, "color": { "solid": { "color": "#FFFFFF" } }, "transparency": 0 }],
+        "border":        [{ "show": true, "color": { "solid": { "color": "#DDE2DE" } }, "radius": 3 }],
+        "visualHeader":  [{ "show": true, "background": { "solid": { "color": "#FFFFFF" } } }],
+        "title": [{
+          "show": true,
+          "fontColor":  { "solid": { "color": "#131B1C" } },
+          "background": { "solid": { "color": "#FFFFFF" } },
+          "alignment": "left",
+          "fontSize": 11
+        }],
+        "categoryAxis": [{
+          "showAxisTitle": false,
+          "gridlineShow": false,
+          "labelColor": { "solid": { "color": "#6E7A78" } },
+          "fontSize": 9
+        }],
+        "valueAxis": [{
+          "showAxisTitle": false,
+          "gridlineShow": true,
+          "gridlineColor": { "solid": { "color": "#EDEFEC" } },
+          "gridlineThickness": 1,
+          "labelColor": { "solid": { "color": "#6E7A78" } },
+          "fontSize": 9
+        }],
+        "legend": [{
+          "show": true,
+          "position": "TopCenter",
+          "showTitle": false,
+          "labelColor": { "solid": { "color": "#414D4C" } },
+          "fontSize": 9
+        }],
+        "labels": [{ "show": false }]
+      }
+    },
+    "card": {
+      "*": {
+        "labels":         [{ "color": { "solid": { "color": "#0B3C5D" } }, "fontSize": 22 }],
+        "categoryLabels": [{ "show": true, "color": { "solid": { "color": "#6E7A78" } }, "fontSize": 9 }],
+        "wordWrap":       [{ "show": true }]
+      }
+    },
+    "slicer": {
+      "*": {
+        "header": [{ "show": true, "fontColor": { "solid": { "color": "#414D4C" } }, "fontSize": 9 }],
+        "items":  [{ "fontColor": { "solid": { "color": "#131B1C" } }, "fontSize": 9 }]
+      }
+    },
+    "tableEx": {
+      "*": {
+        "grid": [{
+          "gridVertical": true,
+          "gridVerticalColor":   { "solid": { "color": "#EDEFEC" } },
+          "gridHorizontal": true,
+          "gridHorizontalColor": { "solid": { "color": "#EDEFEC" } },
+          "rowPadding": 3,
+          "outlineColor": { "solid": { "color": "#DDE2DE" } }
+        }],
+        "columnHeaders": [{
+          "fontColor":  { "solid": { "color": "#FFFFFF" } },
+          "backColor":  { "solid": { "color": "#0B3C5D" } },
+          "fontSize": 9,
+          "bold": true
+        }],
+        "values": [{
+          "fontColorPrimary":  { "solid": { "color": "#131B1C" } },
+          "backColorPrimary":  { "solid": { "color": "#FFFFFF" } },
+          "fontColorSecondary":{ "solid": { "color": "#131B1C" } },
+          "backColorSecondary":{ "solid": { "color": "#F8F9F7" } },
+          "fontSize": 9
+        }]
+      }
+    },
+    "actionButton": {
+      "*": {
+        "text":    [{ "fontSize": 10, "fontColor": { "solid": { "color": "#0B3C5D" } } }],
+        "outline": [{ "show": true, "lineColor": { "solid": { "color": "#0B3C5D" } }, "weight": 1 }]
+      }
+    },
+    "lineChart": {
+      "*": {
+        "lineStyles": [{ "strokeWidth": 2, "showMarker": false }]
+      }
+    }
+  }
+}
