@@ -217,7 +217,37 @@ def _reglas_modelo(cat: Catalogo) -> list[dict]:
     return out
 
 
+def agrupar(hallazgos: list[dict]) -> list[dict]:
+    """
+    Agrupa los hallazgos por regla. Cuarenta medidas sin formato son UN
+    problema con cuarenta ocurrencias, no cuarenta problemas: mostrarlos
+    sueltos entierra los hallazgos graves debajo del ruido.
+    """
+    grupos: dict[str, dict] = {}
+    for h in hallazgos:
+        g = grupos.setdefault(h["regla"], {
+            "regla": h["regla"], "severidad": h["severidad"],
+            "detalle": h["detalle"], "arreglo": h["arreglo"],
+            "auto": h["auto"], "objetos": [],
+        })
+        g["objetos"].append(h["objeto"])
+    orden = {s: i for i, s in enumerate(SEVERIDADES)}
+    return sorted(grupos.values(),
+                  key=lambda g: (orden.get(g["severidad"], 9), g["regla"]))
+
+
 def puntaje(hallazgos: list[dict]) -> int:
-    """Salud del modelo 0-100: resta por severidad, con piso en 0."""
+    """
+    Salud del modelo 0-100.
+
+    El castigo se cuenta POR REGLA, no por ocurrencia, y se satura a 3× el
+    peso: un modelo con 40 medidas sin formato tiene el mismo problema que
+    uno con 5, no ocho veces peor. Sin ese tope, cualquier modelo grande y
+    correcto daba 0 y la métrica dejaba de informar.
+    """
     pesos = {"alta": 12, "media": 5, "baja": 2}
-    return max(0, 100 - sum(pesos.get(h["severidad"], 2) for h in hallazgos))
+    castigo = 0
+    for grupo in agrupar(hallazgos):
+        peso = pesos.get(grupo["severidad"], 2)
+        castigo += peso * min(len(grupo["objetos"]), 3)
+    return max(0, 100 - castigo)

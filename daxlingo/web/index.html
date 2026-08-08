@@ -3,267 +3,327 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MV DAX Lab — Tu modelo de Power BI, explicado, corregido y exportado</title>
-<meta name="description" content="Plataforma de DAX y Power BI: cargá tu .pbit/PBIP, analizalo, generá DAX en español, practicá en la Academia y exportá con tablero a Power BI o Fabric.">
-<style>
-:root{
-  --navy:#081527; --navy2:#0c2137; --hero-a:#0d2440; --hero-b:#081324;
-  --amber:#f2b441; --amber2:#e39a2e; --amber-ink:#1c1305;
-  --ink:#eaf1fb; --muted:#9db0c8; --faint:#7a8da7;
-  --line:#1d3149; --line2:#2a4160;
-  --paper:#ffffff; --ink-d:#122238; --muted-d:#586a80; --line-d:#e6ebf2; --tint:#f4f7fb;
-  --green:#00c896;
-  --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
-}
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:var(--sans);background:var(--navy);color:var(--ink);line-height:1.6}
-a{color:var(--amber);text-decoration:none}
-.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
-nav{position:sticky;top:0;z-index:50;background:rgba(8,21,39,.85);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
-nav .wrap{display:flex;align-items:center;gap:22px;height:58px}
-.brand{font-weight:800;font-size:1.05rem;color:var(--ink)}
-.brand b{color:var(--amber)}
-nav a.lnk{color:var(--muted);font-size:.9rem}
-nav a.lnk:hover{color:var(--ink)}
-.cta{margin-left:auto;background:var(--amber);color:var(--amber-ink);font-weight:700;padding:8px 16px;border-radius:10px;font-size:.9rem}
-header{background:linear-gradient(160deg,var(--hero-a),var(--hero-b));padding:72px 0 64px;border-bottom:1px solid var(--line)}
-.kicker{color:var(--amber);font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:.78rem}
-h1{font-size:clamp(1.9rem,4.4vw,3rem);line-height:1.15;margin:14px 0 18px}
-.sub{color:var(--muted);max-width:640px;font-size:1.05rem}
-.hero-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:44px;align-items:center}
-@media(max-width:860px){.hero-grid{grid-template-columns:1fr}}
-.botones{display:flex;gap:12px;margin-top:26px;flex-wrap:wrap}
-.btn-a{background:var(--amber);color:var(--amber-ink);font-weight:700;padding:12px 22px;border-radius:12px}
-.btn-b{border:1px solid var(--line2);color:var(--ink);padding:12px 22px;border-radius:12px}
-.metricas{display:flex;gap:28px;margin-top:34px;flex-wrap:wrap}
-.metricas b{display:block;font-size:1.4rem;color:var(--amber)}
-.metricas span{color:var(--faint);font-size:.85rem}
-.demo-box{background:var(--navy2);border:1px solid var(--line);border-radius:16px;padding:18px;font-family:var(--mono);font-size:.82rem;box-shadow:0 18px 50px rgba(0,0,0,.45)}
-.demo-box .tag{color:var(--faint);font-family:var(--sans);font-size:.75rem;margin-bottom:10px;display:block}
-.linea-p{color:var(--ink);background:#12294a;border-radius:8px;padding:8px 10px;margin:8px 0}
-.linea-r{color:var(--green);white-space:pre-wrap}
-.linea-c{color:var(--muted)}
-section{padding:64px 0}
-section.claro{background:var(--paper);color:var(--ink-d)}
-section.claro h2{color:var(--ink-d)}
-section.claro p{color:var(--muted-d)}
-h2{font-size:1.7rem;margin-bottom:8px}
-.lead{color:var(--muted);max-width:640px;margin-bottom:34px}
-.claro .lead{color:var(--muted-d)}
-.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
-.grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
-@media(max-width:860px){.grid3{grid-template-columns:1fr}.grid5{grid-template-columns:repeat(2,1fr)}}
-.card{background:var(--navy2);border:1px solid var(--line);border-radius:14px;padding:20px}
-.card h3{font-size:1rem;margin-bottom:6px;color:var(--ink)}
-.card p{color:var(--muted);font-size:.88rem}
-.claro .card{background:var(--tint);border-color:var(--line-d)}
-.claro .card h3{color:var(--ink-d)}
-.claro .card p{color:var(--muted-d)}
-.chip{display:inline-block;background:#12294a;color:var(--amber);border-radius:999px;padding:2px 10px;font-size:.72rem;font-weight:700;margin-bottom:10px}
-.claro .chip{background:#e8eef7;color:#215ea3}
-.ciclo{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-weight:700}
-.ciclo span{background:var(--navy2);border:1px solid var(--line);border-radius:10px;padding:10px 14px}
-.ciclo em{color:var(--amber);font-style:normal}
-.precios{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
-@media(max-width:860px){.precios{grid-template-columns:1fr}}
-.plan{border:1px solid var(--line-d);border-radius:16px;padding:26px;background:var(--paper)}
-.plan.destacado{border-color:var(--amber);box-shadow:0 12px 40px rgba(242,180,65,.18)}
-.plan .precio{font-size:1.9rem;font-weight:800;color:var(--ink-d)}
-.plan ul{list-style:none;margin:16px 0 22px}
-.plan li{padding:5px 0;color:var(--muted-d);font-size:.9rem}
-.plan li::before{content:"✔ ";color:var(--green)}
-.banda{background:linear-gradient(120deg,var(--amber),var(--amber2));color:var(--amber-ink);text-align:center;padding:52px 0}
-.banda h2{color:var(--amber-ink)}
-footer{border-top:1px solid var(--line);padding:34px 0;color:var(--faint);font-size:.85rem}
-kbd{background:#12294a;border:1px solid var(--line2);border-radius:6px;padding:1px 7px;font-family:var(--mono);font-size:.8rem;color:var(--amber)}
-.claro kbd{background:#e8eef7;border-color:var(--line-d);color:#215ea3}
-</style>
+<title>MV DAX Lab — DAX, Power BI y Fabric con IA</title>
+<meta name="description" content="Cargá tu .pbit o PBIP: auditoría de buenas prácticas, generación de DAX en tu idioma, explicación paso a paso y export con tablero a Power BI o Microsoft Fabric.">
+<meta property="og:title" content="MV DAX Lab — tu modelo de Power BI, explicado, corregido y exportado">
+<meta property="og:description" content="Auditoría, generación de DAX, Academia y export con tablero a Power BI y Fabric. Prueba de 7 días.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23f2b441'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/estilos.css">
 </head>
 <body>
 
 <nav><div class="wrap">
-  <span class="brand">🟨 MV <b>DAX Lab</b></span>
-  <a class="lnk" href="#plataforma">Plataforma</a>
-  <a class="lnk" href="#herramientas">Herramientas</a>
-  <a class="lnk" href="#academia">Academia</a>
-  <a class="lnk" href="#overlay">Overlay</a>
-  <a class="lnk" href="#precios">Precios</a>
-  <a class="cta" href="#demo">Probar la demo</a>
+  <span class="marca"><i class="marca-cuadro"></i>MV <b>DAX Lab</b></span>
+  <div class="menu-links">
+    <a class="lnk" href="#plataforma" data-i="nav_plataforma">Plataforma</a>
+    <a class="lnk" href="#funciones" data-i="nav_funciones">Funciones</a>
+    <a class="lnk" href="#herramientas" data-i="nav_herramientas">Herramientas</a>
+    <a class="lnk" href="#academia" data-i="nav_academia">Academia</a>
+    <a class="lnk" href="#precios" data-i="nav_precios">Precios</a>
+  </div>
+  <div class="idiomas" role="group" aria-label="Idioma">
+    <button data-lang="es" aria-pressed="true">ES</button>
+    <button data-lang="en" aria-pressed="false">EN</button>
+    <button data-lang="pt" aria-pressed="false">PT</button>
+  </div>
+  <a class="cta" href="#precios" data-i="nav_cta">Probar 7 días gratis</a>
 </div></nav>
 
 <header><div class="wrap hero-grid">
   <div>
-    <span class="kicker">DAX · Power BI · Fabric · IA</span>
-    <h1>Tu modelo de Power BI,<br>explicado, corregido y exportado.</h1>
-    <p class="sub">Cargá un <code>.pbit</code>, un proyecto <b>PBIP</b> o un
-    <code>model.bim</code>. MV DAX Lab lo audita con reglas de buenas
-    prácticas, te escribe las medidas en español sin inventar columnas, te
-    explica cada expresión paso a paso, y lo devuelve como
-    <b>.pbit / PBIP con tablero, filtros y navegación</b> — listo para
-    Power BI Desktop o para publicar en Fabric.</p>
+    <span class="kicker" data-i="hero_kicker">DAX · POWER BI · FABRIC · IA</span>
+    <h1 data-i="hero_titulo">Tu modelo de Power BI,<br>explicado, corregido y exportado.</h1>
+    <p class="sub" data-i="hero_sub"></p>
     <div class="botones">
-      <a class="btn-a" href="#demo">Ver la demo en vivo</a>
-      <a class="btn-b" href="#plataforma">Cómo funciona</a>
+      <a class="btn-a" href="#video" data-i="hero_btn1">Ver la demo en video</a>
+      <a class="btn-b" href="#precios" data-i="hero_btn2">Descargar para Windows</a>
     </div>
     <div class="metricas">
-      <div><b>15</b><span>reglas de auditoría</span></div>
-      <div><b>NL→DAX</b><span>validado contra tu catálogo</span></div>
-      <div><b>17</b><span>ejercicios · 5 niveles</span></div>
-      <div><b>3</b><span>servidores MCP integrados</span></div>
+      <div><b>15</b><span data-i="hero_m1">reglas de auditoría</span></div>
+      <div><b>NL→DAX</b><span data-i="hero_m2">validado contra tu catálogo</span></div>
+      <div><b>17</b><span data-i="hero_m3">ejercicios · 5 niveles</span></div>
+      <div><b>3</b><span data-i="hero_m4">servidores MCP integrados</span></div>
     </div>
   </div>
   <div class="demo-box">
-    <span class="tag">Generador NL→DAX — anclado a TU modelo</span>
-    <div class="linea-p">» ventas vs año anterior</div>
-    <div class="linea-r">VAR Actual = SUM ( Ventas[Importe] )
+    <span class="tag" data-i="hero_demo_tag"></span>
+    <div class="linea-p" data-i="hero_demo_pedido">» ventas vs año anterior</div>
+<pre class="linea-r">VAR Actual = SUM ( Ventas[Importe] )
 VAR Anterior =
     CALCULATE (
         SUM ( Ventas[Importe] ),
         SAMEPERIODLASTYEAR ( Calendario[Fecha] )
     )
 RETURN
-    DIVIDE ( Actual - Anterior, Anterior )</div>
-    <div class="linea-c">✔ referencias validadas contra el catálogo
-✔ formato sugerido: +0.0 %;-0.0 %
-✔ explicación paso a paso incluida</div>
+    DIVIDE ( Actual - Anterior, Anterior )</pre>
+    <div class="linea-c">
+      <span>✓ <span data-i="hero_demo_ok1"></span></span><br>
+      <span>✓ <span data-i="hero_demo_ok2"></span>: <code>+0.0 %;-0.0 %</code></span><br>
+      <span>✓ <span data-i="hero_demo_ok3"></span></span>
+    </div>
   </div>
 </div></header>
 
-<section id="plataforma" class="claro"><div class="wrap">
-  <h2>Un ciclo verificable, no una caja negra</h2>
-  <p class="lead">La IA no «hace un dashboard»: recorre un ciclo que podés
-  auditar en cada paso, sobre archivos versionables.</p>
-  <div class="ciclo" style="margin-bottom:36px">
-    <span>inspeccionar</span> <em>→</em> <span>modelar</span> <em>→</em>
-    <span>construir</span> <em>→</em> <span>validar</span> <em>→</em>
-    <span>verificar</span> <em>→</em> <span>exportar</span>
-  </div>
-  <div class="grid3">
-    <div class="card"><span class="chip">Cargar</span>
-      <h3>.pbit · PBIP · .bim · .pbix</h3>
-      <p>Lee el modelo tabular completo de .pbit/PBIP/.bim. De un .pbix lee
-      el reporte y un catálogo parcial — y te dice exactamente cómo obtener
-      el modelo completo, en vez de inventarlo.</p></div>
-    <div class="card"><span class="chip">Auditar</span>
-      <h3>Analizador de buenas prácticas</h3>
-      <p>15 reglas con severidad e impacto real: divisiones inseguras,
-      relaciones bidireccionales, columnas calculadas, auto date/time,
-      medidas sin formato. Las automáticas se arreglan con un clic.</p></div>
-    <div class="card"><span class="chip">Generar</span>
-      <h3>Español → DAX, sin alucinar</h3>
-      <p>«% del total por país», «media móvil 3 meses». Motor de reglas
-      local siempre disponible; con tu API key de Anthropic, pedidos libres
-      con Claude. Toda expresión se valida contra el catálogo.</p></div>
-    <div class="card"><span class="chip">Entender</span>
-      <h3>Explicador de DAX</h3>
-      <p>Pegá cualquier medida y salí entendiéndola: qué calcula, qué hace
-      CALCULATE con el contexto, qué funciones usa y de qué nivel es.</p></div>
-    <div class="card"><span class="chip">Transformar</span>
-      <h3>Ediciones seguras</h3>
-      <p>Renombrar con propagación de referencias, columnas calculadas,
-      tabla de medidas, formatos y claves ocultas. Siempre sobre una copia:
-      tu archivo original no se toca.</p></div>
-    <div class="card"><span class="chip">Exportar</span>
-      <h3>Tablero + filtros + navegación</h3>
-      <p>KPIs, evolución temporal, barras, dona, matriz y slicers, generados
-      desde tus medidas. Salida .pbit (doble clic → guardar como .pbix) o
-      PBIP para Git y Fabric.</p></div>
+<!-- ============ VIDEO ============ -->
+<section id="video"><div class="wrap">
+  <h2 data-i="video_titulo">Miralo funcionar, de punta a punta</h2>
+  <p class="lead" data-i="video_sub"></p>
+  <div class="video-caja">
+    <video id="video-demo" controls preload="metadata" playsinline
+           poster="assets/img/es/analizador.png">
+      <source src="assets/video/demo-es.mp4" type="video/mp4">
+      <span data-i="video_sin_soporte">Tu navegador no puede reproducir el video.</span>
+    </video>
   </div>
 </div></section>
 
-<section id="herramientas"><div class="wrap">
-  <h2>El stack del analista moderno, operativo</h2>
-  <p class="lead">No reemplaza tus herramientas: las conecta. Cada una con su
-  acción concreta desde la plataforma.</p>
+<!-- ============ CICLO ============ -->
+<section id="plataforma" class="claro"><div class="wrap">
+  <h2 data-i="ciclo_titulo">Un ciclo verificable, no una caja negra</h2>
+  <p class="lead" data-i="ciclo_sub"></p>
+  <div class="ciclo">
+    <span data-i="ciclo_1">inspeccionar</span><em>→</em>
+    <span data-i="ciclo_2">modelar</span><em>→</em>
+    <span data-i="ciclo_3">construir</span><em>→</em>
+    <span data-i="ciclo_4">validar</span><em>→</em>
+    <span data-i="ciclo_5">verificar</span><em>→</em>
+    <span data-i="ciclo_6">exportar</span>
+  </div>
+</div></section>
+
+<!-- ============ FUNCIONES (capturas reales) ============ -->
+<section id="funciones"><div class="wrap">
+  <h2 data-i="fn_titulo">Todas las funciones, con la pantalla real</h2>
+  <p class="lead" data-i="fn_sub"></p>
+  <div class="galeria">
+
+    <article class="shot"><img data-shot="modelo" data-i-alt="fn_modelo_t" loading="lazy">
+      <div class="cuerpo"><h3>📥 <span data-i="fn_modelo_t"></span></h3>
+      <p data-i="fn_modelo_d"></p></div></article>
+
+    <article class="shot"><img data-shot="relaciones" data-i-alt="fn_relaciones_t" loading="lazy">
+      <div class="cuerpo"><h3>🕸️ <span data-i="fn_relaciones_t"></span></h3>
+      <p data-i="fn_relaciones_d"></p></div></article>
+
+    <article class="shot"><img data-shot="analizador" data-i-alt="fn_analizador_t" loading="lazy">
+      <div class="cuerpo"><h3>🩺 <span data-i="fn_analizador_t"></span></h3>
+      <p data-i="fn_analizador_d"></p></div></article>
+
+    <article class="shot"><img data-shot="generar" data-i-alt="fn_generar_t" loading="lazy">
+      <div class="cuerpo"><h3>🤖 <span data-i="fn_generar_t"></span></h3>
+      <p data-i="fn_generar_d"></p></div></article>
+
+    <article class="shot"><img data-shot="explicador" data-i-alt="fn_explicador_t" loading="lazy">
+      <div class="cuerpo"><h3>📖 <span data-i="fn_explicador_t"></span></h3>
+      <p data-i="fn_explicador_d"></p></div></article>
+
+    <article class="shot"><img data-shot="transformar" data-i-alt="fn_transformar_t" loading="lazy">
+      <div class="cuerpo"><h3>🔧 <span data-i="fn_transformar_t"></span></h3>
+      <p data-i="fn_transformar_d"></p></div></article>
+
+    <article class="shot"><img data-shot="exportar" data-i-alt="fn_exportar_t" loading="lazy">
+      <div class="cuerpo"><h3>📊 <span data-i="fn_exportar_t"></span></h3>
+      <p data-i="fn_exportar_d"></p></div></article>
+
+    <article class="shot"><img data-shot="fabric" data-i-alt="fn_fabric_t" loading="lazy">
+      <div class="cuerpo"><h3>🟪 <span data-i="fn_fabric_t"></span></h3>
+      <p data-i="fn_fabric_d"></p></div></article>
+
+    <article class="shot"><img data-shot="overlay" data-i-alt="fn_overlay_t" loading="lazy">
+      <div class="cuerpo"><h3>🖥️ <span data-i="fn_overlay_t"></span></h3>
+      <p data-i="fn_overlay_d"></p></div></article>
+
+    <article class="shot"><img data-shot="academia" data-i-alt="fn_academia_t" loading="lazy">
+      <div class="cuerpo"><h3>🎓 <span data-i="fn_academia_t"></span></h3>
+      <p data-i="fn_academia_d"></p></div></article>
+
+    <article class="shot"><img data-shot="herramientas" data-i-alt="fn_herramientas_t" loading="lazy">
+      <div class="cuerpo"><h3>🛠️ <span data-i="fn_herramientas_t"></span></h3>
+      <p data-i="fn_herramientas_d"></p></div></article>
+
+    <article class="shot"><img data-shot="configuracion" data-i-alt="fn_config_t" loading="lazy">
+      <div class="cuerpo"><h3>⚙️ <span data-i="fn_config_t"></span></h3>
+      <p data-i="fn_config_d"></p></div></article>
+
+    <article class="shot"><img data-shot="licencia" data-i-alt="fn_licencia_t" loading="lazy">
+      <div class="cuerpo"><h3>🔑 <span data-i="fn_licencia_t"></span></h3>
+      <p data-i="fn_licencia_d"></p></div></article>
+
+    <article class="shot"><img data-shot="guia" data-i-alt="fn_guia_t" loading="lazy">
+      <div class="cuerpo"><h3>❓ <span data-i="fn_guia_t"></span></h3>
+      <p data-i="fn_guia_d"></p></div></article>
+
+  </div>
+</div></section>
+
+<!-- ============ OVERLAY ============ -->
+<section id="overlay" class="claro"><div class="wrap">
+  <h2 data-i="ov_titulo">DAX Overlay: resolvé sin salir de la pantalla</h2>
+  <p class="lead" data-i="ov_sub"></p>
+  <div class="grid3">
+    <div class="card"><span class="icono">🖥️</span>
+      <h3><kbd>F9</kbd> · <span data-i="ov_f9_t"></span></h3>
+      <p data-i="ov_f9_d"></p></div>
+    <div class="card"><span class="icono">⬛</span>
+      <h3><kbd>Shift</kbd>+<kbd>F9</kbd> · <span data-i="ov_shift_t"></span></h3>
+      <p data-i="ov_shift_d"></p></div>
+    <div class="card"><span class="icono">⌨️</span>
+      <h3><kbd>Ctrl</kbd>+<kbd>F9</kbd> · <span data-i="ov_ctrl_t"></span></h3>
+      <p data-i="ov_ctrl_d"></p></div>
+  </div>
+  <p class="lead" style="margin-top:22px;margin-bottom:0" data-i="ov_cierre"></p>
+</div></section>
+
+<!-- ============ IA + MCP ============ -->
+<section id="ia"><div class="wrap">
+  <div class="grid2">
+    <div>
+      <span class="chip">BYOK</span>
+      <h2 data-i="ia_titulo">La IA que vos elijas, con tu propia clave</h2>
+      <p class="lead" data-i="ia_sub"></p>
+    </div>
+    <div class="card">
+      <span class="icono">🔌</span>
+      <h3 data-i="ia_mcp_t">Conectado al MCP de Power BI</h3>
+      <p data-i="ia_mcp_d"></p>
+      <pre class="linea-r" style="margin-top:14px;font-size:.76rem">powerbi-remote   → api.fabric.microsoft.com/v1/mcp/powerbi
+powerbi-modeling → Power BI Desktop (local)
+mv-dax-lab       → .pbit / PBIP / .bim</pre>
+    </div>
+  </div>
+</div></section>
+
+<!-- ============ HERRAMIENTAS ============ -->
+<section id="herramientas" class="claro"><div class="wrap">
+  <h2 data-i="tools_titulo">El stack del analista moderno, operativo</h2>
+  <p class="lead" data-i="tools_sub"></p>
   <div class="grid5">
-    <div class="card"><h3>Power BI Desktop</h3><p>Abre los .pbit/PBIP exportados con doble clic.</p></div>
-    <div class="card"><h3>Power Query</h3><p>Particiones M visibles; el analizador sugiere mover cálculos ahí.</p></div>
-    <div class="card"><h3>Power BI Service</h3><p>Publicación vía Git o .pbix guardado desde Desktop.</p></div>
+    <div class="card"><h3>Power BI Desktop</h3><p>.pbit y PBIP que abren con doble clic.</p></div>
+    <div class="card"><h3>Power Query</h3><p>Particiones M a la vista; el analizador sugiere mover cálculos ahí.</p></div>
+    <div class="card"><h3>Power BI Service</h3><p>Publicación vía Git o el .pbix guardado desde Desktop.</p></div>
     <div class="card"><h3>Bravo</h3><p>Camino directo para revisar tamaño y formatear DAX.</p></div>
-    <div class="card"><h3>DAX Studio</h3><p>Exportá todas tus medidas en un .dax listo para medir.</p></div>
-    <div class="card"><h3>Tabular Editor</h3><p>model.bim exportado que abre directo, con todo lo transformado.</p></div>
+    <div class="card"><h3>DAX Studio</h3><p>Todas tus medidas en un .dax listo para medir.</p></div>
+    <div class="card"><h3>Tabular Editor</h3><p>model.bim que abre directo, con todo lo transformado.</p></div>
     <div class="card"><h3>ALM Toolkit</h3><p>Dos versiones del modelo para comparar y desplegar.</p></div>
     <div class="card"><h3>VS Code + PBIP</h3><p>Texto plano: diff, blame y PRs como cualquier código.</p></div>
-    <div class="card"><h3>Microsoft Fabric</h3><p>Publicación directa por API REST (token BYOK) o Git integration.</p></div>
-    <div class="card"><h3>Power BI MCP</h3><p>Config lista: MCP remoto oficial, MCP local de modelado y el MCP propio.</p></div>
+    <div class="card"><h3>Microsoft Fabric</h3><p>API REST con tu token o integración Git.</p></div>
+    <div class="card"><h3>Power BI MCP</h3><p>Remoto oficial, local de modelado y el servidor propio.</p></div>
   </div>
 </div></section>
 
-<section id="overlay" class="claro"><div class="wrap">
-  <h2>DAX Overlay: resolvé sin salir de la pantalla</h2>
-  <p class="lead">Un compañero de escritorio que ve lo que vos ves y ejecuta
-  en la plataforma lo que la IA propone.</p>
-  <div class="grid3">
-    <div class="card"><h3><kbd>F9</kbd> Pantalla completa</h3>
-      <p>Captura todo lo que estás mirando —el visual roto, el error de la
-      medida, el enunciado— y Claude lo resuelve explicando paso a paso en
-      una ventana flotante.</p></div>
-    <div class="card"><h3><kbd>Shift</kbd>+<kbd>F9</kbd> Región</h3>
-      <p>Seleccionás un rectángulo con el mouse y se analiza solo eso:
-      menos tokens, más foco.</p></div>
-    <div class="card"><h3><kbd>Ctrl</kbd>+<kbd>F9</kbd> Consulta escrita</h3>
-      <p>Sin captura: escribís el pedido («margen % por categoría con
-      semáforo») y listo.</p></div>
-  </div>
-  <p style="margin-top:22px">Cada respuesta queda en la <b>bandeja</b> de la
-  app: las medidas y columnas calculadas propuestas se aplican al modelo
-  cargado con un clic — y de ahí a Exportar o Fabric. Modelos Claude a
-  elección (Opus 5 → Sonnet 5 → Haiku 4.5) con fallback automático si uno
-  está saturado.</p>
-</div></section>
-
+<!-- ============ ACADEMIA ============ -->
 <section id="academia"><div class="wrap">
-  <h2>Academia DAX</h2>
-  <p class="lead">Práctica deliberada con verificación instantánea y local:
-  no hace falta conexión ni API key para entrenar.</p>
+  <h2 data-i="ac_titulo">Academia DAX</h2>
+  <p class="lead" data-i="ac_sub"></p>
   <div class="grid3">
-    <div class="card"><h3>🥚 → 🏆 Cinco niveles</h3><p>De SUM a Pareto con
-    iteradores: 17 ejercicios sobre un modelo estrella de práctica, con XP
-    y progresión de Novato a Maestro DAX.</p></div>
-    <div class="card"><h3>Verificación tolerante</h3><p>Mayúsculas, espacios
-    y comillas no importan: se compara la expresión normalizada, y las
-    variantes válidas también cuentan.</p></div>
-    <div class="card"><h3>Moraleja en cada ejercicio</h3><p>Cada solución
-    explica el patrón que enseña — el mismo que después usás en el
-    generador con tus datos reales.</p></div>
+    <div class="card"><span class="icono">🎓</span>
+      <h3 data-i="ac_1_t"></h3><p data-i="ac_1_d"></p></div>
+    <div class="card"><span class="icono">✓</span>
+      <h3 data-i="ac_2_t"></h3><p data-i="ac_2_d"></p></div>
+    <div class="card"><span class="icono">📘</span>
+      <h3 data-i="ac_3_t"></h3><p data-i="ac_3_d"></p></div>
   </div>
 </div></section>
 
-<section class="claro" id="precios"><div class="wrap">
-  <h2>Planes</h2>
-  <p class="lead">La plataforma completa corre local: tus modelos no salen de
-  tu máquina. La IA es opcional y con tu propia clave.</p>
+<!-- ============ PRECIOS ============ -->
+<section id="precios" class="claro"><div class="wrap">
+  <h2 data-i="pr_titulo">Precios</h2>
+  <p class="lead" data-i="pr_sub"></p>
   <div class="precios">
-    <div class="plan"><h3>Demo</h3><div class="precio">Gratis</div>
-      <ul><li>Modelo demo incluido</li><li>Analizador completo</li>
-      <li>Academia DAX (5 niveles)</li><li>Explicador de DAX</li></ul>
-      <a class="btn-b" style="color:#122238;border-color:#e6ebf2" href="#demo">Probar</a></div>
-    <div class="plan destacado"><h3>Profesional</h3><div class="precio">USD 99</div>
-      <ul><li>Tus .pbit / PBIP / .bim</li><li>Generador NL→DAX + export con tablero</li>
-      <li>DAX Overlay (F9 / Shift+F9 / Ctrl+F9)</li><li>Fabric + MCP</li></ul>
-      <a class="btn-a" href="#contacto">Comprar</a></div>
-    <div class="plan"><h3>Equipos</h3><div class="precio">A medida</div>
-      <ul><li>Instalación multi-puesto</li><li>Reglas de auditoría propias</li>
-      <li>Integración con tu pipeline BI</li><li>Soporte prioritario</li></ul>
-      <a class="btn-b" style="color:#122238;border-color:#e6ebf2" href="#contacto">Hablemos</a></div>
+
+    <div class="plan">
+      <h3 data-i="pr_demo_t">Prueba</h3>
+      <div class="precio" data-i="pr_demo_precio">7 días gratis</div>
+      <div class="nota">&nbsp;</div>
+      <ul>
+        <li data-i="pr_demo_1"></li><li data-i="pr_demo_2"></li>
+        <li data-i="pr_demo_3"></li><li data-i="pr_demo_4"></li>
+      </ul>
+      <a class="btn-b" href="descarga.html" data-i="pr_demo_btn">Descargar la prueba</a>
+    </div>
+
+    <div class="plan destacado">
+      <h3 data-i="pr_pro_t">Profesional</h3>
+      <div class="precio" data-i="pr_pro_precio">USD 99</div>
+      <div class="nota" data-i="pr_pro_nota"></div>
+      <ul>
+        <li data-i="pr_pro_1"></li><li data-i="pr_pro_2"></li>
+        <li data-i="pr_pro_3"></li><li data-i="pr_pro_4"></li>
+      </ul>
+      <button class="btn-a" data-plan="profesional" data-i="pr_pro_btn">Comprar</button>
+    </div>
+
+    <div class="plan">
+      <h3 data-i="pr_est_t">Estudio</h3>
+      <div class="precio" data-i="pr_est_precio">USD 349</div>
+      <div class="nota" data-i="pr_est_nota"></div>
+      <ul>
+        <li data-i="pr_est_1"></li><li data-i="pr_est_2"></li>
+        <li data-i="pr_est_3"></li><li data-i="pr_est_4"></li>
+      </ul>
+      <button class="btn-a" data-plan="estudio" data-i="pr_est_btn">Comprar</button>
+    </div>
+
+    <div class="plan">
+      <h3 data-i="pr_corp_t">Corporativo</h3>
+      <div class="precio" data-i="pr_corp_precio">USD 990</div>
+      <div class="nota" data-i="pr_corp_nota"></div>
+      <ul>
+        <li data-i="pr_corp_1"></li><li data-i="pr_corp_2"></li>
+        <li data-i="pr_corp_3"></li><li data-i="pr_corp_4"></li>
+      </ul>
+      <button class="btn-a" data-plan="corporativo" data-i="pr_corp_btn">Comprar</button>
+    </div>
+
+  </div>
+  <p class="aviso-moneda" data-i="pr_moneda"></p>
+</div></section>
+
+<!-- ============ INSTALADOR ============ -->
+<section id="instalador"><div class="wrap">
+  <h2 data-i="ins_titulo">Instalador de Windows, como corresponde</h2>
+  <div class="grid4" style="margin-top:28px">
+    <div class="card"><span class="icono">📁</span>
+      <h3 data-i="ins_1_t"></h3><p data-i="ins_1_d"></p></div>
+    <div class="card"><span class="icono">🧭</span>
+      <h3 data-i="ins_2_t"></h3><p data-i="ins_2_d"></p></div>
+    <div class="card"><span class="icono">🧹</span>
+      <h3 data-i="ins_3_t"></h3><p data-i="ins_3_d"></p></div>
+    <div class="card"><span class="icono">📦</span>
+      <h3 data-i="ins_4_t"></h3><p data-i="ins_4_d"></p></div>
   </div>
 </div></section>
 
-<section class="banda" id="demo"><div class="wrap">
-  <h2>Vela funcionar con tu propio modelo</h2>
-  <p style="max-width:560px;margin:10px auto 22px">Cloná el repo, corré
-  <code>streamlit run daxlingo/app/app.py</code> y cargá tu .pbit — o probá
-  con el modelo demo de 117 medidas incluido.</p>
-  <a class="btn-b" style="border-color:#1c1305;color:#1c1305" href="#contacto">Pedir una demo guiada</a>
+<!-- ============ FAQ ============ -->
+<section id="faq" class="claro"><div class="wrap">
+  <h2 data-i="faq_titulo">Preguntas que llegan siempre</h2>
+  <div style="margin-top:26px">
+    <details><summary data-i="faq_1_p"></summary><p data-i="faq_1_r"></p></details>
+    <details><summary data-i="faq_2_p"></summary><p data-i="faq_2_r"></p></details>
+    <details><summary data-i="faq_3_p"></summary><p data-i="faq_3_r"></p></details>
+    <details><summary data-i="faq_4_p"></summary><p data-i="faq_4_r"></p></details>
+  </div>
 </div></section>
 
-<footer id="contacto"><div class="wrap">
-  <p><b style="color:var(--ink)">MV DAX Lab</b> · Tu modelo de Power BI,
-  explicado, corregido y exportado.</p>
-  <p>Contacto: <a href="mailto:vieraschiavi@gmail.com">vieraschiavi@gmail.com</a>
-  · Hecho en Uruguay 🇺🇾 · Los modelos analizados no salen de tu máquina.</p>
+<section class="banda"><div class="wrap">
+  <h2 data-i="cta_titulo">Probalo con tu propio modelo</h2>
+  <p data-i="cta_sub"></p>
+  <a class="btn-b" href="descarga.html" data-i="cta_btn">Descargar para Windows</a>
+</div></section>
+
+<footer><div class="wrap">
+  <p><b>MV DAX Lab</b> · <span data-i="footer_lema"></span></p>
+  <p><a href="mailto:vieraschiavi@gmail.com">vieraschiavi@gmail.com</a>
+     · <span data-i="footer_nota"></span></p>
 </div></footer>
 
+<div class="lupa" id="lupa">
+  <button class="cerrar" aria-label="Cerrar">×</button>
+  <img alt="">
+</div>
+
+<script src="assets/i18n.js"></script>
+<script src="assets/app.js"></script>
 </body>
 </html>

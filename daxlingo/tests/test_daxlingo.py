@@ -171,11 +171,13 @@ def test_pbix_sin_modelo_avisa(tmp_path, cat):
     assert parcial.tablas  # extrajo entidades de los prototypeQuery
 
 
-def test_modelo_demo_adium_carga():
-    demo = RAIZ.parent / "powerbi" / "archivos" / \
-        "Adium_VAR.SemanticModel" / "model.bim"
-    if not demo.exists():
-        pytest.skip("modelo Adium no presente")
+def test_modelo_demo_viaja_con_el_producto():
+    """
+    El demo tiene que estar DENTRO del paquete: la landing lo promete y el
+    instalador no lleva la carpeta powerbi/ del repo.
+    """
+    demo = RAIZ / "datos" / "demo" / "modelo_demo.bim"
+    assert demo.exists(), "Falta datos/demo/modelo_demo.bim"
     cargado = modmod.cargar(demo)
     cat2 = catalogo.Catalogo.desde_modelo(cargado["modelo"])
     r = cat2.resumen()

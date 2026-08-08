@@ -1,0 +1,44 @@
+LICENCIA DE USO — MV DAX Lab
+============================
+
+Al instalar MV DAX Lab aceptás estas condiciones.
+
+1. QUÉ SE TE OTORGA
+   Una licencia de uso, no una venta del programa. La edición Profesional
+   habilita 1 equipo; Estudio, 5 equipos; Corporativo, sin límite dentro de
+   la organización que la compró. La licencia es perpetua para la versión
+   adquirida e incluye sus actualizaciones.
+
+2. PRUEBA DE 7 DÍAS
+   La edición de prueba habilita todas las funciones durante 7 días desde el
+   primer uso. Vencida la prueba siguen disponibles, sin límite de tiempo y
+   sin costo, el analizador de modelos, el explicador de DAX, el mapa de
+   relaciones y la Academia DAX. Generar DAX, transformar, exportar,
+   publicar en Fabric y el overlay requieren una licencia activa.
+
+3. QUÉ NO PODÉS HACER
+   Redistribuir, revender, alquilar ni publicar el programa o su clave de
+   licencia; quitar o eludir la verificación de licencia; usar la edición
+   OWNER si no sos el titular del producto.
+
+4. TUS DATOS
+   El programa corre en tu máquina y los modelos que analizás no se envían a
+   ningún servidor nuestro. Si configurás un proveedor de IA, las consultas
+   que hagas viajan a ese proveedor con tu propia clave y bajo sus términos.
+   Si publicás en Microsoft Fabric, el modelo viaja a tu propio tenant.
+
+5. GARANTÍA Y RESPONSABILIDAD
+   El programa se entrega "tal cual". Genera y transforma archivos de Power
+   BI siempre sobre una copia, pero la revisión del resultado es tuya: no
+   respondemos por decisiones tomadas a partir de lo que produzca, ni por
+   pérdida de datos. La responsabilidad total se limita al importe pagado.
+
+6. DEVOLUCIONES
+   Si el programa no funciona como se anuncia, escribinos dentro de los 30
+   días de la compra y te devolvemos el importe.
+
+7. LEY APLICABLE
+   Estas condiciones se rigen por la ley de la República Oriental del
+   Uruguay.
+
+Contacto: vieraschiavi@gmail.com — https://mvdaxlab.vercel.app

@@ -19,13 +19,10 @@ qué la expresión es esa.
 from __future__ import annotations
 
 import json
-import os
 import re
-import urllib.request
 
 from .catalogo import Catalogo, _norm, validar_referencias
-
-MODELO_IA_DEFECTO = "claude-sonnet-4-5"
+from .proveedores_ia import PROVEEDOR_DEFECTO, consultar, hay_clave
 
 
 def _col_ref(tabla: str, columna: str) -> str:
@@ -55,7 +52,8 @@ def _sin(texto: str, *frases: str) -> str:
 # Motor de reglas
 # ==========================================================================
 def generar(pedido: str, cat: Catalogo, api_key: str | None = None,
-            modelo_ia: str = MODELO_IA_DEFECTO) -> dict:
+            proveedor: str = PROVEEDOR_DEFECTO, modelo_ia: str = "",
+            endpoint: str = "") -> dict:
     """
     Devuelve:
       nombre, dax, formato, explicacion, metodo ('reglas'|'ia'),
@@ -73,10 +71,10 @@ def generar(pedido: str, cat: Catalogo, api_key: str | None = None,
     if resultado is not None:
         return resultado
 
-    clave = api_key or os.environ.get("ANTHROPIC_API_KEY", "")
-    if clave:
+    if hay_clave(proveedor, api_key):
         try:
-            return _con_ia(pedido, cat, clave, modelo_ia)
+            return _con_ia(pedido, cat, api_key, proveedor, modelo_ia,
+                           endpoint)
         except Exception as exc:  # red caída, clave inválida, etc.
             return _error(
                 f"El motor de reglas no reconoció el patrón y la IA falló: "
@@ -87,7 +85,8 @@ def generar(pedido: str, cat: Catalogo, api_key: str | None = None,
         "<dimensión>», «<columna> acumulado del año», «<columna> vs año "
         "anterior», «media móvil 3 meses de <columna>», «ranking de "
         "<dimensión> por <columna>». Con una ANTHROPIC_API_KEY configurada, "
-        "también entiendo pedidos libres.")
+        "también entiendo pedidos libres con la IA que elijas (Claude, "
+        "ChatGPT, Gemini, Copilot…).")
 
 
 def _error(msg: str) -> dict:
@@ -396,33 +395,26 @@ def _catalogo_para_prompt(cat: Catalogo, maximo: int = 4000) -> str:
     return texto[:maximo]
 
 
-def _con_ia(pedido: str, cat: Catalogo, api_key: str, modelo_ia: str) -> dict:
-    """Llama a la API de Anthropic y valida la respuesta contra el catálogo."""
+def _con_ia(pedido: str, cat: Catalogo, api_key: str | None, proveedor: str,
+            modelo_ia: str, endpoint: str = "") -> dict:
+    """
+    Pide la medida al proveedor de IA elegido y valida la respuesta contra el
+    catálogo: una referencia inexistente descarta la medida entera.
+    """
     prompt = (
         "Sos un experto en DAX. Este es el catálogo REAL del modelo:\n\n"
         f"{_catalogo_para_prompt(cat)}\n\n"
         f"Pedido del usuario: {pedido}\n\n"
         "Respondé SOLO un JSON con las claves: nombre (nombre de la medida), "
         "dax (la expresión, sin «Medida =» adelante), formato (formatString "
-        "de Power BI) y explicacion (1-3 frases en español). Usá únicamente "
-        "tablas, columnas y medidas del catálogo; si el pedido nombra algo "
-        "que no existe, devolvé {\"error\": \"...\"} explicando qué falta."
+        "de Power BI) y explicacion (1-3 frases, en el idioma del pedido). "
+        "Usá únicamente tablas, columnas y medidas del catálogo; si el pedido "
+        "nombra algo que no existe, devolvé {\"error\": \"...\"} explicando "
+        "qué falta."
     )
-    cuerpo = json.dumps({
-        "model": modelo_ia,
-        "max_tokens": 1024,
-        "messages": [{"role": "user", "content": prompt}],
-    }).encode()
-    peticion = urllib.request.Request(
-        "https://api.anthropic.com/v1/messages",
-        data=cuerpo,
-        headers={"content-type": "application/json",
-                 "x-api-key": api_key,
-                 "anthropic-version": "2023-06-01"},
-    )
-    with urllib.request.urlopen(peticion, timeout=60) as resp:
-        datos = json.loads(resp.read())
-    texto = "".join(b.get("text", "") for b in datos.get("content", []))
+    texto = consultar([{"role": "user", "content": prompt}],
+                      proveedor=proveedor, modelo=modelo_ia, api_key=api_key,
+                      max_tokens=1024, endpoint=endpoint)
     m = re.search(r"\{.*\}", texto, re.DOTALL)
     if not m:
         raise ValueError("la IA no devolvió JSON")

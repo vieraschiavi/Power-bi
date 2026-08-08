@@ -1,11 +1,10 @@
 """
-MV DAX Lab · Dashboard principal (Streamlit).
+MV DAX Lab · Dashboard principal (Streamlit), trilingüe ES/EN/PT.
 
 Una sola app con todo el ciclo: cargar un modelo de Power BI (.pbit / PBIP /
-.bim / .pbix), entenderlo (catálogo, relaciones), auditarlo (analizador de
-buenas prácticas), mejorarlo (transformaciones y NL→DAX con anti-alucinación),
-practicar (Academia DAX gamificada) y exportarlo de vuelta a .pbit/PBIP con
-tablero, filtros y navegación — o publicarlo en Fabric.
+.bim / .pbix), entenderlo, auditarlo, mejorarlo (transformaciones y NL→DAX
+con anti-alucinación), practicar (Academia DAX) y exportarlo de vuelta a
+.pbit/PBIP con tablero, filtros y navegación — o publicarlo en Fabric.
 
 Correr:  streamlit run daxlingo/app/app.py
 """
@@ -26,12 +25,11 @@ sys.path.insert(0, str(RAIZ))
 from dxl import LEMA, MARCA, __version__  # noqa: E402
 from dxl import analizador, asistente, catalogo, ejercicios  # noqa: E402
 from dxl import explicador, fabric, generador, herramientas, ia  # noqa: E402
+from dxl import licencia as lic  # noqa: E402
 from dxl import modelo as modmod  # noqa: E402
-from dxl import tablero, transformador  # noqa: E402
+from dxl import proveedores_ia, tablero, transformador  # noqa: E402
+from dxl.i18n import IDIOMAS, NOMBRES_IDIOMA, t  # noqa: E402
 
-# ==========================================================================
-# Página y estilo (design system Kobra: navy + ámbar)
-# ==========================================================================
 NAVY, NAVY2, AMBAR, TINTA, APAGADO = ("#081527", "#0c2137", "#f2b441",
                                       "#eaf1fb", "#9db0c8")
 
@@ -56,11 +54,16 @@ h1,h2,h3 {{ color:{TINTA}; }}
 code {{ color:{AMBAR}; }}
 .stTabs [data-baseweb="tab"] {{ color:{APAGADO}; }}
 .stTabs [aria-selected="true"] {{ color:{AMBAR}; }}
+/* La barra de Streamlit (Deploy, menú de la nube) no es parte del producto:
+   fuera. Sin esto queda una franja blanca arriba de una app oscura. */
+header[data-testid="stHeader"] {{ background:transparent; height:0; }}
+[data-testid="stToolbar"], [data-testid="stDecoration"] {{ display:none; }}
+.block-container {{ padding-top:1.6rem; }}
 </style>""", unsafe_allow_html=True)
 
 
 # ==========================================================================
-# Estado
+# Estado de sesión
 # ==========================================================================
 def _estado(clave, defecto):
     if clave not in st.session_state:
@@ -68,12 +71,37 @@ def _estado(clave, defecto):
     return st.session_state[clave]
 
 
-_estado("cargado", None)          # dict de modelo.cargar()
-_estado("historial", [])          # log de cambios aplicados
+_estado("cargado", None)
+_estado("historial", [])
 _estado("xp", 0)
 _estado("resueltos", set())
 _estado("api_key", "")
-_estado("modelo_ia", ia.MODELO_DEFECTO)
+_estado("endpoint", "")
+_estado("idioma", lic.preferencia("idioma", "es"))
+_estado("proveedor", lic.preferencia("proveedor", proveedores_ia.PROVEEDOR_DEFECTO))
+_estado("modelo_ia", lic.preferencia(
+    "modelo_ia", proveedores_ia.modelo_defecto(st.session_state.proveedor)))
+
+IDIOMA = st.session_state.idioma
+ESTADO_LIC = lic.evaluar()
+
+
+def _(clave: str) -> str:
+    return t(clave, IDIOMA)
+
+
+def modelo_demo() -> Path | None:
+    """
+    El modelo demo que se distribuye con el producto. Va copiado en
+    `datos/demo/` para que el instalador lo lleve adentro — desde el repo
+    también sirve el original de `powerbi/archivos/`, que es su fuente.
+    """
+    candidatos = [
+        RAIZ / "datos" / "demo" / "modelo_demo.bim",
+        RAIZ.parent / "powerbi" / "archivos" / "Adium_VAR.SemanticModel"
+        / "model.bim",
+    ]
+    return next((c for c in candidatos if c.exists()), None)
 
 
 def cat_actual() -> catalogo.Catalogo | None:
@@ -92,6 +120,38 @@ def aplicar_modelo(nuevo: dict, cambios: list[str]) -> None:
     st.session_state.historial.extend(cambios)
 
 
+def gate(funcion: str) -> bool:
+    """True si la edición/licencia habilita la función; si no, avisa."""
+    if ESTADO_LIC.permite(funcion):
+        return True
+    st.markdown(f"<div class='dxl-caja dxl-mal'>🔒 {_('lic_bloqueado')}</div>",
+                unsafe_allow_html=True)
+    return False
+
+
+# ==========================================================================
+# Barra lateral: idioma + licencia
+# ==========================================================================
+with st.sidebar:
+    st.markdown(f"### 🟨 {MARCA}")
+    nuevo_idioma = st.selectbox(
+        _("idioma"), IDIOMAS, index=IDIOMAS.index(IDIOMA),
+        format_func=lambda i: NOMBRES_IDIOMA[i])
+    if nuevo_idioma != IDIOMA:
+        st.session_state.idioma = nuevo_idioma
+        lic.guardar_preferencia("idioma", nuevo_idioma)
+        st.rerun()
+
+    icono = {"owner": "👑", "licencia": "✅", "demo": "🕒",
+             "vencida": "🔒"}[ESTADO_LIC.motivo]
+    st.markdown(f"**{_('lic_edicion')}:** {icono} `{ESTADO_LIC.edicion}`")
+    if ESTADO_LIC.motivo == "demo":
+        st.caption(f"{_('lic_dias')}: **{ESTADO_LIC.dias_restantes}**")
+    elif ESTADO_LIC.motivo == "vencida":
+        st.caption("🔒 " + _("lic_vencida"))
+    st.caption(f"v{__version__}")
+
+
 # ==========================================================================
 # Header
 # ==========================================================================
@@ -99,77 +159,48 @@ izq, der = st.columns([0.65, 0.35])
 with izq:
     st.markdown(f"# 🟨 {MARCA} <span class='dxl-badge'>DAX · Power BI · "
                 f"Fabric</span>", unsafe_allow_html=True)
-    st.caption(f"{LEMA} · v{__version__}")
+    st.caption(_("lema"))
 with der:
-    cargado = st.session_state.cargado
     cat = cat_actual()
     if cat:
         r = cat.resumen()
         c1, c2, c3 = st.columns(3)
-        c1.metric("Tablas", r["tablas"])
-        c2.metric("Medidas", r["medidas"])
-        c3.metric("Relaciones", r["relaciones"])
+        c1.metric(_("tablas"), r["tablas"])
+        c2.metric(_("medidas"), r["medidas"])
+        c3.metric(_("relaciones"), r["relaciones"])
     else:
-        st.markdown("<div class='dxl-caja'>Sin modelo cargado — empezá por "
-                    "la pestaña <b>📥 Modelo</b>.</div>",
+        st.markdown(f"<div class='dxl-caja'>{_('sin_modelo')}</div>",
                     unsafe_allow_html=True)
 
 (tab_guia, tab_modelo, tab_rel, tab_analisis, tab_generar, tab_explicar,
  tab_transformar, tab_exportar, tab_fabric, tab_overlay, tab_academia,
- tab_tools, tab_config) = st.tabs([
-     "❓ Guía", "📥 Modelo", "🕸️ Relaciones", "🩺 Analizador",
-     "🤖 Generar DAX", "📖 Explicador", "🔧 Transformar", "📊 Exportar",
-     "🟪 Fabric", "🖥️ Asistente de pantalla", "🎓 Academia DAX",
-     "🛠️ Herramientas", "⚙️ Configuración"])
+ tab_tools, tab_lic, tab_config) = st.tabs([
+     _("tab_guia"), _("tab_modelo"), _("tab_relaciones"), _("tab_analizador"),
+     _("tab_generar"), _("tab_explicar"), _("tab_transformar"),
+     _("tab_exportar"), _("tab_fabric"), _("tab_overlay"), _("tab_academia"),
+     _("tab_herramientas"), _("tab_licencia"), _("tab_config")])
 
 
 # ==========================================================================
 # ❓ Guía
 # ==========================================================================
 with tab_guia:
-    st.subheader("El ciclo completo, verificable")
-    st.markdown("""
-**inspeccionar → modelar → construir → validar → verificar → exportar**
-
-1. **📥 Modelo** — cargá un `.pbit`, un proyecto **PBIP**, un `model.bim` o
-   un `.pbix` (de un `.pbix` se lee el reporte y un catálogo parcial; el
-   modelo tabular viaja en un binario propietario — la app te dice cómo
-   obtener el completo).
-2. **🕸️ Relaciones** — el modelo dibujado: tablas, cardinalidades, calendario.
-3. **🩺 Analizador** — reglas de buenas prácticas con severidad y arreglo;
-   las automáticas se aplican con un clic.
-4. **🤖 Generar DAX** — pedile medidas en español («% del total por país»,
-   «ventas vs año anterior»). Sin API key usa el motor de reglas local;
-   con tu clave de Anthropic, pedidos libres con Claude. En ambos casos la
-   expresión se **valida contra el catálogo**: nada que no exista.
-5. **🔧 Transformar** — renombrar con propagación, columnas calculadas,
-   tabla de medidas, formatos.
-6. **📊 Exportar** — de vuelta a `.pbit` (doble clic en Desktop → guardar
-   como `.pbix`) o **PBIP** (Git), con **tablero automático**: KPIs,
-   evolución, barras, dona, matriz y slicers.
-7. **🟪 Fabric** — publicación directa por API (token BYOK) o vía
-   integración Git del PBIP.
-8. **🖥️ Asistente de pantalla** — el DAX Overlay captura lo que estás
-   mirando (F9 / Shift+F9 / Ctrl+F9), Claude lo explica paso a paso y las
-   medidas propuestas se aplican acá con un clic.
-9. **🎓 Academia DAX** — practicá con ejercicios por nivel, XP y verificación
-   local instantánea.
-""")
-    st.info("La demo carga el modelo Adium de este mismo repo (117 medidas "
-            "reales) desde la pestaña **📥 Modelo** sin subir nada.")
+    st.subheader(_("guia_titulo"))
+    st.markdown(_("guia_ciclo"))
+    st.markdown(_("guia_pasos"))
+    st.info(_("guia_demo"))
 
 
 # ==========================================================================
 # 📥 Modelo
 # ==========================================================================
 with tab_modelo:
-    st.subheader("Cargar un modelo")
+    st.subheader(_("cargar_modelo"))
     col_a, col_b = st.columns([0.55, 0.45])
     with col_a:
-        subida = st.file_uploader(
-            "Arrastrá un .pbit, .pbix, model.bim o un PBIP comprimido (.zip)",
-            type=["pbit", "pbix", "bim", "json", "zip"])
-        if subida is not None and st.button("Cargar archivo", type="primary"):
+        subida = st.file_uploader(_("arrastra"),
+                                  type=["pbit", "pbix", "bim", "json", "zip"])
+        if subida is not None and st.button(_("btn_cargar"), type="primary"):
             tmp = Path(tempfile.mkdtemp(prefix="dxl_"))
             destino = tmp / subida.name
             destino.write_bytes(subida.getvalue())
@@ -183,12 +214,11 @@ with tab_modelo:
                 st.session_state.historial = []
                 st.rerun()
             except Exception as exc:
-                st.error(f"No se pudo cargar: {exc}")
+                st.error(f"{_('no_se_pudo_cargar')}: {exc}")
     with col_b:
-        st.markdown("**Modelo demo (Adium · 117 medidas)**")
-        demo = RAIZ.parent / "powerbi" / "archivos" / \
-            "Adium_VAR.SemanticModel" / "model.bim"
-        if demo.exists() and st.button("Cargar el modelo demo"):
+        st.markdown(f"**{_('modelo_demo')}**")
+        demo = modelo_demo()
+        if demo and st.button(_("btn_demo")):
             st.session_state.cargado = modmod.cargar(demo)
             st.session_state.historial = []
             st.rerun()
@@ -200,31 +230,33 @@ with tab_modelo:
         cat = cat_actual()
         if cat:
             r = cat.resumen()
-            st.markdown(f"<div class='dxl-caja dxl-ok'>Cargado "
-                        f"(<b>{cargado['formato']}</b>): {r['tablas']} "
-                        f"tablas · {r['columnas']} columnas · "
-                        f"{r['medidas']} medidas · {r['relaciones']} "
-                        f"relaciones{' · catálogo PARCIAL' if r['parcial'] else ''}"
-                        "</div>", unsafe_allow_html=True)
-            for t in cat.tablas:
-                if t["interna"]:
+            parcial = f" · {_('catalogo_parcial')}" if r["parcial"] else ""
+            st.markdown(
+                f"<div class='dxl-caja dxl-ok'>✅ <b>{cargado['formato']}</b> · "
+                f"{r['tablas']} {_('tablas').lower()} · {r['columnas']} "
+                f"{_('columnas').lower()} · {r['medidas']} "
+                f"{_('medidas').lower()} · {r['relaciones']} "
+                f"{_('relaciones').lower()}{parcial}</div>",
+                unsafe_allow_html=True)
+            for tb in cat.tablas:
+                if tb["interna"]:
                     continue
-                with st.expander(f"📋 {t['nombre']} — "
-                                 f"{len(t['columnas'])} col · "
-                                 f"{len(t['medidas'])} medidas"):
-                    if t["columnas"]:
+                with st.expander(f"📋 {tb['nombre']} — {len(tb['columnas'])} "
+                                 f"{_('columnas').lower()} · "
+                                 f"{len(tb['medidas'])} {_('medidas').lower()}"):
+                    if tb["columnas"]:
                         st.dataframe(
-                            [{"Columna": c["nombre"], "Tipo": c["tipo"],
-                              "Oculta": "sí" if c["oculta"] else "",
-                              "Calculada": "sí" if c["calculada"] else ""}
-                             for c in t["columnas"]],
+                            [{_("columna"): c["nombre"], _("tipo"): c["tipo"],
+                              _("oculta"): "✔" if c["oculta"] else "",
+                              _("calculada"): "✔" if c["calculada"] else ""}
+                             for c in tb["columnas"]],
                             use_container_width=True, hide_index=True)
-                    for m in t["medidas"]:
+                    for m in tb["medidas"]:
                         st.markdown(f"**[{m['nombre']}]** "
-                                    f"`{m['formato'] or 'sin formato'}`")
+                                    f"`{m['formato'] or _('sin_formato')}`")
                         st.code(m["expresion"], language="sql")
         if st.session_state.historial:
-            st.markdown("**Cambios aplicados en esta sesión:**")
+            st.markdown(f"**{_('cambios_sesion')}**")
             for c in st.session_state.historial:
                 st.markdown(f"- {c}")
 
@@ -233,13 +265,12 @@ with tab_modelo:
 # 🕸️ Relaciones
 # ==========================================================================
 with tab_rel:
-    st.subheader("Mapa del modelo")
+    st.subheader(_("mapa_modelo"))
     cat = cat_actual()
     if not cat:
-        st.info("Cargá un modelo primero.")
+        st.info(_("carga_primero"))
     elif not cat.relaciones:
-        st.warning("El modelo no declara relaciones (o el catálogo es "
-                   "parcial).")
+        st.warning(_("sin_relaciones"))
     else:
         lineas = ["digraph modelo {",
                   '  rankdir=LR; bgcolor="transparent";',
@@ -249,13 +280,13 @@ with tab_rel:
                   f'  edge [color="{APAGADO}", fontcolor="{APAGADO}", '
                   'fontsize=10];']
         fechas = (cat.tabla_fechas() or {}).get("nombre")
-        for t in cat.tablas:
-            if t["interna"]:
+        for tb in cat.tablas:
+            if tb["interna"]:
                 continue
-            extra = ' fillcolor="#1d3149"' if t["nombre"] == fechas else ""
-            lineas.append(f'  "{t["nombre"]}" [label="{t["nombre"]}\\n'
-                          f'{len(t["columnas"])} col · '
-                          f'{len(t["medidas"])} med"{extra}];')
+            extra = ' fillcolor="#1d3149"' if tb["nombre"] == fechas else ""
+            lineas.append(f'  "{tb["nombre"]}" [label="{tb["nombre"]}\\n'
+                          f'{len(tb["columnas"])} col · '
+                          f'{len(tb["medidas"])} med"{extra}];')
         for r in cat.relaciones:
             estilo = []
             if r["bidireccional"]:
@@ -267,86 +298,88 @@ with tab_rel:
                           f'{attrs};')
         lineas.append("}")
         st.graphviz_chart("\n".join(lineas), use_container_width=True)
-        st.caption("Flechas: lado muchos → lado uno. Rojo doble = "
-                   "bidireccional (revisar). Punteada = inactiva. "
-                   "Fondo claro = tabla de calendario.")
+        st.caption(_("leyenda_grafo"))
 
 
 # ==========================================================================
 # 🩺 Analizador
 # ==========================================================================
 with tab_analisis:
-    st.subheader("Buenas prácticas del modelo")
+    st.subheader(_("buenas_practicas"))
     cat = cat_actual()
     if not cat:
-        st.info("Cargá un modelo primero.")
+        st.info(_("carga_primero"))
     else:
         hallazgos = analizador.analizar(cat)
-        salud = analizador.puntaje(hallazgos)
+        grupos = analizador.agrupar(hallazgos)
         c1, c2, c3 = st.columns(3)
-        c1.metric("Salud del modelo", f"{salud}/100")
-        c2.metric("Hallazgos", len(hallazgos))
-        c3.metric("Arreglables en 1 clic",
-                  sum(1 for h in hallazgos if h["auto"]))
-        for h in hallazgos:
-            icono = {"alta": "🔴", "media": "🟡", "baja": "🔵"}[h["severidad"]]
-            with st.expander(f"{icono} {h['regla']} — {h['objeto']}"):
-                st.markdown(f"**Por qué importa:** {h['detalle']}")
-                st.markdown(f"**Cómo se arregla:** {h['arreglo']}")
-                if h["auto"]:
-                    st.markdown("✅ *Arreglable automáticamente*")
+        c1.metric(_("salud"), f"{analizador.puntaje(hallazgos)}/100")
+        c2.metric(_("hallazgos"), len(hallazgos))
+        c3.metric(_("arreglables"), sum(1 for h in hallazgos if h["auto"]))
+        for g in grupos:
+            icono = {"alta": "🔴", "media": "🟡", "baja": "🔵"}[g["severidad"]]
+            cuantos = len(g["objetos"])
+            sufijo = f" · {cuantos}×" if cuantos > 1 else f" — {g['objetos'][0]}"
+            with st.expander(f"{icono} {g['regla']}{sufijo}"):
+                st.markdown(f"**{_('por_que_importa')}:** {g['detalle']}")
+                st.markdown(f"**{_('como_se_arregla')}:** {g['arreglo']}")
+                if g["auto"]:
+                    st.markdown(f"✅ *{_('arreglable_auto')}*")
+                if cuantos > 1:
+                    st.code("\n".join(g["objetos"][:40])
+                            + ("\n…" if cuantos > 40 else ""))
         if any(h["auto"] for h in hallazgos) and \
                 st.session_state.cargado.get("modelo"):
-            if st.button("🔧 Aplicar todos los arreglos automáticos",
-                         type="primary"):
+            if st.button(_("btn_arreglar"), type="primary") and \
+                    gate("transformar"):
                 nuevo, cambios = transformador.aplicar_arreglos(
                     st.session_state.cargado["modelo"], hallazgos)
                 aplicar_modelo(nuevo, cambios)
-                st.success(f"{len(cambios)} cambio(s) aplicados.")
+                st.success(f"{len(cambios)} {_('cambios_aplicados')}")
                 st.rerun()
 
-        if ia.hay_clave(st.session_state.api_key):
-            if st.button("🧠 Opinión de Claude sobre este modelo"):
-                with st.spinner("Consultando a Claude…"):
+        prov = st.session_state.proveedor
+        if proveedores_ia.hay_clave(prov, st.session_state.api_key):
+            if st.button(_("opinion_ia")):
+                with st.spinner(_("consultando")):
                     try:
                         st.markdown(ia.analizar_modelo_ia(
                             generador._catalogo_para_prompt(cat), hallazgos,
-                            modelo=st.session_state.modelo_ia,
-                            api_key=st.session_state.api_key))
+                            proveedor=prov, modelo=st.session_state.modelo_ia,
+                            api_key=st.session_state.api_key,
+                            endpoint=st.session_state.endpoint))
                     except Exception as exc:
                         st.error(str(exc))
         else:
-            st.caption("Con una API key de Anthropic (⚙️ Configuración) "
-                       "también tenés la opinión de Claude sobre el modelo.")
+            st.caption(_("sin_clave_opinion"))
 
 
 # ==========================================================================
 # 🤖 Generar DAX
 # ==========================================================================
 with tab_generar:
-    st.subheader("De español a DAX, sin inventar columnas")
+    st.subheader(_("gen_titulo"))
     cat = cat_actual()
     if not cat:
-        st.info("Cargá un modelo primero.")
-    else:
-        pedido = st.text_input(
-            "¿Qué medida necesitás?",
-            placeholder="p. ej.: total de ventas · % del total · ventas vs "
-                        "año anterior · media móvil 3 meses de unidades · "
-                        "ranking de país por ventas")
+        st.info(_("carga_primero"))
+    elif gate("generar"):
+        pedido = st.text_input(_("gen_pregunta"), placeholder=_("gen_ejemplos"))
         if pedido:
-            r = generador.generar(pedido, cat,
-                                  api_key=st.session_state.api_key or None,
-                                  modelo_ia=st.session_state.modelo_ia)
+            r = generador.generar(
+                pedido, cat, api_key=st.session_state.api_key or None,
+                proveedor=st.session_state.proveedor,
+                modelo_ia=st.session_state.modelo_ia,
+                endpoint=st.session_state.endpoint)
             if r["ok"]:
-                st.markdown(f"<div class='dxl-caja dxl-ok'><b>[{r['nombre']}]"
-                            f"</b> · formato <code>{r['formato']}</code> · "
-                            f"motor: {r['metodo']}</div>",
-                            unsafe_allow_html=True)
+                st.markdown(
+                    f"<div class='dxl-caja dxl-ok'><b>[{r['nombre']}]</b> · "
+                    f"{_('formato')} <code>{r['formato']}</code> · "
+                    f"{_('gen_motor')}: {r['metodo']}</div>",
+                    unsafe_allow_html=True)
                 st.code(r["dax"], language="sql")
-                st.markdown(f"**Por qué:** {r['explicacion']}")
+                st.markdown(f"**{_('gen_porque')}:** {r['explicacion']}")
                 if st.session_state.cargado.get("modelo") and \
-                        st.button("➕ Agregar esta medida al modelo"):
+                        st.button(_("gen_agregar")):
                     try:
                         nuevo, cambios = transformador.agregar_medida(
                             st.session_state.cargado["modelo"], r["nombre"],
@@ -366,31 +399,31 @@ with tab_generar:
 # 📖 Explicador
 # ==========================================================================
 with tab_explicar:
-    st.subheader("Pegá DAX, salí entendiéndolo")
+    st.subheader(_("exp_titulo"))
     cat = cat_actual()
-    opciones = ["(pegar una expresión)"]
+    opciones = [_("exp_pegar")]
     medidas_cat = cat.medidas() if cat else []
     opciones += [f"[{m['nombre']}]" for m in medidas_cat]
-    eleccion = st.selectbox("Explicar una medida del modelo o pegar DAX",
-                            opciones)
+    eleccion = st.selectbox(_("exp_selector"), opciones)
     if eleccion != opciones[0]:
         m = medidas_cat[opciones.index(eleccion) - 1]
         expresion, nombre = m["expresion"], m["nombre"]
         st.code(expresion, language="sql")
     else:
         nombre = ""
-        expresion = st.text_area("Expresión DAX", height=140,
+        expresion = st.text_area(_("exp_expresion"), height=140,
                                  placeholder="CALCULATE ( SUM ( … ) )")
     if expresion.strip():
         e = explicador.explicar(expresion, cat, nombre)
-        st.markdown(f"<div class='dxl-caja'><b>{e['resumen']}</b> · nivel "
-                    f"{e['nivel']}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='dxl-caja'><b>{e['resumen']}</b> · "
+                    f"{_('exp_nivel')} {e['nivel']}</div>",
+                    unsafe_allow_html=True)
         for paso in e["pasos"]:
             st.markdown(f"- {paso}")
         if e["funciones"]:
-            st.dataframe([{"Función": f["nombre"],
-                           "Qué hace": f["descripcion"],
-                           "Categoría": f["categoria"]}
+            st.dataframe([{_("exp_funcion"): f["nombre"],
+                           _("exp_que_hace"): f["descripcion"],
+                           _("exp_categoria"): f["categoria"]}
                           for f in e["funciones"]],
                          use_container_width=True, hide_index=True)
         for falta in e["faltantes"]:
@@ -401,20 +434,21 @@ with tab_explicar:
 # 🔧 Transformar
 # ==========================================================================
 with tab_transformar:
-    st.subheader("Transformaciones seguras (siempre sobre una copia)")
+    st.subheader(_("tr_titulo"))
     cargado = st.session_state.cargado
     cat = cat_actual()
     if not cargado or not cargado.get("modelo"):
-        st.info("Necesito el modelo completo (.pbit / PBIP / .bim).")
-    else:
+        st.info(_("tr_necesito_completo"))
+    elif gate("transformar"):
         c1, c2 = st.columns(2)
         with c1:
-            st.markdown("**Renombrar medida (propaga referencias)**")
+            st.markdown(f"**{_('tr_renombrar')}**")
             nombres = [m["nombre"] for m in cat.medidas()]
             if nombres:
-                actual = st.selectbox("Medida", nombres, key="ren_sel")
-                nuevo_nombre = st.text_input("Nuevo nombre", key="ren_txt")
-                if nuevo_nombre and st.button("Renombrar"):
+                actual = st.selectbox(_("tr_medida"), nombres, key="ren_sel")
+                nuevo_nombre = st.text_input(_("tr_nuevo_nombre"),
+                                             key="ren_txt")
+                if nuevo_nombre and st.button(_("tr_btn_renombrar")):
                     try:
                         nuevo, cambios = transformador.renombrar_medida(
                             cargado["modelo"], actual, nuevo_nombre)
@@ -423,22 +457,22 @@ with tab_transformar:
                         st.rerun()
                     except ValueError as exc:
                         st.error(str(exc))
-            st.markdown("**Crear tabla de medidas**")
-            if st.button("Concentrar todas las medidas en «_Medidas»"):
+            st.markdown(f"**{_('tr_tabla_medidas')}**")
+            if st.button(_("tr_btn_concentrar")):
                 nuevo, cambios = transformador.crear_tabla_medidas(
                     cargado["modelo"])
                 aplicar_modelo(nuevo, cambios)
-                st.success(" · ".join(cambios) or "Nada que mover.")
+                st.success(" · ".join(cambios) or _("nada_que_mover"))
                 st.rerun()
         with c2:
-            st.markdown("**Columna calculada**")
-            tablas_visibles = [t["nombre"] for t in cat.tablas
-                               if not t["interna"]]
-            t_sel = st.selectbox("Tabla", tablas_visibles, key="cc_tabla")
-            cc_nombre = st.text_input("Nombre de la columna", key="cc_nom")
-            cc_dax = st.text_area("Expresión DAX", key="cc_dax", height=90,
+            st.markdown(f"**{_('tr_col_calculada')}**")
+            tablas_visibles = [tb["nombre"] for tb in cat.tablas
+                               if not tb["interna"]]
+            t_sel = st.selectbox(_("tr_tabla"), tablas_visibles, key="cc_tabla")
+            cc_nombre = st.text_input(_("tr_nombre_col"), key="cc_nom")
+            cc_dax = st.text_area(_("exp_expresion"), key="cc_dax", height=90,
                                   placeholder="Ventas[Importe] - Ventas[Costo]")
-            if cc_nombre and cc_dax and st.button("Agregar columna"):
+            if cc_nombre and cc_dax and st.button(_("tr_btn_agregar_col")):
                 try:
                     nuevo, cambios = asistente.agregar_columna_calculada(
                         cargado["modelo"], t_sel, cc_nombre, cc_dax)
@@ -447,12 +481,12 @@ with tab_transformar:
                     st.rerun()
                 except ValueError as exc:
                     st.error(str(exc))
-            st.markdown("**Formatos y claves**")
-            if st.button("Asignar formatos faltantes + ocultar claves"):
+            st.markdown(f"**{_('tr_formatos')}**")
+            if st.button(_("tr_btn_formatos")):
                 nuevo, c_1 = transformador.asignar_formatos(cargado["modelo"])
                 nuevo, c_2 = transformador.ocultar_claves(nuevo)
                 aplicar_modelo(nuevo, c_1 + c_2)
-                st.success(f"{len(c_1) + len(c_2)} cambio(s).")
+                st.success(f"{len(c_1) + len(c_2)} {_('cambios_aplicados')}")
                 st.rerun()
 
 
@@ -460,24 +494,18 @@ with tab_transformar:
 # 📊 Exportar
 # ==========================================================================
 with tab_exportar:
-    st.subheader("Exportar con tablero, filtros y navegación")
+    st.subheader(_("ex_titulo"))
     cargado = st.session_state.cargado
     cat = cat_actual()
     if not cargado or not cargado.get("modelo"):
-        st.info("Necesito el modelo completo (.pbit / PBIP / .bim).")
-    else:
-        nombre_out = st.text_input("Nombre del archivo",
+        st.info(_("tr_necesito_completo"))
+    elif gate("exportar"):
+        nombre_out = st.text_input(_("ex_nombre"),
                                    value=(cat.nombre or "MV_DAX_Lab"))
         medidas_disp = [m["nombre"] for m in cat.medidas()]
-        sel = st.multiselect(
-            "Medidas para el tablero automático (hasta 5; vacío = primeras 5)",
-            medidas_disp, max_selections=5)
-        usar_tablero = st.checkbox(
-            "Generar tablero automático (KPIs + evolución + barras + dona + "
-            "matriz + slicers)", value=True)
-        conservar = st.checkbox(
-            "Conservar el reporte original si el archivo traía uno",
-            value=not usar_tablero)
+        sel = st.multiselect(_("ex_medidas"), medidas_disp, max_selections=5)
+        usar_tablero = st.checkbox(_("ex_generar_tablero"), value=True)
+        conservar = st.checkbox(_("ex_conservar"), value=not usar_tablero)
 
         layout = None
         if usar_tablero and medidas_disp:
@@ -491,17 +519,16 @@ with tab_exportar:
 
         c1, c2 = st.columns(2)
         with c1:
-            if st.button("⬇️ Generar .pbit", type="primary"):
+            if st.button(_("ex_btn_pbit"), type="primary"):
                 tmp = Path(tempfile.mkdtemp(prefix="dxl_out_"))
                 ruta = modmod.exportar_pbit(
                     cargado["modelo"], layout, tmp / f"{nombre_out}.pbit",
                     descripcion=f"Generado por {MARCA}")
-                st.download_button("Descargar " + ruta.name,
+                st.download_button(f"{_('ex_descargar')} {ruta.name}",
                                    ruta.read_bytes(), file_name=ruta.name)
-                st.caption("Doble clic → Power BI Desktop → Archivo → "
-                           "Guardar como → .pbix")
+                st.caption(_("ex_nota_pbit"))
         with c2:
-            if st.button("⬇️ Generar PBIP (zip)"):
+            if st.button(_("ex_btn_pbip")):
                 tmp = Path(tempfile.mkdtemp(prefix="dxl_out_"))
                 modmod.exportar_pbip(cargado["modelo"], layout, tmp,
                                      nombre_out)
@@ -510,129 +537,115 @@ with tab_exportar:
                     for f in tmp.rglob("*"):
                         if f.is_file():
                             z.write(f, f.relative_to(tmp))
-                st.download_button(f"Descargar {nombre_out}_pbip.zip",
+                st.download_button(f"{_('ex_descargar')} {nombre_out}_pbip.zip",
                                    buf.getvalue(),
                                    file_name=f"{nombre_out}_pbip.zip")
-                st.caption("Formato de control de versiones — y el que "
-                           "entiende la integración Git de Fabric.")
+                st.caption(_("ex_nota_pbip"))
 
 
 # ==========================================================================
 # 🟪 Fabric
 # ==========================================================================
 with tab_fabric:
-    st.subheader("Publicar en Microsoft Fabric")
+    st.subheader(_("fab_titulo"))
     cargado = st.session_state.cargado
     st.markdown(fabric.GUIA_GIT)
-    if cargado and cargado.get("modelo"):
-        token = st.text_input("Token de Fabric (no se guarda)",
-                              type="password")
+    if cargado and cargado.get("modelo") and gate("fabric"):
+        token = st.text_input(_("fab_token"), type="password")
         if token:
             try:
                 ws = fabric.listar_workspaces(token)
                 if ws:
                     elegido = st.selectbox(
-                        "Workspace", ws,
+                        _("fab_workspace"), ws,
                         format_func=lambda w: w["nombre"] or w["id"])
-                    nombre_fab = st.text_input("Nombre del ítem",
-                                               value=cat_actual().nombre
-                                               or "MV_DAX_Lab")
-                    if st.button("🚀 Publicar en Fabric", type="primary"):
-                        with st.spinner("Publicando…"):
+                    nombre_fab = st.text_input(
+                        _("fab_nombre_item"),
+                        value=cat_actual().nombre or "MV_DAX_Lab")
+                    if st.button(_("fab_btn"), type="primary"):
+                        with st.spinner(_("fab_publicando")):
                             r = fabric.publicar(
-                                elegido["id"], nombre_fab,
-                                cargado["modelo"], cargado.get("layout"),
-                                token)
-                        st.success(f"Modelo semántico: "
-                                   f"{r['modelo_semantico']}"
-                                   + (f" · Reporte: {r['reporte']}"
-                                      if r["reporte"] else ""))
+                                elegido["id"], nombre_fab, cargado["modelo"],
+                                cargado.get("layout"), token)
+                        st.success(f"✅ {r['modelo_semantico']}"
+                                   + (f" · {r['reporte']}" if r["reporte"]
+                                      else ""))
             except Exception as exc:
-                st.error(f"Fabric respondió con error: {exc}")
-    st.caption("El MCP remoto oficial de Power BI "
-               f"({herramientas.MCP_REMOTO_POWERBI}) también trabaja sobre "
-               "modelos ya publicados — configuralo desde 🛠️ Herramientas.")
+                st.error(f"{_('fab_error')}: {exc}")
+    st.caption(_("fab_mcp_nota"))
 
 
 # ==========================================================================
-# 🖥️ Asistente de pantalla (DAX Overlay)
+# 🖥️ Asistente de pantalla
 # ==========================================================================
 with tab_overlay:
-    st.subheader("DAX Overlay: capturá la pantalla, aplicá el resultado acá")
-    st.markdown("""
-El overlay corre en tu escritorio (Windows/Mac/Linux con interfaz gráfica):
-
-| Atajo | Qué hace |
+    st.subheader(_("ov_titulo"))
+    st.markdown(f"""
+| {_('ov_atajo')} | {_('ov_que_hace')} |
 |---|---|
-| **F9** | Captura **toda la pantalla** y la resuelve con Claude |
-| **Shift + F9** | Seleccionás un **rectángulo** con el mouse |
-| **Ctrl + F9** | Abre una ventana para **escribir la consulta** |
-| Ctrl+Shift+M | Limpia la memoria de capturas previas |
+| **F9** | {_('ov_f9')} |
+| **Shift + F9** | {_('ov_shift_f9')} |
+| **Ctrl + F9** | {_('ov_ctrl_f9')} |
+| Ctrl+Shift+M | {_('ov_limpiar_mem')} |
 
 ```bash
 pip install anthropic pynput pillow
 python daxlingo/overlay/DAX_Overlay.py
 ```
 
-Cada respuesta se explica **paso a paso** en la ventana flotante y queda en
-la **bandeja** de abajo: si trae medidas o columnas calculadas, se aplican
-al modelo cargado con un clic — y de ahí a Exportar o Fabric.
+{_('ov_explica')}
 """)
-    consulta_directa = st.text_area(
-        "…o escribí la consulta acá mismo (sin overlay)", height=80,
-        placeholder="p. ej.: necesito el margen % por categoría con "
-                    "semáforo, ¿qué medidas armo?")
-    if consulta_directa and st.button("Resolver con Claude"):
-        if not ia.hay_clave(st.session_state.api_key):
-            st.error("Configurá tu API key en ⚙️ Configuración.")
-        else:
-            with st.spinner("Consultando…"):
-                try:
-                    cat = cat_actual()
-                    contexto = ("Catálogo del modelo:\n"
-                                + generador._catalogo_para_prompt(cat)
-                                if cat else "")
-                    respuesta = ia.consultar(
-                        [{"role": "user",
-                          "content": f"{contexto}\n\n{consulta_directa}"}],
-                        sistema=ia.SISTEMA_DAX,
-                        modelo=st.session_state.modelo_ia,
-                        api_key=st.session_state.api_key)
-                    asistente.depositar(consulta_directa, respuesta,
-                                        origen="consulta")
-                    st.rerun()
-                except Exception as exc:
-                    st.error(str(exc))
+    if gate("overlay"):
+        consulta_directa = st.text_area(_("ov_escribir"), height=80,
+                                        placeholder=_("ov_placeholder"))
+        if consulta_directa and st.button(_("ov_btn_resolver")):
+            prov = st.session_state.proveedor
+            if not proveedores_ia.hay_clave(prov, st.session_state.api_key):
+                st.error(_("sin_clave_opinion"))
+            else:
+                with st.spinner(_("consultando")):
+                    try:
+                        cat = cat_actual()
+                        contexto = (generador._catalogo_para_prompt(cat)
+                                    if cat else "")
+                        respuesta = ia.resolver_consulta(
+                            consulta_directa, contexto, proveedor=prov,
+                            modelo=st.session_state.modelo_ia,
+                            api_key=st.session_state.api_key,
+                            endpoint=st.session_state.endpoint)
+                        asistente.depositar(consulta_directa, respuesta,
+                                            origen="consulta")
+                        st.rerun()
+                    except Exception as exc:
+                        st.error(str(exc))
 
     st.markdown("---")
-    st.markdown("**📬 Bandeja del overlay**")
+    st.markdown(f"**{_('ov_bandeja')}**")
     items = asistente.pendientes()
     if not items:
-        st.caption("Sin resultados todavía. Usá el overlay o la consulta de "
-                   "arriba.")
+        st.caption(_("ov_vacia"))
     for item in reversed(items[-10:]):
         estado_icono = {"pendiente": "🟡", "aplicado": "✅",
                         "descartado": "⚪"}.get(item["estado"], "🟡")
         with st.expander(f"{estado_icono} {item['cuando']} · "
                          f"{item['pregunta'][:70]}"):
             st.markdown(item["respuesta"])
-            acciones = item.get("acciones", [])
-            aplicables = [a for a in acciones
+            aplicables = [a for a in item.get("acciones", [])
                           if a["tipo"] in ("medida", "columna_calculada")]
             if aplicables and st.session_state.cargado \
                     and st.session_state.cargado.get("modelo") \
                     and item["estado"] == "pendiente":
                 cat = cat_actual()
-                tablas_visibles = [t["nombre"] for t in cat.tablas
-                                   if not t["interna"]]
+                tablas_visibles = [tb["nombre"] for tb in cat.tablas
+                                   if not tb["interna"]]
                 for i, a in enumerate(aplicables):
                     st.code(f"{a['nombre']} = {a['dax']}", language="sql")
                     t_destino = ""
                     if a["tipo"] == "columna_calculada":
                         t_destino = st.selectbox(
-                            "Tabla destino", tablas_visibles,
+                            _("ov_tabla_destino"), tablas_visibles,
                             key=f"bd_{item['id']}_{i}")
-                    if st.button(f"➕ Aplicar «{a['nombre']}»",
+                    if st.button(f"{_('ov_aplicar')} «{a['nombre']}»",
                                  key=f"ap_{item['id']}_{i}"):
                         try:
                             nuevo, cambios = asistente.aplicar_accion(
@@ -645,10 +658,10 @@ al modelo cargado con un clic — y de ahí a Exportar o Fabric.
                         except ValueError as exc:
                             st.error(str(exc))
             if item["estado"] == "pendiente" and \
-                    st.button("Descartar", key=f"de_{item['id']}"):
+                    st.button(_("ov_descartar"), key=f"de_{item['id']}"):
                 asistente.marcar(item["_archivo"], "descartado")
                 st.rerun()
-    if items and st.button("🧹 Limpiar resueltos"):
+    if items and st.button(_("ov_limpiar")):
         asistente.limpiar()
         st.rerun()
 
@@ -657,34 +670,35 @@ al modelo cargado con un clic — y de ahí a Exportar o Fabric.
 # 🎓 Academia DAX
 # ==========================================================================
 with tab_academia:
-    st.subheader("Academia DAX — práctica con verificación instantánea")
+    st.subheader(_("ac_titulo"))
     banco = ejercicios.cargar_ejercicios()
     xp = st.session_state.xp
     c1, c2, c3 = st.columns(3)
     c1.metric("XP", xp)
-    c2.metric("Nivel", ejercicios.nivel_por_xp(xp))
+    c2.metric(_("ac_nivel"), ejercicios.nivel_por_xp(xp))
     prox = ejercicios.proximo_nivel(xp)
-    c3.metric("Próximo nivel", f"faltan {prox[1]} XP" if prox else "¡máximo!")
+    c3.metric(_("ac_proximo"),
+              f"{_('ac_faltan')} {prox[1]} XP" if prox else _("ac_maximo"))
 
     datos_banco = json.loads(
         ejercicios.RUTA_EJERCICIOS.read_text(encoding="utf-8"))
-    with st.expander("📋 El modelo de práctica (común a todos los ejercicios)"):
+    with st.expander(_("ac_modelo_practica")):
         mp = datos_banco["modelo_practica"]
         for tbl, cols in mp["tablas"].items():
             st.markdown(f"**{tbl}**: {', '.join(cols)}")
-        st.markdown("**Relaciones:** " + " · ".join(mp["relaciones"]))
+        st.markdown(f"**{_('relaciones')}:** " + " · ".join(mp["relaciones"]))
 
     for nivel in sorted({e["nivel"] for e in banco}):
-        st.markdown(f"### Nivel {nivel}")
+        st.markdown(f"### {_('ac_nivel')} {nivel}")
         for e in [x for x in banco if x["nivel"] == nivel]:
             hecho = e["id"] in st.session_state.resueltos
             with st.expander(("✅ " if hecho else "▫️ ")
                              + f"{e['id']} · {e['titulo']} (+{e['xp']} XP)"):
                 st.markdown(e["enunciado"])
-                respuesta = st.text_area("Tu DAX", key=f"ej_{e['id']}",
+                respuesta = st.text_area(_("ac_tu_dax"), key=f"ej_{e['id']}",
                                          height=80)
                 cols = st.columns([0.2, 0.2, 0.6])
-                if cols[0].button("Verificar", key=f"v_{e['id']}"):
+                if cols[0].button(_("ac_verificar"), key=f"v_{e['id']}"):
                     v = ejercicios.verificar(e, respuesta)
                     if v["correcto"]:
                         if not hecho:
@@ -694,15 +708,15 @@ with tab_academia:
                         st.rerun()
                     else:
                         st.error(v["detalle"])
-                if cols[1].button("Pista", key=f"p_{e['id']}"):
-                    st.info(e.get("pista", "Sin pista para este."))
+                if cols[1].button(_("ac_pista"), key=f"p_{e['id']}"):
+                    st.info(e.get("pista", _("ac_sin_pista")))
 
 
 # ==========================================================================
 # 🛠️ Herramientas
 # ==========================================================================
 with tab_tools:
-    st.subheader("El stack del analista Power BI moderno, operativo")
+    st.subheader(_("he_titulo"))
     cat = cat_actual()
     for etapa in ("01 · Crear", "02 · Operar", "03 · Modelar",
                   "04 · Industrializar", "05 · Escalar con IA"):
@@ -712,25 +726,25 @@ with tab_tools:
         for col, h in zip(cols, grupo):
             with col:
                 ruta = herramientas.detectar(h)
-                estado_txt = (f"🟢 detectada" if ruta
-                              else "⚪ no detectada acá")
+                estado_txt = (f"🟢 {_('he_detectada')}" if ruta
+                              else f"⚪ {_('he_no_detectada')}")
                 st.markdown(f"**{h['nombre']}**  \n{h['descripcion']}  \n"
-                            f"{estado_txt}  \n[sitio]({h['url']})")
+                            f"{estado_txt}  \n[{_('he_sitio')}]({h['url']})")
                 st.caption(h["integracion"])
 
     st.markdown("---")
     c1, c2, c3 = st.columns(3)
     with c1:
-        st.markdown("**Para DAX Studio**")
+        st.markdown(f"**{_('he_para_daxstudio')}**")
         if cat and cat.medidas():
             tmp = Path(tempfile.mkdtemp(prefix="dxl_dax_"))
             ruta = herramientas.exportar_medidas_dax(cat, tmp / "medidas.dax")
             st.download_button("⬇️ medidas.dax", ruta.read_text("utf-8"),
                                file_name="medidas.dax")
         else:
-            st.caption("Cargá un modelo con medidas.")
+            st.caption(_("he_carga_medidas"))
     with c2:
-        st.markdown("**Para Tabular Editor / ALM Toolkit**")
+        st.markdown(f"**{_('he_para_tabular')}**")
         cargado = st.session_state.cargado
         if cargado and cargado.get("modelo"):
             st.download_button(
@@ -738,38 +752,124 @@ with tab_tools:
                 json.dumps(cargado["modelo"], indent=2, ensure_ascii=False),
                 file_name="model.bim")
         else:
-            st.caption("Cargá el modelo completo.")
+            st.caption(_("tr_necesito_completo"))
     with c3:
-        st.markdown("**Para agentes de IA (MCP)**")
-        st.download_button("⬇️ .mcp.json",
-                           herramientas.config_mcp_texto("."),
-                           file_name=".mcp.json")
-        st.caption("Incluye el MCP remoto oficial de Power BI, el MCP local "
-                   "de modelado y el servidor MCP de esta plataforma.")
+        st.markdown(f"**{_('he_para_mcp')}**")
+        agente = st.selectbox(
+            "Agente", list(proveedores_ia.AGENTES_MCP),
+            format_func=lambda a: proveedores_ia.AGENTES_MCP[a]["nombre"],
+            key="mcp_agente_tools")
+        archivo = proveedores_ia.AGENTES_MCP[agente]["archivo"]
+        st.download_button(f"⬇️ {archivo}",
+                           proveedores_ia.config_mcp_texto(agente, "."),
+                           file_name=Path(archivo).name)
+        st.caption(_("he_mcp_nota"))
+
+
+# ==========================================================================
+# 🔑 Licencia
+# ==========================================================================
+with tab_lic:
+    st.subheader(_("lic_titulo"))
+    c1, c2, c3 = st.columns(3)
+    c1.metric(_("lic_edicion"), ESTADO_LIC.edicion)
+    c2.metric(_("lic_estado"),
+              _("lic_activa") if ESTADO_LIC.activa else _("lic_vencida"))
+    c3.metric(_("lic_dias"),
+              ESTADO_LIC.dias_restantes if ESTADO_LIC.dias_restantes
+              is not None else "∞")
+
+    if ESTADO_LIC.motivo == "owner":
+        st.markdown(f"<div class='dxl-caja dxl-ok'>👑 {_('lic_owner')}</div>",
+                    unsafe_allow_html=True)
+    elif ESTADO_LIC.motivo == "demo":
+        st.markdown(f"<div class='dxl-caja'>🕒 {_('lic_demo_activa')}</div>",
+                    unsafe_allow_html=True)
+    elif ESTADO_LIC.motivo == "vencida":
+        st.markdown(f"<div class='dxl-caja dxl-mal'>🔒 "
+                    f"{_('lic_demo_vencida')}</div>", unsafe_allow_html=True)
+    else:
+        email = ESTADO_LIC.payload.get("email") or "—"
+        st.markdown(f"<div class='dxl-caja dxl-ok'>✅ "
+                    f"{_('lic_activa')} · {email}</div>",
+                    unsafe_allow_html=True)
+
+    clave = st.text_input(_("lic_pegar"), type="password")
+    col_a, col_b = st.columns(2)
+    if clave and col_a.button(_("lic_activar"), type="primary"):
+        try:
+            lic.activar(clave)
+            st.success(_("lic_activada"))
+            st.rerun()
+        except ValueError:
+            st.error(_("lic_invalida"))
+    col_b.link_button(f"🛒 {_('lic_comprar')}",
+                      "https://mvdaxlab.vercel.app/#precios")
 
 
 # ==========================================================================
 # ⚙️ Configuración
 # ==========================================================================
 with tab_config:
-    st.subheader("Configuración")
-    st.markdown("**IA (Claude) — opcional y BYOK**")
-    st.session_state.api_key = st.text_input(
-        "ANTHROPIC_API_KEY (solo esta sesión; no se guarda en disco)",
-        value=st.session_state.api_key, type="password")
-    st.session_state.modelo_ia = st.selectbox(
-        "Modelo de Claude", [m for m, _ in ia.MODELOS_CLAUDE],
-        index=[m for m, _ in ia.MODELOS_CLAUDE].index(
-            st.session_state.modelo_ia),
-        format_func=lambda m: dict(ia.MODELOS_CLAUDE)[m])
-    st.caption("Si el modelo elegido está saturado, se cae solo al "
-               "siguiente de la lista, con reintentos (3s, 6s). Sin clave, "
-               "todo lo demás funciona igual: motor de reglas, analizador, "
-               "explicador, export.")
+    st.subheader(_("cfg_titulo"))
+    st.markdown(f"**{_('cfg_ia')}**")
+
+    claves_prov = list(proveedores_ia.PROVEEDORES)
+    prov = st.selectbox(
+        _("cfg_proveedor"), claves_prov,
+        index=claves_prov.index(st.session_state.proveedor),
+        format_func=lambda p: proveedores_ia.PROVEEDORES[p]["nombre"])
+    if prov != st.session_state.proveedor:
+        st.session_state.proveedor = prov
+        st.session_state.modelo_ia = proveedores_ia.modelo_defecto(prov)
+        lic.guardar_preferencia("proveedor", prov)
+        st.rerun()
+
+    modelos = proveedores_ia.modelos_de(prov)
+    if modelos:
+        ids = [m for m, _lbl in modelos]
+        indice = ids.index(st.session_state.modelo_ia) \
+            if st.session_state.modelo_ia in ids else 0
+        elegido = st.selectbox(_("cfg_modelo"), ids, index=indice,
+                               format_func=lambda m: dict(modelos)[m])
+        if elegido != st.session_state.modelo_ia:
+            st.session_state.modelo_ia = elegido
+            lic.guardar_preferencia("modelo_ia", elegido)
+
+    cfg_prov = proveedores_ia.PROVEEDORES[prov]
+    if proveedores_ia.necesita_clave(prov):
+        st.session_state.api_key = st.text_input(
+            _("cfg_clave"), value=st.session_state.api_key, type="password",
+            help=f"{cfg_prov['env']} · {cfg_prov['doc']}")
+    if cfg_prov.get("necesita_endpoint"):
+        st.session_state.endpoint = st.text_input(
+            "Endpoint (https://<recurso>.openai.azure.com)",
+            value=st.session_state.endpoint)
+
+    if st.button(_("cfg_probar")):
+        with st.spinner(_("consultando")):
+            try:
+                proveedores_ia.probar_conexion(
+                    prov, st.session_state.modelo_ia,
+                    st.session_state.api_key, st.session_state.endpoint)
+                st.success(f"✅ {_('cfg_ok')}")
+            except Exception as exc:
+                st.error(str(exc))
+    st.caption(_("cfg_nota_ia"))
+
     st.markdown("---")
-    st.markdown(f"**Bandeja del overlay:** `{asistente.carpeta_bandeja()}`  \n"
-                "Cambiala con la variable de entorno `MVDAXLAB_BANDEJA`.")
+    st.markdown(f"**{_('cfg_mcp')}**")
+    agente_cfg = st.selectbox(
+        "Agente", list(proveedores_ia.AGENTES_MCP),
+        format_func=lambda a: proveedores_ia.AGENTES_MCP[a]["nombre"],
+        key="mcp_agente_config")
+    info_agente = proveedores_ia.AGENTES_MCP[agente_cfg]
+    st.code(proveedores_ia.config_mcp_texto(agente_cfg, "."), language="json")
+    st.caption(f"📄 `{info_agente['archivo']}` · {_('cfg_mcp_nota')}")
+
+    st.markdown("---")
+    st.markdown(f"**{_('cfg_bandeja')}:** `{asistente.carpeta_bandeja()}`")
     if st.session_state.historial:
-        st.markdown("**Historial de cambios de la sesión:**")
+        st.markdown(f"**{_('cfg_historial')}**")
         for c in st.session_state.historial:
             st.markdown(f"- {c}")
