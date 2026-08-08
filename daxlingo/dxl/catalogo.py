@@ -26,6 +26,15 @@ def _norm(texto: str) -> str:
     return "".join(c for c in plano if not unicodedata.combining(c)).lower().strip()
 
 
+def _palabras(texto: str) -> list[str]:
+    """
+    Palabras alfanuméricas del texto, normalizadas. Sirve para comparar
+    nombres ignorando separadores: «% del total · Importe» y
+    «% del total - importe» son el mismo nombre.
+    """
+    return [p for p in re.split(r"[^a-z0-9]+", _norm(texto)) if p]
+
+
 class Catalogo:
     """Vista aplanada e indexada de un modelo tabular."""
 
@@ -247,20 +256,26 @@ class Catalogo:
         return mejor if mejor_puntaje >= 30 else None
 
     def buscar_medida(self, texto: str) -> dict | None:
-        objetivo = _norm(texto)
+        """
+        Encuentra una medida SOLO si el pedido la nombra: mismas palabras,
+        sin sobras. No hay coincidencia parcial a propósito.
+
+        La versión por subcadena parecía razonable y era una fuente silenciosa
+        de resultados incorrectos: con un «Importe YTD» ya en el modelo, pedir
+        algo sobre «importe» lo agarraba a él, y salía la media móvil de un
+        acumulado anual o el ranking por un YTD. DAX impecable, número sin
+        sentido — el peor error posible, porque nadie lo ve leyendo.
+
+        Cuando no hay match exacto, quien llama cae a la búsqueda de columna,
+        que es el comportamiento seguro.
+        """
+        objetivo = _palabras(texto)
         if not objetivo:
             return None
-        mejor, mejor_puntaje = None, 0.0
         for m in self.medidas():
-            nm = _norm(m["nombre"])
-            puntaje = 0.0
-            if nm == objetivo:
-                puntaje = 100
-            elif objetivo in nm or nm in objetivo:
-                puntaje = 60
-            if puntaje > mejor_puntaje:
-                mejor, mejor_puntaje = m, puntaje
-        return mejor if mejor_puntaje >= 60 else None
+            if _palabras(m["nombre"]) == objetivo:
+                return m
+        return None
 
     # ------------------------------------------------------------------
     def resumen(self) -> dict:

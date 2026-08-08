@@ -269,8 +269,15 @@ def test_generar_suma(cat):
 
 
 def test_generar_distintos(cat):
-    r = generador.generar("cantidad de clientes distintos", cat)
-    assert r["ok"] and "DISTINCTCOUNT" in r["dax"]
+    # El sustantivo puede ir antes o después de «distintos»: las dos formas
+    # son el mismo pedido. La variante «X distintos» estuvo rota hasta que la
+    # encontró el end-to-end por MCP.
+    for pedido in ("cantidad de clientes distintos", "clientes distintos",
+                   "distintos clientes", "clientes únicos"):
+        r = generador.generar(pedido, cat)
+        assert r["ok"], f"«{pedido}»: {r['advertencias']}"
+        assert "DISTINCTCOUNT" in r["dax"], pedido
+        assert catalogo.validar_referencias(r["dax"], cat) == []
 
 
 def test_generar_pct_total(cat):
@@ -309,6 +316,49 @@ def test_generar_no_inventa(cat):
 def test_generar_reusa_medidas(cat):
     r = generador.generar("total ventas acumulado del año", cat)
     assert r["ok"] and "[Total Ventas]" in r["dax"]
+
+
+def test_no_secuestra_una_medida_por_una_palabra_suelta(cat):
+    """
+    Una medida se reutiliza cuando el pedido la NOMBRA, no cuando su nombre
+    contiene la palabra. Con el umbral flojo original, pedir «importe» con un
+    «% del total · Importe» en el modelo generaba TOTALYTD de un porcentaje:
+    DAX válido, resultado sin sentido.
+    """
+    modelo_con_ruido, _ = transformador.agregar_medida(
+        modelo_juguete(), "% del total · Importe",
+        "DIVIDE ( SUM ( Ventas[Importe] ), 1 )", formato="0.0 %")
+    cat2 = catalogo.Catalogo.desde_modelo(modelo_con_ruido)
+
+    assert cat2.buscar_medida("importe") is None
+    r = generador.generar("importe acumulado del año", cat2)
+    assert r["ok"]
+    assert "% del total" not in r["dax"], r["dax"]
+    assert "SUM ( Ventas[Importe] )" in r["dax"]
+
+    # Pero nombrarla completa sí la reutiliza, y los separadores no importan.
+    for alias in ("% del total · Importe", "% del total - importe",
+                  "del total importe"):
+        encontrada = cat2.buscar_medida(alias)
+        assert encontrada and encontrada["nombre"] == "% del total · Importe", alias
+
+    # Un nombre que solo comparte el prefijo NO alcanza: con «Importe YTD» en
+    # el modelo, pedir «importe» tiene que seguir yendo a la columna.
+    modelo_ytd, _ = transformador.agregar_medida(
+        modelo_juguete(), "Importe YTD",
+        "TOTALYTD ( SUM ( Ventas[Importe] ), Calendario[Fecha] )")
+    cat3 = catalogo.Catalogo.desde_modelo(modelo_ytd)
+    assert cat3.buscar_medida("importe") is None
+    r3 = generador.generar("importe vs año anterior", cat3)
+    assert r3["ok"] and "[Importe YTD]" not in r3["dax"], r3["dax"]
+
+
+def test_medida_de_conteo_se_llama_por_lo_que_cuenta(cat):
+    """Contar Ventas[IdCliente] es contar clientes, no «IdCliente»."""
+    r = generador.generar("clientes distintos", cat)
+    assert r["ok"]
+    assert r["nombre"] == "Clientes distintos", r["nombre"]
+    assert "DISTINCTCOUNT ( Ventas[IdCliente] )" in r["dax"]
 
 
 # ==========================================================================
