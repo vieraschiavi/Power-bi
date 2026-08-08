@@ -1,4 +1,10 @@
 # Adium Pharma · Excelencia Comercial Corporativo
+
+> **Nuevo — [`daxlingo/`](daxlingo/README.md): MV DAX Lab**, plataforma de
+> DAX/Power BI/Fabric construida sobre la maquinaria de este repo: carga
+> `.pbit`/PBIP/`.bim`, analiza el modelo, genera y explica DAX en español,
+> Academia gamificada, overlay de pantalla (F9), servidores MCP y export a
+> `.pbit`/PBIP/Fabric con tablero. Ver su README para correrla.
 ### Tres tableros de Power BI sobre un modelo semántico único, con ML y un motor de recomendación explicable
 
 Proyecto end-to-end que va del dato crudo a la decisión comercial: simula los
