@@ -1,6 +1,12 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+
+  "//": "Este repo es mayormente Python (el proyecto Adium, con requirements.txt en la raíz), pero lo que se publica es la landing estática de daxlingo/web más las funciones Node de /api. Sin decirlo explícito, Vercel autodetecta Python y falla con «No python entrypoint found». De ahí framework:null y los comandos vacíos: no hay nada que instalar ni que compilar.",
+  "framework": null,
+  "installCommand": "echo 'sin dependencias: la landing es HTML/CSS/JS vanilla'",
+  "buildCommand": "echo 'sitio estatico: nada que compilar'",
   "outputDirectory": "daxlingo/web",
+
   "cleanUrls": true,
   "trailingSlash": false,
   "headers": [

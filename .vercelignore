@@ -1,0 +1,34 @@
+# Lo que Vercel NO necesita para publicar la landing. Achica el build y, sobre
+# todo, saca del camino los archivos que hacen que autodetecte otro runtime.
+#
+# Ojo: NO excluir daxlingo/web (es lo que se publica) ni api/ (las funciones).
+
+# El proyecto Power BI original: nada de esto viaja a la web.
+powerbi/
+data/
+sql/
+src/
+docs/
+construir_tableros.bat
+requirements.txt
+
+# El producto de escritorio y el motor: se distribuyen por el instalador y el
+# repo, no por la web.
+daxlingo/desktop/
+daxlingo/dxl/
+daxlingo/app/
+daxlingo/mcp/
+daxlingo/overlay/
+daxlingo/media/
+daxlingo/tests/
+daxlingo/datos/
+daxlingo/.streamlit/
+daxlingo/requirements.txt
+daxlingo/run.sh
+
+# Los tests de las funciones de pago no son endpoints.
+daxlingo/api/*.test.js
+
+**/__pycache__/
+**/node_modules/
+**/.pytest_cache/
