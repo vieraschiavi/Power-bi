@@ -25,9 +25,13 @@ from .catalogo import Catalogo, _norm, validar_referencias
 from .proveedores_ia import PROVEEDOR_DEFECTO, consultar, hay_clave
 
 
+def _tabla_ref(tabla: str) -> str:
+    """En DAX solo hacen falta comillas si el nombre no es un identificador."""
+    return f"'{tabla}'" if re.search(r"[^A-Za-z0-9_]", tabla) else tabla
+
+
 def _col_ref(tabla: str, columna: str) -> str:
-    quote = "'" if re.search(r"[^A-Za-z0-9_]", tabla) else ""
-    return f"{quote}{tabla}{quote}[{columna}]"
+    return f"{_tabla_ref(tabla)}[{columna}]"
 
 
 def _limpiar_pedido(pedido: str) -> str:
@@ -189,21 +193,38 @@ def _regla_extremos(texto: str, cat: Catalogo) -> dict | None:
 
 
 def _regla_conteo_distinto(texto: str, cat: Catalogo) -> dict | None:
-    m = re.search(r"(?:(?:conteo|cantidad|numero|cuantos|cuantas)\s+)?"
-                  r"(?:distintos?|unicos?|diferentes)\s*(.*)", texto)
-    m2 = re.search(r"(?:conteo|cantidad|numero|cuantos|cuantas)\s+(.*?)\s*"
-                   r"(?:distintos?|unicos?|diferentes)", texto)
-    if not m and not m2:
+    if not re.search(r"\b(distintos?|unicos?|diferentes)\b", texto):
         return None
-    objetivo = (m2.group(1) if m2 else m.group(1)) or texto
-    col = cat.buscar_columna(objetivo)
+    # El sustantivo puede ir antes o después de la palabra clave —«clientes
+    # distintos» y «distintos clientes» son el mismo pedido—, así que en vez
+    # de adivinar la posición se saca el ruido y queda el objetivo.
+    objetivo = _sin(texto, "distintos", "distintas", "distinto", "distinta",
+                    "unicos", "unicas", "unico", "unica", "diferentes",
+                    "diferente", "conteo", "cantidad", "numero", "cuantos",
+                    "cuantas", "valores")
+    col = cat.buscar_columna(objetivo or texto)
     if not col:
         return _error(f"No encontré la columna a contar en «{texto}».")
     tabla, c = col
-    return _exito(f"{_titulo(c['nombre'])} distintos",
+    return _exito(f"{_nombre_de_entidad(cat, tabla, c['nombre'])} distintos",
                   f"DISTINCTCOUNT ( {_col_ref(tabla, c['nombre'])} )", "#,0",
                   f"Cuenta los valores únicos de {tabla}[{c['nombre']}] en el "
                   "contexto del visual — el mismo cliente diez veces cuenta 1.")
+
+
+def _nombre_de_entidad(cat: Catalogo, tabla: str, columna: str) -> str:
+    """
+    Nombre legible para una medida sobre una columna clave. Contar
+    Ventas[IdCliente] es contar CLIENTES: la medida tiene que llamarse por lo
+    que cuenta, no por la columna técnica. Si la columna apunta a otra tabla,
+    se usa el nombre de esa tabla; si no, se le saca el prefijo «Id».
+    """
+    for r in cat.relaciones:
+        if (_norm(r["desde_tabla"]), _norm(r["desde_col"])) == (_norm(tabla),
+                                                                _norm(columna)):
+            return _titulo(r["hacia_tabla"])
+    limpio = re.sub(r"^id[_ ]?", "", columna, flags=re.IGNORECASE).strip()
+    return _titulo(limpio or columna)
 
 
 def _regla_conteo(texto: str, cat: Catalogo) -> dict | None:
@@ -247,8 +268,8 @@ def _regla_pct_total(texto: str, cat: Catalogo) -> dict | None:
                 c["nombre"])
     nombre_base, dax_base, _ = base
     refs = re.findall(r"'?([\w ]+?)'?\[", dax_base)
-    quitar = f"ALLSELECTED ( '{refs[0].strip()}' )" if refs \
-        else "ALLSELECTED ()"
+    quitar = (f"ALLSELECTED ( {_tabla_ref(refs[0].strip())} )" if refs
+              else "ALLSELECTED ()")
     dax = (f"DIVIDE (\n    {dax_base},\n"
            f"    CALCULATE ( {dax_base}, {quitar} )\n)")
     return _exito(

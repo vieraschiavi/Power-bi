@@ -33,8 +33,19 @@
       if (valor !== undefined) nodo.setAttribute("alt", valor);
     });
 
-    // Las capturas están tomadas del programa en cada idioma.
+    // Las capturas están tomadas del programa en cada idioma. Si alguna no
+    // está —un deploy sin los binarios, un asset que no subió— se esconde su
+    // tarjeta entera: una galería con un ícono roto se ve peor que una
+    // galería con una tarjeta menos.
     document.querySelectorAll("[data-shot]").forEach(function (img) {
+      img.onerror = function () {
+        const tarjeta = img.closest(".shot");
+        if (tarjeta) tarjeta.hidden = true;
+      };
+      img.onload = function () {
+        const tarjeta = img.closest(".shot");
+        if (tarjeta) tarjeta.hidden = false;
+      };
       img.src = "assets/img/" + idioma + "/" + img.getAttribute("data-shot") + ".png";
     });
 
@@ -44,6 +55,11 @@
       const nueva = "assets/video/demo-" + idioma + ".mp4";
       if (fuente && !fuente.src.endsWith(nueva)) {
         fuente.src = nueva;
+        // Mismo criterio que con las capturas: si el video no está, se
+        // esconde la sección en vez de dejar un reproductor negro y muerto.
+        const seccion = document.getElementById("video");
+        video.onerror = function () { if (seccion) seccion.hidden = true; };
+        video.onloadeddata = function () { if (seccion) seccion.hidden = false; };
         video.load();
       }
     }

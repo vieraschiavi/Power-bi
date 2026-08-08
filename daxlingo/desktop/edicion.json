@@ -1,6 +1,7 @@
 {
-  "_comentario": "Edición horneada en el paquete. Este archivo del repo es el de DESARROLLO: demo sin bloquear, para poder probar las tres ediciones con MVDAX_EDICION. Los instaladores que se venden lo sobrescriben con `bloqueada: true` — lo hace scripts/build-instaladores.js.",
+  "_comentario": "Edición horneada en el paquete. Este archivo del repo es el de DESARROLLO: demo sin bloquear, para poder probar las tres ediciones con MVDAX_EDICION. Los instaladores que se venden lo sobrescriben con `bloqueada: true` — lo hace scripts/build-instaladores.js. El campo `sitio` es el dominio público: cambialo al que te dé Vercel.",
   "edicion": "demo",
   "bloqueada": false,
-  "secreto": ""
+  "secreto": "",
+  "sitio": "https://mvdaxlab.vercel.app"
 }

@@ -106,16 +106,36 @@ pregunta antes de borrar tus datos (licencia y preferencias sobreviven a una
 reinstalación). El runtime de Python va embebido: el cliente **no instala
 Python** — ver `desktop/runtime/LEEME.md`.
 
+## Precio: uno solo, dos formas de pagarlo
+
+No hay versiones recortadas — las dos modalidades desbloquean exactamente lo
+mismo:
+
+| Modalidad | Precio | Licencia |
+|---|---|---|
+| Prueba | 7 días gratis | Todo desbloqueado, sin tarjeta |
+| Mensual | **USD 10 / mes** | Clave de 32 días que se renueva sola mientras la suscripción siga autorizada |
+| Pago único | **USD 99** | Perpetua, sin vencimiento |
+
+La mensual usa **suscripción** de MercadoPago (`preapproval`), no un pago
+suelto: el corte es el vencimiento de la clave. Si el cliente da de baja o el
+cobro falla, deja de renovarse y caduca sola — el programa no necesita llamar
+a casa ni nosotros guardar nada. Son 32 días y no 30 a propósito: un cobro que
+se acredita un día tarde no puede dejar afuera a alguien que pagó.
+
 ## Web y pagos
 
 `web/` es la landing trilingüe (HTML/CSS/JS vanilla, sin build) con las
 **capturas reales** de las 14 pestañas en los 3 idiomas y el **video demo** por
 idioma. `api/` son las funciones serverless de MercadoPago:
 
-- `checkout.js` — crea la preferencia (token solo en el servidor; conversión a
-  UYU porque un collector uruguayo rechaza preferencias en USD).
-- `verificar-pago.js` — consulta el pago **contra la API real** y solo entonces
-  firma la licencia.
+- `checkout.js` — bifurca según la modalidad: `/checkout/preferences` para el
+  pago único y `/preapproval` para la suscripción (token solo en el servidor;
+  conversión a UYU porque un collector uruguayo rechaza preferencias en USD).
+- `verificar-pago.js` — consulta el pago único **contra la API real** y solo
+  entonces firma la licencia.
+- `verificar-suscripcion.js` — consulta el estado de la suscripción y emite
+  (o renueva) la clave mensual con vencimiento.
 - `_licencia.js` — firma HMAC-SHA256, **mismo formato** que `dxl/licencia.py`
   (hay un test que compara las dos implementaciones byte a byte).
 

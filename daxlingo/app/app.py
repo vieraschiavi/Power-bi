@@ -22,7 +22,7 @@ import streamlit as st
 RAIZ = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(RAIZ))
 
-from dxl import LEMA, MARCA, __version__  # noqa: E402
+from dxl import LEMA, MARCA, __version__, sitio  # noqa: E402
 from dxl import analizador, asistente, catalogo, ejercicios  # noqa: E402
 from dxl import explicador, fabric, generador, herramientas, ia  # noqa: E402
 from dxl import licencia as lic  # noqa: E402
@@ -790,9 +790,20 @@ with tab_lic:
                     f"{_('lic_demo_vencida')}</div>", unsafe_allow_html=True)
     else:
         email = ESTADO_LIC.payload.get("email") or "—"
+        es_mensual = ESTADO_LIC.payload.get("plan") == "mensual"
         st.markdown(f"<div class='dxl-caja dxl-ok'>✅ "
                     f"{_('lic_activa')} · {email}</div>",
                     unsafe_allow_html=True)
+        st.caption(_("lic_mensual") if es_mensual else _("lic_perpetua"))
+        if es_mensual:
+            # El enlace lleva el id de la suscripción, así que renovar es
+            # abrirlo y copiar: no hay que buscar el correo de la compra.
+            sub = ESTADO_LIC.payload.get("sub", "")
+            url = sitio("/descarga.html") + (
+                f"?preapproval_id={sub}" if sub else "")
+            if (ESTADO_LIC.dias_restantes or 99) <= 7:
+                st.warning(_("lic_por_vencer"))
+            st.link_button(f"🔄 {_('lic_renovar')}", url)
 
     clave = st.text_input(_("lic_pegar"), type="password")
     col_a, col_b = st.columns(2)
@@ -803,8 +814,7 @@ with tab_lic:
             st.rerun()
         except ValueError:
             st.error(_("lic_invalida"))
-    col_b.link_button(f"🛒 {_('lic_comprar')}",
-                      "https://mvdaxlab.vercel.app/#precios")
+    col_b.link_button(f"🛒 {_('lic_comprar')}", sitio("/#precios"))
 
 
 # ==========================================================================

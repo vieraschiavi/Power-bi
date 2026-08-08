@@ -1,6 +1,10 @@
-// Verifica un pago de MercadoPago contra la API real (server-side) y recién
-// entonces emite la licencia firmada. Es lo que impide armar la URL de
+// Verifica un pago único de MercadoPago contra la API real (server-side) y
+// recién entonces emite la licencia firmada. Es lo que impide armar la URL de
 // /descarga.html a mano sin haber pagado.
+//
+// La suscripción mensual NO pasa por acá: tiene su propio endpoint
+// (`verificar-suscripcion.js`), porque lo que hay que consultar es el estado
+// de la autorización recurrente, no un pago suelto.
 //
 // La licencia se emite acá y NO en el navegador: el secreto de firma
 // (MVDAX_LICENSE_SECRET) nunca sale del servidor.

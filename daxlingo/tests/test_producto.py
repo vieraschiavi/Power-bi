@@ -362,6 +362,89 @@ def test_los_planes_de_la_web_coinciden_con_los_del_checkout():
     assert planes_web, "La landing no tiene ningún botón de compra"
 
 
+def test_un_solo_precio_dos_modalidades():
+    """
+    Un solo producto: las dos formas de pago desbloquean lo mismo. Si alguna
+    vez alguien recorta una para empujar a la otra, este test lo frena.
+    """
+    planes = (RAIZ / "api" / "_planes.js").read_text(encoding="utf-8")
+    claves = set(re.findall(r"^  (\w+): \{", planes, re.MULTILINE))
+    assert claves == {"perpetua", "mensual"}
+    assert re.search(r"perpetua:.*?usd: 99", planes, re.DOTALL)
+    assert re.search(r"mensual:.*?usd: 10", planes, re.DOTALL)
+    # Mismos equipos en las dos: ninguna es una versión recortada.
+    equipos = re.findall(r"equipos: (\d+)", planes)
+    assert len(set(equipos)) == 1, f"Las modalidades difieren en equipos: {equipos}"
+
+
+def test_la_licencia_mensual_vence_y_la_perpetua_no():
+    """
+    El corte de la suscripción es el vencimiento de la clave. Si una mensual
+    saliera sin `exp`, un mes pagado valdría para siempre.
+    """
+    perpetua = licencia.firmar({"plan": "perpetua", "equipos": 1}, SECRETO)
+    assert licencia.verificar(perpetua, SECRETO) is not None
+
+    ahora = time.time()
+    vigente = licencia.firmar(
+        {"plan": "mensual", "equipos": 1, "sub": "abc",
+         "exp": ahora + 32 * 86400}, SECRETO)
+    assert licencia.verificar(vigente, SECRETO)["plan"] == "mensual"
+
+    vencida = licencia.firmar(
+        {"plan": "mensual", "equipos": 1, "sub": "abc",
+         "exp": ahora - 86400}, SECRETO)
+    assert licencia.verificar(vencida, SECRETO) is None
+
+
+def test_estado_de_una_suscripcion_vencida(datos):
+    """Vencida la mensual, el programa vuelve al estado de demo agotada."""
+    licencia.guardar_estado({
+        "demo_inicio": time.time() - 60 * 86400,
+        "licencia": licencia.firmar(
+            {"plan": "mensual", "exp": time.time() - 86400}, SECRETO),
+    })
+    estado = licencia.evaluar()
+    assert not estado.activa
+    assert estado.motivo == "vencida"
+    # Y lo de lectura sigue abierto, como con la demo.
+    assert estado.permite("analizar") and estado.permite("academia")
+
+
+def test_el_dominio_no_esta_clavado_en_el_codigo():
+    """
+    El sitio público sale de un solo lugar configurable (`dxl.SITIO` /
+    `edicion.json`). Estuvo repetido en seis archivos apuntando a un dominio
+    que ni siquiera existía todavía: cuando el deploy real tenga otro nombre,
+    los botones de compra y de renovación tienen que seguirlo solos.
+    """
+    import dxl
+
+    permitidos = {
+        # El único default, y su espejo en Electron y en la config del build.
+        RAIZ / "dxl" / "__init__.py",
+        RAIZ / "desktop" / "main.cjs",
+        RAIZ / "desktop" / "edicion.json",
+        RAIZ / "web" / "descarga.html",   # texto de ayuda, no un enlace vivo
+    }
+    sospechosos = []
+    for archivo in RAIZ.rglob("*"):
+        if archivo.suffix not in (".py", ".js", ".jsx", ".cjs", ".html"):
+            continue
+        # Los tests usan hosts de mentira como dato de entrada: eso no es un
+        # dominio clavado en el producto.
+        if archivo in permitidos or "node_modules" in archivo.parts \
+                or "dist" in archivo.parts or "tests" in archivo.parts \
+                or archivo.name.endswith(".test.js"):
+            continue
+        if "vercel.app" in archivo.read_text(encoding="utf-8", errors="ignore"):
+            sospechosos.append(str(archivo.relative_to(RAIZ)))
+    assert not sospechosos, f"Dominio clavado en: {sospechosos}"
+
+    assert dxl.sitio("/#precios").endswith("/#precios")
+    assert "://" not in dxl.dominio()
+
+
 def test_la_web_no_filtra_secretos():
     """Ni tokens de MercadoPago ni claves de IA en lo que se sirve al público."""
     sospechosos = re.compile(

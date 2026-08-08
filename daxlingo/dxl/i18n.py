@@ -528,6 +528,29 @@ T: dict[str, dict[str, str]] = {
     },
     "lic_comprar": {"es": "Comprar una licencia", "en": "Buy a license",
                     "pt": "Comprar uma licença"},
+    "lic_perpetua": {
+        "es": "Licencia perpetua: no vence.",
+        "en": "Perpetual license: it does not expire.",
+        "pt": "Licença perpétua: não vence.",
+    },
+    "lic_mensual": {
+        "es": "Suscripción mensual. La clave vale 32 días y se renueva sola "
+              "mientras la suscripción siga activa: cuando falten pocos días, "
+              "entrá al enlace de renovación y pegá la clave nueva.",
+        "en": "Monthly subscription. The key lasts 32 days and renews itself "
+              "while the subscription stays active: when it is close to "
+              "expiring, open the renewal link and paste the new key.",
+        "pt": "Assinatura mensal. A chave vale 32 dias e se renova sozinha "
+              "enquanto a assinatura seguir ativa: quando faltarem poucos "
+              "dias, abra o link de renovação e cole a chave nova.",
+    },
+    "lic_renovar": {"es": "Renovar la clave", "en": "Renew the key",
+                    "pt": "Renovar a chave"},
+    "lic_por_vencer": {
+        "es": "Tu clave vence pronto. Renovala para no quedarte afuera.",
+        "en": "Your key expires soon. Renew it so you are not locked out.",
+        "pt": "Sua chave vence em breve. Renove para não ficar de fora.",
+    },
     "lic_demo_activa": {
         "es": "Estás en la prueba gratuita de 7 días, con todo desbloqueado.",
         "en": "You are on the free 7-day trial, with everything unlocked.",

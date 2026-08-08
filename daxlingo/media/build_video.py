@@ -28,6 +28,7 @@ from PIL import Image, ImageDraw, ImageFont
 RAIZ = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(RAIZ))
 
+from dxl import dominio  # noqa: E402
 from dxl.i18n import IDIOMAS  # noqa: E402
 
 ANCHO, ALTO = 1920, 1080
@@ -68,7 +69,7 @@ VIDEO: dict[str, dict[str, tuple[str, str]]] = {
         "_intro": ("MV DAX Lab",
                    "Tu modelo de Power BI, explicado, corregido y exportado"),
         "_cierre": ("Probalo con tu modelo",
-                    "7 días gratis · mvdaxlab.vercel.app"),
+                    "7 días gratis · {sitio}"),
         "modelo": ("Cargá tu modelo",
                    ".pbit, PBIP, model.bim o .pbix — tablas, columnas y el DAX de cada medida"),
         "relaciones": ("Mirá el modelo entero",
@@ -102,7 +103,7 @@ VIDEO: dict[str, dict[str, tuple[str, str]]] = {
         "_intro": ("MV DAX Lab",
                    "Your Power BI model: explained, fixed and exported"),
         "_cierre": ("Try it on your model",
-                    "7 days free · mvdaxlab.vercel.app"),
+                    "7 days free · {sitio}"),
         "modelo": ("Load your model",
                    ".pbit, PBIP, model.bim or .pbix — tables, columns and each measure's DAX"),
         "relaciones": ("See the whole model",
@@ -136,7 +137,7 @@ VIDEO: dict[str, dict[str, tuple[str, str]]] = {
         "_intro": ("MV DAX Lab",
                    "Seu modelo de Power BI, explicado, corrigido e exportado"),
         "_cierre": ("Teste com seu modelo",
-                    "7 dias grátis · mvdaxlab.vercel.app"),
+                    "7 dias grátis · {sitio}"),
         "modelo": ("Carregue seu modelo",
                    ".pbit, PBIP, model.bim ou .pbix — tabelas, colunas e o DAX de cada medida"),
         "relaciones": ("Veja o modelo inteiro",
@@ -280,6 +281,10 @@ def construir(idioma: str) -> Path:
             f"No hay capturas en {carpeta}. Corré primero: "
             f"python daxlingo/media/capturar.py --idioma {idioma}")
 
+    # El cierre lleva el dominio real, que se resuelve al render: si el
+    # sitio cambia, se regenera el video y listo.
+    cierre = tuple(t.replace("{sitio}", dominio())
+                   for t in textos["_cierre"])
     cuadros: list[tuple[Image.Image, float]] = [
         (cuadro_titulo(*textos["_intro"]), SEG_INTRO)]
     presentes = [(slug, clave) for slug, clave in GUION
@@ -289,7 +294,7 @@ def construir(idioma: str) -> Path:
         cuadros.append((cuadro_pestana(carpeta / f"{slug}.png", titulo,
                                        bajada, i, len(presentes)),
                         SEG_POR_PESTANA))
-    cuadros.append((cuadro_titulo(*textos["_cierre"]), SEG_CIERRE))
+    cuadros.append((cuadro_titulo(*cierre), SEG_CIERRE))
 
     destino = RAIZ / "web" / "assets" / "video" / f"demo-{idioma}.mp4"
     escribir_video(cuadros, destino)

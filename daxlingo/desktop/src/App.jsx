@@ -45,10 +45,12 @@ const PASOS = [
 export default function App() {
   const [estado, setEstado] = useState({ fase: "arrancando", detalle: "" });
   const [paso, setPaso] = useState(0);
+  const [sitio, setSitio] = useState("");
 
   useEffect(() => {
     if (!window.mvdax) return;
     window.mvdax.estadoActual().then(setEstado);
+    window.mvdax.sitio().then(setSitio);
     return window.mvdax.alCambiarEstado(setEstado);
   }, []);
 
@@ -114,14 +116,14 @@ export default function App() {
       )}
 
       <footer>
-        <button
-          className="enlace"
-          onClick={() =>
-            window.mvdax && window.mvdax.abrirExterno("https://mvdaxlab.vercel.app")
-          }
-        >
-          mvdaxlab.vercel.app
-        </button>
+        {sitio && (
+          <button
+            className="enlace"
+            onClick={() => window.mvdax && window.mvdax.abrirExterno(sitio)}
+          >
+            {sitio.replace(/^https?:\/\//, "")}
+          </button>
+        )}
       </footer>
     </div>
   );
