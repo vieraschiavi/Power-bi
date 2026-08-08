@@ -1,0 +1,17 @@
+# Tema de MV DAX Lab — navy + ámbar, el mismo de la landing y del instalador.
+# Sin esto, el marco de Streamlit sale claro y choca con la app.
+[theme]
+base = "dark"
+primaryColor = "#f2b441"
+backgroundColor = "#081527"
+secondaryBackgroundColor = "#0c2137"
+textColor = "#eaf1fb"
+
+[browser]
+gatherUsageStats = false
+
+[client]
+toolbarMode = "minimal"
+
+[server]
+headless = true

@@ -1,0 +1,4604 @@
+{
+  "name": "Adium_VAR",
+  "compatibilityLevel": 1567,
+  "model": {
+    "culture": "es-ES",
+    "dataAccessOptions": {
+      "legacyRedirects": true,
+      "returnErrorValuesAsNull": true
+    },
+    "defaultPowerBIDataSourceVersion": "powerBI_V3",
+    "sourceQueryCulture": "es-ES",
+    "expressions": [
+      {
+        "name": "OrigenDatos",
+        "kind": "m",
+        "description": "De dónde lee el modelo. 'Parquet' usa los archivos locales que genera el pipeline; 'SQL Server' se conecta a las vistas star.v_* del data warehouse. Las 117 medidas funcionan igual con los dos.",
+        "expression": [
+          "\"Parquet\"",
+          "    meta [IsParameterQuery=true, Type=\"Text\", IsParameterQueryRequired=true, AllowedValues = {\"Parquet\", \"SQL Server\"}]"
+        ],
+        "annotations": [
+          {
+            "name": "PBI_ResultType",
+            "value": "Text"
+          }
+        ]
+      },
+      {
+        "name": "RutaDatos",
+        "kind": "m",
+        "description": "Solo para OrigenDatos = 'Parquet'. Carpeta con los .parquet del modelo estrella (la que genera `python src/run_all.py`). Ruta absoluta, sin barra final.",
+        "expression": [
+          "\"C:\\Adium\\data\\star\"",
+          "    meta [IsParameterQuery=true, Type=\"Text\", IsParameterQueryRequired=true]"
+        ],
+        "annotations": [
+          {
+            "name": "PBI_ResultType",
+            "value": "Text"
+          }
+        ]
+      },
+      {
+        "name": "ServidorSQL",
+        "kind": "m",
+        "description": "Solo para OrigenDatos = 'SQL Server'. Instancia donde se desplegaron los scripts de sql/.",
+        "expression": [
+          "\"localhost\"",
+          "    meta [IsParameterQuery=true, Type=\"Text\", IsParameterQueryRequired=true]"
+        ],
+        "annotations": [
+          {
+            "name": "PBI_ResultType",
+            "value": "Text"
+          }
+        ]
+      },
+      {
+        "name": "BaseSQL",
+        "kind": "m",
+        "description": "Solo para OrigenDatos = 'SQL Server'. Base de datos que contiene el esquema star.",
+        "expression": [
+          "\"AdiumBI\"",
+          "    meta [IsParameterQuery=true, Type=\"Text\", IsParameterQueryRequired=true]"
+        ],
+        "annotations": [
+          {
+            "name": "PBI_ResultType",
+            "value": "Text"
+          }
+        ]
+      }
+    ],
+    "tables": [
+      {
+        "name": "v_dim_calendario",
+        "columns": [
+          {
+            "name": "Fecha",
+            "dataType": "dateTime",
+            "sourceColumn": "Fecha",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "formatString": "yyyy-mm-dd",
+            "isKey": true
+          },
+          {
+            "name": "Año",
+            "dataType": "int64",
+            "sourceColumn": "Año",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "Mes N°",
+            "dataType": "int64",
+            "sourceColumn": "Mes N°",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Mes",
+            "dataType": "string",
+            "sourceColumn": "Mes",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "sortByColumn": "Mes N°"
+          },
+          {
+            "name": "Año-Mes",
+            "dataType": "string",
+            "sourceColumn": "Año-Mes",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "sortByColumn": "Año-Mes orden"
+          },
+          {
+            "name": "Año-Mes orden",
+            "dataType": "int64",
+            "sourceColumn": "Año-Mes orden",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Trimestre",
+            "dataType": "string",
+            "sourceColumn": "Trimestre",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "Año-Trimestre",
+            "dataType": "string",
+            "sourceColumn": "Año-Trimestre",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "Es día hábil",
+            "dataType": "int64",
+            "sourceColumn": "Es día hábil",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "Es pasado",
+            "dataType": "int64",
+            "sourceColumn": "Es pasado",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Temporada respiratoria",
+            "dataType": "int64",
+            "sourceColumn": "Temporada respiratoria",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          }
+        ],
+        "partitions": [
+          {
+            "name": "v_dim_calendario",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    FuenteSQL = () => Sql.Database(ServidorSQL, BaseSQL){[Schema=\"star\", Item=\"v_dim_calendario\"]}[Data],",
+                "    FuenteParquet = () =>",
+                "        let",
+                "            Crudo = Parquet.Document(File.Contents(RutaDatos & \"\\dim_calendario.parquet\")),",
+                "            Renombrado = Table.RenameColumns(Crudo, {{\"fecha\", \"Fecha\"}, {\"anio\", \"Año\"}, {\"mes_nro\", \"Mes N°\"}, {\"mes_nombre\", \"Mes\"}, {\"anio_mes\", \"Año-Mes\"}, {\"anio_mes_orden\", \"Año-Mes orden\"}, {\"trimestre\", \"Trimestre\"}, {\"anio_trimestre\", \"Año-Trimestre\"}, {\"es_habil\", \"Es día hábil\"}, {\"es_pasado\", \"Es pasado\"}, {\"temporada_respiratoria\", \"Temporada respiratoria\"}})",
+                "        in",
+                "            Renombrado,",
+                "    Origen = if OrigenDatos = \"SQL Server\" then FuenteSQL() else FuenteParquet(),",
+                "    Seleccionado = Table.SelectColumns(Origen, {\"Fecha\", \"Año\", \"Mes N°\", \"Mes\", \"Año-Mes\", \"Año-Mes orden\", \"Trimestre\", \"Año-Trimestre\", \"Es día hábil\", \"Es pasado\", \"Temporada respiratoria\"}),",
+                "    Tipado = Table.TransformColumnTypes(Seleccionado, {{\"Fecha\", type datetime}, {\"Año\", Int64.Type}, {\"Mes N°\", Int64.Type}, {\"Mes\", type text}, {\"Año-Mes\", type text}, {\"Año-Mes orden\", Int64.Type}, {\"Trimestre\", type text}, {\"Año-Trimestre\", type text}, {\"Es día hábil\", Int64.Type}, {\"Es pasado\", Int64.Type}, {\"Temporada respiratoria\", Int64.Type}})",
+                "in",
+                "    Tipado"
+              ]
+            }
+          }
+        ],
+        "dataCategory": "Time",
+        "hierarchies": [
+          {
+            "name": "Calendario",
+            "levels": [
+              {
+                "name": "Año",
+                "ordinal": 0,
+                "column": "Año"
+              },
+              {
+                "name": "Trimestre",
+                "ordinal": 1,
+                "column": "Trimestre"
+              },
+              {
+                "name": "Mes",
+                "ordinal": 2,
+                "column": "Mes"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "v_dim_producto",
+        "columns": [
+          {
+            "name": "Id producto",
+            "dataType": "int64",
+            "sourceColumn": "Id producto",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "SKU",
+            "dataType": "string",
+            "sourceColumn": "SKU",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "Marca",
+            "dataType": "string",
+            "sourceColumn": "Marca",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "ATC1",
+            "dataType": "string",
+            "sourceColumn": "ATC1",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "Clase terapéutica",
+            "dataType": "string",
+            "sourceColumn": "Clase terapéutica",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "ATC3",
+            "dataType": "string",
+            "sourceColumn": "ATC3",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "Forma farmacéutica",
+            "dataType": "string",
+            "sourceColumn": "Forma farmacéutica",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "Presentación",
+            "dataType": "string",
+            "sourceColumn": "Presentación",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "Tipo de venta",
+            "dataType": "string",
+            "sourceColumn": "Tipo de venta",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "Ciclo de vida",
+            "dataType": "string",
+            "sourceColumn": "Ciclo de vida",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "Vida útil (meses)",
+            "dataType": "int64",
+            "sourceColumn": "Vida útil (meses)",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "Precio de lista USD",
+            "dataType": "double",
+            "sourceColumn": "Precio de lista USD",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "Costo estándar USD",
+            "dataType": "double",
+            "sourceColumn": "Costo estándar USD",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "Margen estándar %",
+            "dataType": "double",
+            "sourceColumn": "Margen estándar %",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "Condición de conservación",
+            "dataType": "string",
+            "sourceColumn": "Condición de conservación",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "Origen del costo",
+            "dataType": "string",
+            "sourceColumn": "Origen del costo",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          }
+        ],
+        "partitions": [
+          {
+            "name": "v_dim_producto",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    FuenteSQL = () => Sql.Database(ServidorSQL, BaseSQL){[Schema=\"star\", Item=\"v_dim_producto\"]}[Data],",
+                "    FuenteParquet = () =>",
+                "        let",
+                "            Crudo = Parquet.Document(File.Contents(RutaDatos & \"\\dim_producto.parquet\")),",
+                "            Derivada0 = Table.AddColumn(Crudo, \"Condición de conservación\", each if [cadena_frio] then \"Cadena de frío\" else \"Temperatura ambiente\", type text),",
+                "            Derivada1 = Table.AddColumn(Derivada0, \"Origen del costo\", each if [costo_imputado] = 1 then \"Costo imputado\" else \"Costo real\", type text),",
+                "            Renombrado = Table.RenameColumns(Derivada1, {{\"id_producto\", \"Id producto\"}, {\"sku\", \"SKU\"}, {\"marca\", \"Marca\"}, {\"atc1\", \"ATC1\"}, {\"atc1_desc\", \"Clase terapéutica\"}, {\"atc3\", \"ATC3\"}, {\"forma_farmaceutica\", \"Forma farmacéutica\"}, {\"presentacion\", \"Presentación\"}, {\"tipo_venta\", \"Tipo de venta\"}, {\"ciclo_vida\", \"Ciclo de vida\"}, {\"vida_util_meses\", \"Vida útil (meses)\"}, {\"precio_lista_usd\", \"Precio de lista USD\"}, {\"costo_std_usd\", \"Costo estándar USD\"}, {\"margen_std_pct\", \"Margen estándar %\"}})",
+                "        in",
+                "            Renombrado,",
+                "    Origen = if OrigenDatos = \"SQL Server\" then FuenteSQL() else FuenteParquet(),",
+                "    Seleccionado = Table.SelectColumns(Origen, {\"Id producto\", \"SKU\", \"Marca\", \"ATC1\", \"Clase terapéutica\", \"ATC3\", \"Forma farmacéutica\", \"Presentación\", \"Tipo de venta\", \"Ciclo de vida\", \"Vida útil (meses)\", \"Precio de lista USD\", \"Costo estándar USD\", \"Margen estándar %\", \"Condición de conservación\", \"Origen del costo\"}),",
+                "    Tipado = Table.TransformColumnTypes(Seleccionado, {{\"Id producto\", Int64.Type}, {\"SKU\", type text}, {\"Marca\", type text}, {\"ATC1\", type text}, {\"Clase terapéutica\", type text}, {\"ATC3\", type text}, {\"Forma farmacéutica\", type text}, {\"Presentación\", type text}, {\"Tipo de venta\", type text}, {\"Ciclo de vida\", type text}, {\"Vida útil (meses)\", Int64.Type}, {\"Precio de lista USD\", type number}, {\"Costo estándar USD\", type number}, {\"Margen estándar %\", type number}, {\"Condición de conservación\", type text}, {\"Origen del costo\", type text}})",
+                "in",
+                "    Tipado"
+              ]
+            }
+          }
+        ],
+        "hierarchies": [
+          {
+            "name": "Producto",
+            "levels": [
+              {
+                "name": "Clase terapéutica",
+                "ordinal": 0,
+                "column": "Clase terapéutica"
+              },
+              {
+                "name": "ATC3",
+                "ordinal": 1,
+                "column": "ATC3"
+              },
+              {
+                "name": "Marca",
+                "ordinal": 2,
+                "column": "Marca"
+              },
+              {
+                "name": "SKU",
+                "ordinal": 3,
+                "column": "SKU"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "v_dim_cliente",
+        "columns": [
+          {
+            "name": "Id cliente",
+            "dataType": "int64",
+            "sourceColumn": "Id cliente",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Id filial cliente",
+            "dataType": "int64",
+            "sourceColumn": "Id filial cliente",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Código cliente",
+            "dataType": "string",
+            "sourceColumn": "Código cliente",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "Cliente",
+            "dataType": "string",
+            "sourceColumn": "Cliente",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "Canal",
+            "dataType": "string",
+            "sourceColumn": "Canal",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "Segmento",
+            "dataType": "string",
+            "sourceColumn": "Segmento",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "Antigüedad (meses)",
+            "dataType": "int64",
+            "sourceColumn": "Antigüedad (meses)",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "Representante",
+            "dataType": "string",
+            "sourceColumn": "Representante",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "Supervisor",
+            "dataType": "string",
+            "sourceColumn": "Supervisor",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "Línea de promoción",
+            "dataType": "string",
+            "sourceColumn": "Línea de promoción",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          }
+        ],
+        "partitions": [
+          {
+            "name": "v_dim_cliente",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    FuenteSQL = () => Sql.Database(ServidorSQL, BaseSQL){[Schema=\"star\", Item=\"v_dim_cliente\"]}[Data],",
+                "    FuenteParquet = () =>",
+                "        let",
+                "            Crudo = Parquet.Document(File.Contents(RutaDatos & \"\\dim_cliente.parquet\")),",
+                "            Satelite = Parquet.Document(File.Contents(RutaDatos & \"\\dim_representante.parquet\")),",
+                "            Unido = Table.NestedJoin(Crudo, {\"id_representante\"}, Satelite, {\"id_representante\"}, \"_sat\", JoinKind.LeftOuter),",
+                "            Expandido = Table.ExpandTableColumn(Unido, \"_sat\", {\"nombre_rep\", \"supervisor\", \"linea_promocion\"}, {\"Representante\", \"Supervisor\", \"Línea de promoción\"}),",
+                "            Renombrado = Table.RenameColumns(Expandido, {{\"id_cliente\", \"Id cliente\"}, {\"id_filial\", \"Id filial cliente\"}, {\"cod_cliente\", \"Código cliente\"}, {\"razon_social\", \"Cliente\"}, {\"canal\", \"Canal\"}, {\"segmento\", \"Segmento\"}, {\"antiguedad_meses\", \"Antigüedad (meses)\"}})",
+                "        in",
+                "            Renombrado,",
+                "    Origen = if OrigenDatos = \"SQL Server\" then FuenteSQL() else FuenteParquet(),",
+                "    Seleccionado = Table.SelectColumns(Origen, {\"Id cliente\", \"Id filial cliente\", \"Código cliente\", \"Cliente\", \"Canal\", \"Segmento\", \"Antigüedad (meses)\", \"Representante\", \"Supervisor\", \"Línea de promoción\"}),",
+                "    Tipado = Table.TransformColumnTypes(Seleccionado, {{\"Id cliente\", Int64.Type}, {\"Id filial cliente\", Int64.Type}, {\"Código cliente\", type text}, {\"Cliente\", type text}, {\"Canal\", type text}, {\"Segmento\", type text}, {\"Antigüedad (meses)\", Int64.Type}, {\"Representante\", type text}, {\"Supervisor\", type text}, {\"Línea de promoción\", type text}})",
+                "in",
+                "    Tipado"
+              ]
+            }
+          }
+        ],
+        "hierarchies": [
+          {
+            "name": "Estructura comercial",
+            "levels": [
+              {
+                "name": "Canal",
+                "ordinal": 0,
+                "column": "Canal"
+              },
+              {
+                "name": "Segmento",
+                "ordinal": 1,
+                "column": "Segmento"
+              },
+              {
+                "name": "Cliente",
+                "ordinal": 2,
+                "column": "Cliente"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "v_dim_filial",
+        "columns": [
+          {
+            "name": "Id filial",
+            "dataType": "int64",
+            "sourceColumn": "Id filial",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Filial",
+            "dataType": "string",
+            "sourceColumn": "Filial",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "País",
+            "dataType": "string",
+            "sourceColumn": "País",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "Región",
+            "dataType": "string",
+            "sourceColumn": "Región",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "Moneda local",
+            "dataType": "string",
+            "sourceColumn": "Moneda local",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "SLA entrega (días)",
+            "dataType": "int64",
+            "sourceColumn": "SLA entrega (días)",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          }
+        ],
+        "partitions": [
+          {
+            "name": "v_dim_filial",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    FuenteSQL = () => Sql.Database(ServidorSQL, BaseSQL){[Schema=\"star\", Item=\"v_dim_filial\"]}[Data],",
+                "    FuenteParquet = () =>",
+                "        let",
+                "            Crudo = Parquet.Document(File.Contents(RutaDatos & \"\\dim_filial.parquet\")),",
+                "            Renombrado = Table.RenameColumns(Crudo, {{\"id_filial\", \"Id filial\"}, {\"cod_filial\", \"Filial\"}, {\"pais\", \"País\"}, {\"region\", \"Región\"}, {\"moneda\", \"Moneda local\"}, {\"sla_entrega_dias\", \"SLA entrega (días)\"}})",
+                "        in",
+                "            Renombrado,",
+                "    Origen = if OrigenDatos = \"SQL Server\" then FuenteSQL() else FuenteParquet(),",
+                "    Seleccionado = Table.SelectColumns(Origen, {\"Id filial\", \"Filial\", \"País\", \"Región\", \"Moneda local\", \"SLA entrega (días)\"}),",
+                "    Tipado = Table.TransformColumnTypes(Seleccionado, {{\"Id filial\", Int64.Type}, {\"Filial\", type text}, {\"País\", type text}, {\"Región\", type text}, {\"Moneda local\", type text}, {\"SLA entrega (días)\", Int64.Type}})",
+                "in",
+                "    Tipado"
+              ]
+            }
+          }
+        ],
+        "hierarchies": [
+          {
+            "name": "Geografía",
+            "levels": [
+              {
+                "name": "Región",
+                "ordinal": 0,
+                "column": "Región"
+              },
+              {
+                "name": "País",
+                "ordinal": 1,
+                "column": "País"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "v_dim_deposito",
+        "columns": [
+          {
+            "name": "Id depósito",
+            "dataType": "int64",
+            "sourceColumn": "Id depósito",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Depósito",
+            "dataType": "string",
+            "sourceColumn": "Depósito",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "Id filial depósito",
+            "dataType": "int64",
+            "sourceColumn": "Id filial depósito",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Capacidad (pallets)",
+            "dataType": "int64",
+            "sourceColumn": "Capacidad (pallets)",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "Capacidad de frío",
+            "dataType": "string",
+            "sourceColumn": "Capacidad de frío",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          }
+        ],
+        "partitions": [
+          {
+            "name": "v_dim_deposito",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    FuenteSQL = () => Sql.Database(ServidorSQL, BaseSQL){[Schema=\"star\", Item=\"v_dim_deposito\"]}[Data],",
+                "    FuenteParquet = () =>",
+                "        let",
+                "            Crudo = Parquet.Document(File.Contents(RutaDatos & \"\\dim_deposito.parquet\")),",
+                "            Derivada0 = Table.AddColumn(Crudo, \"Capacidad de frío\", each if [tiene_camara_frio] then \"Con cámara de frío\" else \"Sin cámara de frío\", type text),",
+                "            Renombrado = Table.RenameColumns(Derivada0, {{\"id_deposito\", \"Id depósito\"}, {\"nombre_deposito\", \"Depósito\"}, {\"id_filial\", \"Id filial depósito\"}, {\"capacidad_pallets\", \"Capacidad (pallets)\"}})",
+                "        in",
+                "            Renombrado,",
+                "    Origen = if OrigenDatos = \"SQL Server\" then FuenteSQL() else FuenteParquet(),",
+                "    Seleccionado = Table.SelectColumns(Origen, {\"Id depósito\", \"Depósito\", \"Id filial depósito\", \"Capacidad (pallets)\", \"Capacidad de frío\"}),",
+                "    Tipado = Table.TransformColumnTypes(Seleccionado, {{\"Id depósito\", Int64.Type}, {\"Depósito\", type text}, {\"Id filial depósito\", Int64.Type}, {\"Capacidad (pallets)\", Int64.Type}, {\"Capacidad de frío\", type text}})",
+                "in",
+                "    Tipado"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "v_dim_transportista",
+        "columns": [
+          {
+            "name": "Id transportista",
+            "dataType": "int64",
+            "sourceColumn": "Id transportista",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Transportista",
+            "dataType": "string",
+            "sourceColumn": "Transportista",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "Confiabilidad histórica",
+            "dataType": "double",
+            "sourceColumn": "Confiabilidad histórica",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "Control de temperatura",
+            "dataType": "string",
+            "sourceColumn": "Control de temperatura",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          }
+        ],
+        "partitions": [
+          {
+            "name": "v_dim_transportista",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    FuenteSQL = () => Sql.Database(ServidorSQL, BaseSQL){[Schema=\"star\", Item=\"v_dim_transportista\"]}[Data],",
+                "    FuenteParquet = () =>",
+                "        let",
+                "            Crudo = Parquet.Document(File.Contents(RutaDatos & \"\\dim_transportista.parquet\")),",
+                "            Derivada0 = Table.AddColumn(Crudo, \"Control de temperatura\", each if [control_frio] then \"Con control de frío\" else \"Sin control de frío\", type text),",
+                "            Renombrado = Table.RenameColumns(Derivada0, {{\"id_transportista\", \"Id transportista\"}, {\"transportista\", \"Transportista\"}, {\"confiabilidad\", \"Confiabilidad histórica\"}})",
+                "        in",
+                "            Renombrado,",
+                "    Origen = if OrigenDatos = \"SQL Server\" then FuenteSQL() else FuenteParquet(),",
+                "    Seleccionado = Table.SelectColumns(Origen, {\"Id transportista\", \"Transportista\", \"Confiabilidad histórica\", \"Control de temperatura\"}),",
+                "    Tipado = Table.TransformColumnTypes(Seleccionado, {{\"Id transportista\", Int64.Type}, {\"Transportista\", type text}, {\"Confiabilidad histórica\", type number}, {\"Control de temperatura\", type text}})",
+                "in",
+                "    Tipado"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "v_dim_motivo_devolucion",
+        "columns": [
+          {
+            "name": "Id motivo",
+            "dataType": "int64",
+            "sourceColumn": "Id motivo",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Código motivo",
+            "dataType": "string",
+            "sourceColumn": "Código motivo",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "Motivo de devolución",
+            "dataType": "string",
+            "sourceColumn": "Motivo de devolución",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "Área responsable",
+            "dataType": "string",
+            "sourceColumn": "Área responsable",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "Evitabilidad",
+            "dataType": "string",
+            "sourceColumn": "Evitabilidad",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          }
+        ],
+        "partitions": [
+          {
+            "name": "v_dim_motivo_devolucion",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    FuenteSQL = () => Sql.Database(ServidorSQL, BaseSQL){[Schema=\"star\", Item=\"v_dim_motivo_devolucion\"]}[Data],",
+                "    FuenteParquet = () =>",
+                "        let",
+                "            Crudo = Parquet.Document(File.Contents(RutaDatos & \"\\dim_motivo_devolucion.parquet\")),",
+                "            Derivada0 = Table.AddColumn(Crudo, \"Evitabilidad\", each if [es_evitable] = 1 then \"Evitable\" else \"No evitable\", type text),",
+                "            Renombrado = Table.RenameColumns(Derivada0, {{\"id_motivo\", \"Id motivo\"}, {\"cod_motivo\", \"Código motivo\"}, {\"motivo\", \"Motivo de devolución\"}, {\"area_responsable\", \"Área responsable\"}})",
+                "        in",
+                "            Renombrado,",
+                "    Origen = if OrigenDatos = \"SQL Server\" then FuenteSQL() else FuenteParquet(),",
+                "    Seleccionado = Table.SelectColumns(Origen, {\"Id motivo\", \"Código motivo\", \"Motivo de devolución\", \"Área responsable\", \"Evitabilidad\"}),",
+                "    Tipado = Table.TransformColumnTypes(Seleccionado, {{\"Id motivo\", Int64.Type}, {\"Código motivo\", type text}, {\"Motivo de devolución\", type text}, {\"Área responsable\", type text}, {\"Evitabilidad\", type text}})",
+                "in",
+                "    Tipado"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "v_dim_tipo_oferta",
+        "columns": [
+          {
+            "name": "Id tipo oferta",
+            "dataType": "int64",
+            "sourceColumn": "Id tipo oferta",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Código",
+            "dataType": "string",
+            "sourceColumn": "Código",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "Tipo de oferta",
+            "dataType": "string",
+            "sourceColumn": "Tipo de oferta",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "Costo relativo",
+            "dataType": "double",
+            "sourceColumn": "Costo relativo",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          }
+        ],
+        "partitions": [
+          {
+            "name": "v_dim_tipo_oferta",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    FuenteSQL = () => Sql.Database(ServidorSQL, BaseSQL){[Schema=\"star\", Item=\"v_dim_tipo_oferta\"]}[Data],",
+                "    FuenteParquet = () =>",
+                "        let",
+                "            Crudo = Parquet.Document(File.Contents(RutaDatos & \"\\dim_tipo_oferta.parquet\")),",
+                "            Renombrado = Table.RenameColumns(Crudo, {{\"id_tipo_oferta\", \"Id tipo oferta\"}, {\"cod_tipo_oferta\", \"Código\"}, {\"tipo_oferta_desc\", \"Tipo de oferta\"}, {\"costo_relativo\", \"Costo relativo\"}})",
+                "        in",
+                "            Renombrado,",
+                "    Origen = if OrigenDatos = \"SQL Server\" then FuenteSQL() else FuenteParquet(),",
+                "    Seleccionado = Table.SelectColumns(Origen, {\"Id tipo oferta\", \"Código\", \"Tipo de oferta\", \"Costo relativo\"}),",
+                "    Tipado = Table.TransformColumnTypes(Seleccionado, {{\"Id tipo oferta\", Int64.Type}, {\"Código\", type text}, {\"Tipo de oferta\", type text}, {\"Costo relativo\", type number}})",
+                "in",
+                "    Tipado"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "v_fact_ventas",
+        "columns": [
+          {
+            "name": "Fecha",
+            "dataType": "dateTime",
+            "sourceColumn": "Fecha",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true,
+            "formatString": "yyyy-mm-dd"
+          },
+          {
+            "name": "Id cliente",
+            "dataType": "int64",
+            "sourceColumn": "Id cliente",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Id producto",
+            "dataType": "int64",
+            "sourceColumn": "Id producto",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Id filial",
+            "dataType": "int64",
+            "sourceColumn": "Id filial",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Id depósito",
+            "dataType": "int64",
+            "sourceColumn": "Id depósito",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Id transportista",
+            "dataType": "int64",
+            "sourceColumn": "Id transportista",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Id tipo oferta",
+            "dataType": "int64",
+            "sourceColumn": "Id tipo oferta",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Tipo documento",
+            "dataType": "string",
+            "sourceColumn": "Tipo documento",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "Unidades",
+            "dataType": "int64",
+            "sourceColumn": "Unidades",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Importe USD",
+            "dataType": "double",
+            "sourceColumn": "Importe USD",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Costo USD",
+            "dataType": "double",
+            "sourceColumn": "Costo USD",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Importe moneda local",
+            "dataType": "double",
+            "sourceColumn": "Importe moneda local",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Líneas",
+            "dataType": "int64",
+            "sourceColumn": "Líneas",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Líneas OTIF",
+            "dataType": "int64",
+            "sourceColumn": "Líneas OTIF",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Líneas completas",
+            "dataType": "int64",
+            "sourceColumn": "Líneas completas",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Lead time x línea",
+            "dataType": "double",
+            "sourceColumn": "Lead time x línea",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Unidades devueltas",
+            "dataType": "int64",
+            "sourceColumn": "Unidades devueltas",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Importe devuelto USD",
+            "dataType": "double",
+            "sourceColumn": "Importe devuelto USD",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Líneas devueltas",
+            "dataType": "int64",
+            "sourceColumn": "Líneas devueltas",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Líneas en revisión",
+            "dataType": "int64",
+            "sourceColumn": "Líneas en revisión",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Días a vencer x línea",
+            "dataType": "double",
+            "sourceColumn": "Días a vencer x línea",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Signo",
+            "dataType": "int64",
+            "sourceColumn": "Signo",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          }
+        ],
+        "partitions": [
+          {
+            "name": "v_fact_ventas",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    FuenteSQL = () => Sql.Database(ServidorSQL, BaseSQL){[Schema=\"star\", Item=\"v_fact_ventas\"]}[Data],",
+                "    FuenteParquet = () =>",
+                "        let",
+                "            Crudo = Parquet.Document(File.Contents(RutaDatos & \"\\fact_ventas.parquet\")),",
+                "            Derivada0 = Table.AddColumn(Crudo, \"Signo\", each if [tipo_documento] = \"NC\" then -1 else 1, Int64.Type),",
+                "            Renombrado = Table.RenameColumns(Derivada0, {{\"fecha\", \"Fecha\"}, {\"id_cliente\", \"Id cliente\"}, {\"id_producto\", \"Id producto\"}, {\"id_filial\", \"Id filial\"}, {\"id_deposito\", \"Id depósito\"}, {\"id_transportista\", \"Id transportista\"}, {\"id_tipo_oferta\", \"Id tipo oferta\"}, {\"tipo_documento\", \"Tipo documento\"}, {\"unidades\", \"Unidades\"}, {\"importe_usd\", \"Importe USD\"}, {\"costo_usd\", \"Costo USD\"}, {\"importe_local\", \"Importe moneda local\"}, {\"lineas\", \"Líneas\"}, {\"lineas_otif\", \"Líneas OTIF\"}, {\"lineas_completas\", \"Líneas completas\"}, {\"lead_time_dias_x_linea\", \"Lead time x línea\"}, {\"unidades_devueltas\", \"Unidades devueltas\"}, {\"importe_devuelto_usd\", \"Importe devuelto USD\"}, {\"lineas_devueltas\", \"Líneas devueltas\"}, {\"lineas_en_revision\", \"Líneas en revisión\"}, {\"dias_a_vencer_x_linea\", \"Días a vencer x línea\"}})",
+                "        in",
+                "            Renombrado,",
+                "    Origen = if OrigenDatos = \"SQL Server\" then FuenteSQL() else FuenteParquet(),",
+                "    Seleccionado = Table.SelectColumns(Origen, {\"Fecha\", \"Id cliente\", \"Id producto\", \"Id filial\", \"Id depósito\", \"Id transportista\", \"Id tipo oferta\", \"Tipo documento\", \"Unidades\", \"Importe USD\", \"Costo USD\", \"Importe moneda local\", \"Líneas\", \"Líneas OTIF\", \"Líneas completas\", \"Lead time x línea\", \"Unidades devueltas\", \"Importe devuelto USD\", \"Líneas devueltas\", \"Líneas en revisión\", \"Días a vencer x línea\", \"Signo\"}),",
+                "    Tipado = Table.TransformColumnTypes(Seleccionado, {{\"Fecha\", type datetime}, {\"Id cliente\", Int64.Type}, {\"Id producto\", Int64.Type}, {\"Id filial\", Int64.Type}, {\"Id depósito\", Int64.Type}, {\"Id transportista\", Int64.Type}, {\"Id tipo oferta\", Int64.Type}, {\"Tipo documento\", type text}, {\"Unidades\", Int64.Type}, {\"Importe USD\", type number}, {\"Costo USD\", type number}, {\"Importe moneda local\", type number}, {\"Líneas\", Int64.Type}, {\"Líneas OTIF\", Int64.Type}, {\"Líneas completas\", Int64.Type}, {\"Lead time x línea\", type number}, {\"Unidades devueltas\", Int64.Type}, {\"Importe devuelto USD\", type number}, {\"Líneas devueltas\", Int64.Type}, {\"Líneas en revisión\", Int64.Type}, {\"Días a vencer x línea\", type number}, {\"Signo\", Int64.Type}})",
+                "in",
+                "    Tipado"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "v_fact_devoluciones",
+        "columns": [
+          {
+            "name": "Fecha",
+            "dataType": "dateTime",
+            "sourceColumn": "Fecha",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true,
+            "formatString": "yyyy-mm-dd"
+          },
+          {
+            "name": "Id cliente",
+            "dataType": "int64",
+            "sourceColumn": "Id cliente",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Id producto",
+            "dataType": "int64",
+            "sourceColumn": "Id producto",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Id filial",
+            "dataType": "int64",
+            "sourceColumn": "Id filial",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Id transportista",
+            "dataType": "int64",
+            "sourceColumn": "Id transportista",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Id motivo",
+            "dataType": "int64",
+            "sourceColumn": "Id motivo",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Unidades devueltas",
+            "dataType": "int64",
+            "sourceColumn": "Unidades devueltas",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Importe devuelto USD",
+            "dataType": "double",
+            "sourceColumn": "Importe devuelto USD",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Líneas devueltas",
+            "dataType": "int64",
+            "sourceColumn": "Líneas devueltas",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          }
+        ],
+        "partitions": [
+          {
+            "name": "v_fact_devoluciones",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    FuenteSQL = () => Sql.Database(ServidorSQL, BaseSQL){[Schema=\"star\", Item=\"v_fact_devoluciones\"]}[Data],",
+                "    FuenteParquet = () =>",
+                "        let",
+                "            Crudo = Parquet.Document(File.Contents(RutaDatos & \"\\fact_devoluciones.parquet\")),",
+                "            Renombrado = Table.RenameColumns(Crudo, {{\"fecha\", \"Fecha\"}, {\"id_cliente\", \"Id cliente\"}, {\"id_producto\", \"Id producto\"}, {\"id_filial\", \"Id filial\"}, {\"id_transportista\", \"Id transportista\"}, {\"id_motivo\", \"Id motivo\"}, {\"unidades_devueltas\", \"Unidades devueltas\"}, {\"importe_devuelto_usd\", \"Importe devuelto USD\"}, {\"lineas\", \"Líneas devueltas\"}})",
+                "        in",
+                "            Renombrado,",
+                "    Origen = if OrigenDatos = \"SQL Server\" then FuenteSQL() else FuenteParquet(),",
+                "    Seleccionado = Table.SelectColumns(Origen, {\"Fecha\", \"Id cliente\", \"Id producto\", \"Id filial\", \"Id transportista\", \"Id motivo\", \"Unidades devueltas\", \"Importe devuelto USD\", \"Líneas devueltas\"}),",
+                "    Tipado = Table.TransformColumnTypes(Seleccionado, {{\"Fecha\", type datetime}, {\"Id cliente\", Int64.Type}, {\"Id producto\", Int64.Type}, {\"Id filial\", Int64.Type}, {\"Id transportista\", Int64.Type}, {\"Id motivo\", Int64.Type}, {\"Unidades devueltas\", Int64.Type}, {\"Importe devuelto USD\", type number}, {\"Líneas devueltas\", Int64.Type}})",
+                "in",
+                "    Tipado"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "v_fact_ofertas",
+        "columns": [
+          {
+            "name": "Fecha",
+            "dataType": "dateTime",
+            "sourceColumn": "Fecha",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true,
+            "formatString": "yyyy-mm-dd"
+          },
+          {
+            "name": "Id cliente",
+            "dataType": "int64",
+            "sourceColumn": "Id cliente",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Id producto",
+            "dataType": "int64",
+            "sourceColumn": "Id producto",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Id filial",
+            "dataType": "int64",
+            "sourceColumn": "Id filial",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Id tipo oferta",
+            "dataType": "int64",
+            "sourceColumn": "Id tipo oferta",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Descuento %",
+            "dataType": "double",
+            "sourceColumn": "Descuento %",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Unidades ofertadas",
+            "dataType": "int64",
+            "sourceColumn": "Unidades ofertadas",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Cobertura del cliente (días)",
+            "dataType": "double",
+            "sourceColumn": "Cobertura del cliente (días)",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Aceptada",
+            "dataType": "int64",
+            "sourceColumn": "Aceptada",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Ofertas",
+            "dataType": "int64",
+            "sourceColumn": "Ofertas",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          }
+        ],
+        "partitions": [
+          {
+            "name": "v_fact_ofertas",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    FuenteSQL = () => Sql.Database(ServidorSQL, BaseSQL){[Schema=\"star\", Item=\"v_fact_ofertas\"]}[Data],",
+                "    FuenteParquet = () =>",
+                "        let",
+                "            Crudo = Parquet.Document(File.Contents(RutaDatos & \"\\fact_ofertas.parquet\")),",
+                "            Derivada0 = Table.AddColumn(Crudo, \"Ofertas\", each 1, Int64.Type),",
+                "            Renombrado = Table.RenameColumns(Derivada0, {{\"fecha\", \"Fecha\"}, {\"id_cliente\", \"Id cliente\"}, {\"id_producto\", \"Id producto\"}, {\"id_filial\", \"Id filial\"}, {\"id_tipo_oferta\", \"Id tipo oferta\"}, {\"descuento_pct\", \"Descuento %\"}, {\"unidades_ofertadas\", \"Unidades ofertadas\"}, {\"cobertura_cliente_dias\", \"Cobertura del cliente (días)\"}, {\"aceptada\", \"Aceptada\"}})",
+                "        in",
+                "            Renombrado,",
+                "    Origen = if OrigenDatos = \"SQL Server\" then FuenteSQL() else FuenteParquet(),",
+                "    Seleccionado = Table.SelectColumns(Origen, {\"Fecha\", \"Id cliente\", \"Id producto\", \"Id filial\", \"Id tipo oferta\", \"Descuento %\", \"Unidades ofertadas\", \"Cobertura del cliente (días)\", \"Aceptada\", \"Ofertas\"}),",
+                "    Tipado = Table.TransformColumnTypes(Seleccionado, {{\"Fecha\", type datetime}, {\"Id cliente\", Int64.Type}, {\"Id producto\", Int64.Type}, {\"Id filial\", Int64.Type}, {\"Id tipo oferta\", Int64.Type}, {\"Descuento %\", type number}, {\"Unidades ofertadas\", Int64.Type}, {\"Cobertura del cliente (días)\", type number}, {\"Aceptada\", Int64.Type}, {\"Ofertas\", Int64.Type}})",
+                "in",
+                "    Tipado"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "v_fact_sellout",
+        "columns": [
+          {
+            "name": "Fecha",
+            "dataType": "dateTime",
+            "sourceColumn": "Fecha",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true,
+            "formatString": "yyyy-mm-dd"
+          },
+          {
+            "name": "Id filial",
+            "dataType": "int64",
+            "sourceColumn": "Id filial",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Id producto",
+            "dataType": "int64",
+            "sourceColumn": "Id producto",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Unidades sell-out",
+            "dataType": "int64",
+            "sourceColumn": "Unidades sell-out",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Importe sell-out USD",
+            "dataType": "double",
+            "sourceColumn": "Importe sell-out USD",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Unidades mercado",
+            "dataType": "int64",
+            "sourceColumn": "Unidades mercado",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Importe mercado USD",
+            "dataType": "double",
+            "sourceColumn": "Importe mercado USD",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          }
+        ],
+        "partitions": [
+          {
+            "name": "v_fact_sellout",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    FuenteSQL = () => Sql.Database(ServidorSQL, BaseSQL){[Schema=\"star\", Item=\"v_fact_sellout\"]}[Data],",
+                "    FuenteParquet = () =>",
+                "        let",
+                "            Crudo = Parquet.Document(File.Contents(RutaDatos & \"\\fact_sellout.parquet\")),",
+                "            Renombrado = Table.RenameColumns(Crudo, {{\"fecha\", \"Fecha\"}, {\"id_filial\", \"Id filial\"}, {\"id_producto\", \"Id producto\"}, {\"unidades_sellout\", \"Unidades sell-out\"}, {\"importe_sellout\", \"Importe sell-out USD\"}, {\"unidades_mercado\", \"Unidades mercado\"}, {\"importe_mercado\", \"Importe mercado USD\"}})",
+                "        in",
+                "            Renombrado,",
+                "    Origen = if OrigenDatos = \"SQL Server\" then FuenteSQL() else FuenteParquet(),",
+                "    Seleccionado = Table.SelectColumns(Origen, {\"Fecha\", \"Id filial\", \"Id producto\", \"Unidades sell-out\", \"Importe sell-out USD\", \"Unidades mercado\", \"Importe mercado USD\"}),",
+                "    Tipado = Table.TransformColumnTypes(Seleccionado, {{\"Fecha\", type datetime}, {\"Id filial\", Int64.Type}, {\"Id producto\", Int64.Type}, {\"Unidades sell-out\", Int64.Type}, {\"Importe sell-out USD\", type number}, {\"Unidades mercado\", Int64.Type}, {\"Importe mercado USD\", type number}})",
+                "in",
+                "    Tipado"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "v_fact_objetivos",
+        "columns": [
+          {
+            "name": "Fecha",
+            "dataType": "dateTime",
+            "sourceColumn": "Fecha",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true,
+            "formatString": "yyyy-mm-dd"
+          },
+          {
+            "name": "Id filial",
+            "dataType": "int64",
+            "sourceColumn": "Id filial",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Id producto",
+            "dataType": "int64",
+            "sourceColumn": "Id producto",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Objetivo USD",
+            "dataType": "double",
+            "sourceColumn": "Objetivo USD",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Objetivo unidades",
+            "dataType": "int64",
+            "sourceColumn": "Objetivo unidades",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          }
+        ],
+        "partitions": [
+          {
+            "name": "v_fact_objetivos",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    FuenteSQL = () => Sql.Database(ServidorSQL, BaseSQL){[Schema=\"star\", Item=\"v_fact_objetivos\"]}[Data],",
+                "    FuenteParquet = () =>",
+                "        let",
+                "            Crudo = Parquet.Document(File.Contents(RutaDatos & \"\\fact_objetivos.parquet\")),",
+                "            Renombrado = Table.RenameColumns(Crudo, {{\"fecha\", \"Fecha\"}, {\"id_filial\", \"Id filial\"}, {\"id_producto\", \"Id producto\"}, {\"objetivo_importe_usd\", \"Objetivo USD\"}, {\"objetivo_unidades\", \"Objetivo unidades\"}})",
+                "        in",
+                "            Renombrado,",
+                "    Origen = if OrigenDatos = \"SQL Server\" then FuenteSQL() else FuenteParquet(),",
+                "    Seleccionado = Table.SelectColumns(Origen, {\"Fecha\", \"Id filial\", \"Id producto\", \"Objetivo USD\", \"Objetivo unidades\"}),",
+                "    Tipado = Table.TransformColumnTypes(Seleccionado, {{\"Fecha\", type datetime}, {\"Id filial\", Int64.Type}, {\"Id producto\", Int64.Type}, {\"Objetivo USD\", type number}, {\"Objetivo unidades\", Int64.Type}})",
+                "in",
+                "    Tipado"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "v_fact_stock",
+        "columns": [
+          {
+            "name": "Fecha",
+            "dataType": "dateTime",
+            "sourceColumn": "Fecha",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true,
+            "formatString": "yyyy-mm-dd"
+          },
+          {
+            "name": "Id depósito",
+            "dataType": "int64",
+            "sourceColumn": "Id depósito",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Id producto",
+            "dataType": "int64",
+            "sourceColumn": "Id producto",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Stock unidades",
+            "dataType": "int64",
+            "sourceColumn": "Stock unidades",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Valor de stock USD",
+            "dataType": "double",
+            "sourceColumn": "Valor de stock USD",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Stock en tránsito",
+            "dataType": "int64",
+            "sourceColumn": "Stock en tránsito",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Unidades por vencer 180d",
+            "dataType": "int64",
+            "sourceColumn": "Unidades por vencer 180d",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Días a vencer promedio",
+            "dataType": "int64",
+            "sourceColumn": "Días a vencer promedio",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Consumo del mes",
+            "dataType": "int64",
+            "sourceColumn": "Consumo del mes",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Cobertura x stock",
+            "dataType": "double",
+            "sourceColumn": "Cobertura x stock",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          }
+        ],
+        "partitions": [
+          {
+            "name": "v_fact_stock",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    FuenteSQL = () => Sql.Database(ServidorSQL, BaseSQL){[Schema=\"star\", Item=\"v_fact_stock\"]}[Data],",
+                "    FuenteParquet = () =>",
+                "        let",
+                "            Crudo = Parquet.Document(File.Contents(RutaDatos & \"\\fact_stock.parquet\")),",
+                "            Derivada0 = Table.AddColumn(Crudo, \"Cobertura x stock\", each [dias_cobertura] * [stock_unidades], type number),",
+                "            Renombrado = Table.RenameColumns(Derivada0, {{\"fecha\", \"Fecha\"}, {\"id_deposito\", \"Id depósito\"}, {\"id_producto\", \"Id producto\"}, {\"stock_unidades\", \"Stock unidades\"}, {\"valor_stock_usd\", \"Valor de stock USD\"}, {\"stock_en_transito\", \"Stock en tránsito\"}, {\"unidades_por_vencer_180d\", \"Unidades por vencer 180d\"}, {\"dias_a_vencer_promedio\", \"Días a vencer promedio\"}, {\"unidades_mes\", \"Consumo del mes\"}})",
+                "        in",
+                "            Renombrado,",
+                "    Origen = if OrigenDatos = \"SQL Server\" then FuenteSQL() else FuenteParquet(),",
+                "    Seleccionado = Table.SelectColumns(Origen, {\"Fecha\", \"Id depósito\", \"Id producto\", \"Stock unidades\", \"Valor de stock USD\", \"Stock en tránsito\", \"Unidades por vencer 180d\", \"Días a vencer promedio\", \"Consumo del mes\", \"Cobertura x stock\"}),",
+                "    Tipado = Table.TransformColumnTypes(Seleccionado, {{\"Fecha\", type datetime}, {\"Id depósito\", Int64.Type}, {\"Id producto\", Int64.Type}, {\"Stock unidades\", Int64.Type}, {\"Valor de stock USD\", type number}, {\"Stock en tránsito\", Int64.Type}, {\"Unidades por vencer 180d\", Int64.Type}, {\"Días a vencer promedio\", Int64.Type}, {\"Consumo del mes\", Int64.Type}, {\"Cobertura x stock\", type number}})",
+                "in",
+                "    Tipado"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "v_fact_scoring_devoluciones",
+        "columns": [
+          {
+            "name": "Fecha",
+            "dataType": "dateTime",
+            "sourceColumn": "Fecha",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true,
+            "formatString": "yyyy-mm-dd"
+          },
+          {
+            "name": "Id cliente",
+            "dataType": "int64",
+            "sourceColumn": "Id cliente",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Id producto",
+            "dataType": "int64",
+            "sourceColumn": "Id producto",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Id filial",
+            "dataType": "int64",
+            "sourceColumn": "Id filial",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Id transportista",
+            "dataType": "int64",
+            "sourceColumn": "Id transportista",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Unidades",
+            "dataType": "int64",
+            "sourceColumn": "Unidades",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Importe USD",
+            "dataType": "double",
+            "sourceColumn": "Importe USD",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Devuelta real",
+            "dataType": "int64",
+            "sourceColumn": "Devuelta real",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Probabilidad de devolución",
+            "dataType": "double",
+            "sourceColumn": "Probabilidad de devolución",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Banda de riesgo",
+            "dataType": "string",
+            "sourceColumn": "Banda de riesgo",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "Importe en riesgo USD",
+            "dataType": "double",
+            "sourceColumn": "Importe en riesgo USD",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          }
+        ],
+        "partitions": [
+          {
+            "name": "v_fact_scoring_devoluciones",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    FuenteSQL = () => Sql.Database(ServidorSQL, BaseSQL){[Schema=\"star\", Item=\"v_fact_scoring_devoluciones\"]}[Data],",
+                "    FuenteParquet = () =>",
+                "        let",
+                "            Crudo = Parquet.Document(File.Contents(RutaDatos & \"\\fact_scoring_devoluciones.parquet\")),",
+                "            Renombrado = Table.RenameColumns(Crudo, {{\"fecha\", \"Fecha\"}, {\"id_cliente\", \"Id cliente\"}, {\"id_producto\", \"Id producto\"}, {\"id_filial\", \"Id filial\"}, {\"id_transportista\", \"Id transportista\"}, {\"unidades\", \"Unidades\"}, {\"importe_usd\", \"Importe USD\"}, {\"devuelta\", \"Devuelta real\"}, {\"prob_devolucion\", \"Probabilidad de devolución\"}, {\"banda_riesgo\", \"Banda de riesgo\"}, {\"importe_en_riesgo_usd\", \"Importe en riesgo USD\"}})",
+                "        in",
+                "            Renombrado,",
+                "    Origen = if OrigenDatos = \"SQL Server\" then FuenteSQL() else FuenteParquet(),",
+                "    Seleccionado = Table.SelectColumns(Origen, {\"Fecha\", \"Id cliente\", \"Id producto\", \"Id filial\", \"Id transportista\", \"Unidades\", \"Importe USD\", \"Devuelta real\", \"Probabilidad de devolución\", \"Banda de riesgo\", \"Importe en riesgo USD\"}),",
+                "    Tipado = Table.TransformColumnTypes(Seleccionado, {{\"Fecha\", type datetime}, {\"Id cliente\", Int64.Type}, {\"Id producto\", Int64.Type}, {\"Id filial\", Int64.Type}, {\"Id transportista\", Int64.Type}, {\"Unidades\", Int64.Type}, {\"Importe USD\", type number}, {\"Devuelta real\", Int64.Type}, {\"Probabilidad de devolución\", type number}, {\"Banda de riesgo\", type text}, {\"Importe en riesgo USD\", type number}})",
+                "in",
+                "    Tipado"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "v_fact_recomendaciones",
+        "columns": [
+          {
+            "name": "Mes objetivo",
+            "dataType": "string",
+            "sourceColumn": "Mes objetivo",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "Id filial",
+            "dataType": "int64",
+            "sourceColumn": "Id filial",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Id producto",
+            "dataType": "int64",
+            "sourceColumn": "Id producto",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Canal recomendado",
+            "dataType": "string",
+            "sourceColumn": "Canal recomendado",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "Segmento recomendado",
+            "dataType": "string",
+            "sourceColumn": "Segmento recomendado",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "Ranking en el segmento",
+            "dataType": "int64",
+            "sourceColumn": "Ranking en el segmento",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "SKU recomendado",
+            "dataType": "string",
+            "sourceColumn": "SKU recomendado",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "Marca recomendada",
+            "dataType": "string",
+            "sourceColumn": "Marca recomendada",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "Descuento recomendado",
+            "dataType": "double",
+            "sourceColumn": "Descuento recomendado",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Precio neto recomendado",
+            "dataType": "double",
+            "sourceColumn": "Precio neto recomendado",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Margen unitario USD",
+            "dataType": "double",
+            "sourceColumn": "Margen unitario USD",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Elasticidad estimada",
+            "dataType": "double",
+            "sourceColumn": "Elasticidad estimada",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Nivel de estimación",
+            "dataType": "string",
+            "sourceColumn": "Nivel de estimación",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "Índice estacional",
+            "dataType": "double",
+            "sourceColumn": "Índice estacional",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Aporte al margen de la filial",
+            "dataType": "double",
+            "sourceColumn": "Aporte al margen de la filial",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Días de cobertura",
+            "dataType": "double",
+            "sourceColumn": "Días de cobertura",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Unidades por vencer",
+            "dataType": "double",
+            "sourceColumn": "Unidades por vencer",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Demanda esperada",
+            "dataType": "double",
+            "sourceColumn": "Demanda esperada",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Probabilidad de aceptación",
+            "dataType": "double",
+            "sourceColumn": "Probabilidad de aceptación",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Riesgo de devolución",
+            "dataType": "double",
+            "sourceColumn": "Riesgo de devolución",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Margen esperado USD",
+            "dataType": "double",
+            "sourceColumn": "Margen esperado USD",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Valor de stock rescatado USD",
+            "dataType": "double",
+            "sourceColumn": "Valor de stock rescatado USD",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Ganancia vs no ofertar USD",
+            "dataType": "double",
+            "sourceColumn": "Ganancia vs no ofertar USD",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Justificativo",
+            "dataType": "string",
+            "sourceColumn": "Justificativo",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          },
+          {
+            "name": "Confianza de la recomendación",
+            "dataType": "string",
+            "sourceColumn": "Confianza de la recomendación",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ]
+          }
+        ],
+        "partitions": [
+          {
+            "name": "v_fact_recomendaciones",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    FuenteSQL = () => Sql.Database(ServidorSQL, BaseSQL){[Schema=\"star\", Item=\"v_fact_recomendaciones\"]}[Data],",
+                "    FuenteParquet = () =>",
+                "        let",
+                "            Crudo = Parquet.Document(File.Contents(RutaDatos & \"\\fact_recomendaciones.parquet\")),",
+                "            Derivada0 = Table.AddColumn(Crudo, \"Confianza de la recomendación\", each if [en_borde_de_soporte] = 1 then \"Requiere test controlado\" else \"Dentro de evidencia histórica\", type text),",
+                "            Renombrado = Table.RenameColumns(Derivada0, {{\"mes_objetivo\", \"Mes objetivo\"}, {\"id_filial\", \"Id filial\"}, {\"id_producto\", \"Id producto\"}, {\"canal\", \"Canal recomendado\"}, {\"segmento\", \"Segmento recomendado\"}, {\"rank_segmento\", \"Ranking en el segmento\"}, {\"sku\", \"SKU recomendado\"}, {\"marca\", \"Marca recomendada\"}, {\"descuento_pct\", \"Descuento recomendado\"}, {\"precio_neto\", \"Precio neto recomendado\"}, {\"margen_unitario\", \"Margen unitario USD\"}, {\"elasticidad\", \"Elasticidad estimada\"}, {\"nivel_estimacion\", \"Nivel de estimación\"}, {\"indice_estacional\", \"Índice estacional\"}, {\"aporte_margen_pct\", \"Aporte al margen de la filial\"}, {\"dias_cobertura\", \"Días de cobertura\"}, {\"unidades_por_vencer\", \"Unidades por vencer\"}, {\"demanda_esperada\", \"Demanda esperada\"}, {\"prob_aceptacion\", \"Probabilidad de aceptación\"}, {\"riesgo_devolucion\", \"Riesgo de devolución\"}, {\"margen_esperado_usd\", \"Margen esperado USD\"}, {\"valor_rescate_usd\", \"Valor de stock rescatado USD\"}, {\"ganancia_vs_sin_oferta_usd\", \"Ganancia vs no ofertar USD\"}, {\"justificativo\", \"Justificativo\"}})",
+                "        in",
+                "            Renombrado,",
+                "    Origen = if OrigenDatos = \"SQL Server\" then FuenteSQL() else FuenteParquet(),",
+                "    Seleccionado = Table.SelectColumns(Origen, {\"Mes objetivo\", \"Id filial\", \"Id producto\", \"Canal recomendado\", \"Segmento recomendado\", \"Ranking en el segmento\", \"SKU recomendado\", \"Marca recomendada\", \"Descuento recomendado\", \"Precio neto recomendado\", \"Margen unitario USD\", \"Elasticidad estimada\", \"Nivel de estimación\", \"Índice estacional\", \"Aporte al margen de la filial\", \"Días de cobertura\", \"Unidades por vencer\", \"Demanda esperada\", \"Probabilidad de aceptación\", \"Riesgo de devolución\", \"Margen esperado USD\", \"Valor de stock rescatado USD\", \"Ganancia vs no ofertar USD\", \"Justificativo\", \"Confianza de la recomendación\"}),",
+                "    Tipado = Table.TransformColumnTypes(Seleccionado, {{\"Mes objetivo\", type text}, {\"Id filial\", Int64.Type}, {\"Id producto\", Int64.Type}, {\"Canal recomendado\", type text}, {\"Segmento recomendado\", type text}, {\"Ranking en el segmento\", Int64.Type}, {\"SKU recomendado\", type text}, {\"Marca recomendada\", type text}, {\"Descuento recomendado\", type number}, {\"Precio neto recomendado\", type number}, {\"Margen unitario USD\", type number}, {\"Elasticidad estimada\", type number}, {\"Nivel de estimación\", type text}, {\"Índice estacional\", type number}, {\"Aporte al margen de la filial\", type number}, {\"Días de cobertura\", type number}, {\"Unidades por vencer\", type number}, {\"Demanda esperada\", type number}, {\"Probabilidad de aceptación\", type number}, {\"Riesgo de devolución\", type number}, {\"Margen esperado USD\", type number}, {\"Valor de stock rescatado USD\", type number}, {\"Ganancia vs no ofertar USD\", type number}, {\"Justificativo\", type text}, {\"Confianza de la recomendación\", type text}})",
+                "in",
+                "    Tipado"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "v_forecast_devoluciones",
+        "columns": [
+          {
+            "name": "Fecha",
+            "dataType": "dateTime",
+            "sourceColumn": "Fecha",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true,
+            "formatString": "yyyy-mm-dd"
+          },
+          {
+            "name": "Id filial",
+            "dataType": "int64",
+            "sourceColumn": "Id filial",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Tasa dev real",
+            "dataType": "double",
+            "sourceColumn": "Tasa dev real",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Tasa dev proyectada",
+            "dataType": "double",
+            "sourceColumn": "Tasa dev proyectada",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Importe dev real",
+            "dataType": "double",
+            "sourceColumn": "Importe dev real",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Importe dev proyectado",
+            "dataType": "double",
+            "sourceColumn": "Importe dev proyectado",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Es holdout",
+            "dataType": "int64",
+            "sourceColumn": "Es holdout",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          }
+        ],
+        "partitions": [
+          {
+            "name": "v_forecast_devoluciones",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    FuenteSQL = () => Sql.Database(ServidorSQL, BaseSQL){[Schema=\"star\", Item=\"v_forecast_devoluciones\"]}[Data],",
+                "    FuenteParquet = () =>",
+                "        let",
+                "            Crudo = Parquet.Document(File.Contents(RutaDatos & \"\\fact_forecast_devoluciones.parquet\")),",
+                "            Renombrado = Table.RenameColumns(Crudo, {{\"fecha\", \"Fecha\"}, {\"id_filial\", \"Id filial\"}, {\"tasa_dev_valor\", \"Tasa dev real\"}, {\"tasa_dev_proyectada\", \"Tasa dev proyectada\"}, {\"importe_dev\", \"Importe dev real\"}, {\"importe_dev_proyectado\", \"Importe dev proyectado\"}, {\"es_holdout\", \"Es holdout\"}})",
+                "        in",
+                "            Renombrado,",
+                "    Origen = if OrigenDatos = \"SQL Server\" then FuenteSQL() else FuenteParquet(),",
+                "    Seleccionado = Table.SelectColumns(Origen, {\"Fecha\", \"Id filial\", \"Tasa dev real\", \"Tasa dev proyectada\", \"Importe dev real\", \"Importe dev proyectado\", \"Es holdout\"}),",
+                "    Tipado = Table.TransformColumnTypes(Seleccionado, {{\"Fecha\", type datetime}, {\"Id filial\", Int64.Type}, {\"Tasa dev real\", type number}, {\"Tasa dev proyectada\", type number}, {\"Importe dev real\", type number}, {\"Importe dev proyectado\", type number}, {\"Es holdout\", Int64.Type}})",
+                "in",
+                "    Tipado"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "v_forecast_ofertas",
+        "columns": [
+          {
+            "name": "Fecha",
+            "dataType": "dateTime",
+            "sourceColumn": "Fecha",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true,
+            "formatString": "yyyy-mm-dd"
+          },
+          {
+            "name": "Id filial",
+            "dataType": "int64",
+            "sourceColumn": "Id filial",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Inversión USD",
+            "dataType": "double",
+            "sourceColumn": "Inversión USD",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Inversión proyectada USD",
+            "dataType": "double",
+            "sourceColumn": "Inversión proyectada USD",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Ofertas del mes",
+            "dataType": "int64",
+            "sourceColumn": "Ofertas del mes",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Aceptadas del mes",
+            "dataType": "int64",
+            "sourceColumn": "Aceptadas del mes",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Es holdout",
+            "dataType": "int64",
+            "sourceColumn": "Es holdout",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          }
+        ],
+        "partitions": [
+          {
+            "name": "v_forecast_ofertas",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    FuenteSQL = () => Sql.Database(ServidorSQL, BaseSQL){[Schema=\"star\", Item=\"v_forecast_ofertas\"]}[Data],",
+                "    FuenteParquet = () =>",
+                "        let",
+                "            Crudo = Parquet.Document(File.Contents(RutaDatos & \"\\fact_forecast_ofertas.parquet\")),",
+                "            Renombrado = Table.RenameColumns(Crudo, {{\"fecha\", \"Fecha\"}, {\"id_filial\", \"Id filial\"}, {\"inversion_usd\", \"Inversión USD\"}, {\"inversion_proyectada_usd\", \"Inversión proyectada USD\"}, {\"ofertas\", \"Ofertas del mes\"}, {\"aceptadas\", \"Aceptadas del mes\"}, {\"es_holdout\", \"Es holdout\"}})",
+                "        in",
+                "            Renombrado,",
+                "    Origen = if OrigenDatos = \"SQL Server\" then FuenteSQL() else FuenteParquet(),",
+                "    Seleccionado = Table.SelectColumns(Origen, {\"Fecha\", \"Id filial\", \"Inversión USD\", \"Inversión proyectada USD\", \"Ofertas del mes\", \"Aceptadas del mes\", \"Es holdout\"}),",
+                "    Tipado = Table.TransformColumnTypes(Seleccionado, {{\"Fecha\", type datetime}, {\"Id filial\", Int64.Type}, {\"Inversión USD\", type number}, {\"Inversión proyectada USD\", type number}, {\"Ofertas del mes\", Int64.Type}, {\"Aceptadas del mes\", Int64.Type}, {\"Es holdout\", Int64.Type}})",
+                "in",
+                "    Tipado"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "v_estado_datos",
+        "columns": [
+          {
+            "name": "Último dato",
+            "dataType": "dateTime",
+            "sourceColumn": "Último dato",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "formatString": "yyyy-mm-dd"
+          },
+          {
+            "name": "Controles críticos",
+            "dataType": "int64",
+            "sourceColumn": "Controles críticos",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Controles en alerta",
+            "dataType": "int64",
+            "sourceColumn": "Controles en alerta",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Controles OK",
+            "dataType": "int64",
+            "sourceColumn": "Controles OK",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "isHidden": true
+          },
+          {
+            "name": "Última validación",
+            "dataType": "dateTime",
+            "sourceColumn": "Última validación",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "User"
+              }
+            ],
+            "formatString": "yyyy-mm-dd"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "v_estado_datos",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    FuenteSQL = () => Sql.Database(ServidorSQL, BaseSQL){[Schema=\"star\", Item=\"v_estado_datos\"]}[Data],",
+                "    FuenteParquet = () =>",
+                "        let",
+                "            Crudo = Parquet.Document(File.Contents(RutaDatos & \"\\fact_estado_datos.parquet\")),",
+                "            Renombrado = Table.RenameColumns(Crudo, {{\"ultimo_dato\", \"Último dato\"}, {\"controles_criticos\", \"Controles críticos\"}, {\"controles_alerta\", \"Controles en alerta\"}, {\"controles_ok\", \"Controles OK\"}, {\"ultima_validacion\", \"Última validación\"}})",
+                "        in",
+                "            Renombrado,",
+                "    Origen = if OrigenDatos = \"SQL Server\" then FuenteSQL() else FuenteParquet(),",
+                "    Seleccionado = Table.SelectColumns(Origen, {\"Último dato\", \"Controles críticos\", \"Controles en alerta\", \"Controles OK\", \"Última validación\"}),",
+                "    Tipado = Table.TransformColumnTypes(Seleccionado, {{\"Último dato\", type datetime}, {\"Controles críticos\", Int64.Type}, {\"Controles en alerta\", Int64.Type}, {\"Controles OK\", Int64.Type}, {\"Última validación\", type datetime}})",
+                "in",
+                "    Tipado"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "_Medidas",
+        "columns": [
+          {
+            "name": "_",
+            "dataType": "string",
+            "isHidden": true,
+            "sourceColumn": "_",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          }
+        ],
+        "partitions": [
+          {
+            "name": "_Medidas",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    Origen = #table({\"_\"}, {{\"\"}})",
+                "in",
+                "    Origen"
+              ]
+            }
+          }
+        ],
+        "measures": [
+          {
+            "name": "Ventas Brutas USD",
+            "expression": [
+              "CALCULATE (",
+              "    SUM ( v_fact_ventas[Importe USD] ),",
+              "    v_fact_ventas[Tipo documento] = \"FC\"",
+              ")"
+            ],
+            "formatString": "#,0",
+            "description": "========================================================================= ADIUM PHARMA — Biblioteca DAX · 00 · MEDIDAS BASE  Estas medidas las comparten los tres tableros (VAR, Ofertas, Logística). Viven en una tabla vacía llamada `_Medidas` para que el panel de campos muestre el modelo separado de los cálculos.  Dos criterios que se aplican en TODA la biblioteca:  1. Ningún ratio se materializa en SQL. Se calcula acá, con DIVIDE, en el contexto de filtro del visual. Un ratio precalculado se promedia mal en cuanto el usuario cambia de nivel de agregación.  2. Toda división usa DIVIDE(), nunca \"/\". DIVIDE devuelve BLANK ante denominador cero en vez de un error que rompe el visual entero.  Nomenclatura: nombre de negocio, sin prefijos técnicos, con la unidad explícita entre paréntesis cuando puede haber ambigüedad. ========================================================================= ------------------------------------------------------------------------- VENTAS ------------------------------------------------------------------------- Ventas brutas: toda la facturación, sin restar notas de crédito.",
+            "displayFolder": "01 · Ventas y margen"
+          },
+          {
+            "name": "Ventas Netas USD",
+            "expression": [
+              "SUMX ( v_fact_ventas, v_fact_ventas[Importe USD] * v_fact_ventas[Signo] )"
+            ],
+            "formatString": "#,0",
+            "description": "Ventas netas: LA cifra oficial de la compañía. El signo viene como columna del modelo (+1 factura / -1 nota de crédito), así que una sola SUMX resuelve netas sin repetir la regla en cada medida. Si mañana cambia el criterio de qué resta, se cambia en el ETL y todas las medidas quedan consistentes automáticamente.",
+            "displayFolder": "01 · Ventas y margen"
+          },
+          {
+            "name": "Unidades",
+            "expression": [
+              "SUMX ( v_fact_ventas, v_fact_ventas[Unidades] * v_fact_ventas[Signo] )"
+            ],
+            "formatString": "#,0",
+            "displayFolder": "01 · Ventas y margen"
+          },
+          {
+            "name": "Costo USD",
+            "expression": [
+              "SUMX ( v_fact_ventas, v_fact_ventas[Costo USD] * v_fact_ventas[Signo] )"
+            ],
+            "formatString": "#,0",
+            "displayFolder": "01 · Ventas y margen"
+          },
+          {
+            "name": "Margen Bruto USD",
+            "expression": [
+              "[Ventas Netas USD] - [Costo USD]"
+            ],
+            "formatString": "#,0",
+            "displayFolder": "01 · Ventas y margen"
+          },
+          {
+            "name": "Margen Bruto %",
+            "expression": [
+              "DIVIDE ( [Margen Bruto USD], [Ventas Netas USD] )"
+            ],
+            "formatString": "0.0%",
+            "displayFolder": "01 · Ventas y margen"
+          },
+          {
+            "name": "Precio Promedio USD",
+            "expression": [
+              "DIVIDE ( [Ventas Netas USD], [Unidades] )"
+            ],
+            "formatString": "#,0",
+            "description": "Precio promedio REALIZADO, no el de lista. Es un promedio ponderado por volumen: dividir la venta por las unidades. Promediar la columna de precio daría el precio \"promedio de las líneas\", que no significa nada.",
+            "displayFolder": "01 · Ventas y margen"
+          },
+          {
+            "name": "Descuento Efectivo %",
+            "expression": [
+              "VAR VentaALista =",
+              "    SUMX (",
+              "        v_fact_ventas,",
+              "        v_fact_ventas[Unidades] * v_fact_ventas[Signo]",
+              "            * RELATED ( v_dim_producto[Precio de lista USD] )",
+              "    )",
+              "RETURN",
+              "    DIVIDE ( VentaALista - [Ventas Netas USD], VentaALista )"
+            ],
+            "formatString": "0.0%",
+            "description": "Descuento efectivo: cuánto se resignó respecto del precio de lista. Es la métrica que el área comercial mira antes que cualquier otra.",
+            "displayFolder": "01 · Ventas y margen"
+          },
+          {
+            "name": "Ventas Netas USD AA",
+            "expression": [
+              "CALCULATE ( [Ventas Netas USD], SAMEPERIODLASTYEAR ( v_dim_calendario[Fecha] ) )"
+            ],
+            "formatString": "#,0",
+            "description": "------------------------------------------------------------------------- INTELIGENCIA DE TIEMPO Todo apoyado en v_dim_calendario, marcada como tabla de fechas. Nunca sobre la fecha de la tabla de hechos: ahí las funciones de time intelligence dan resultados silenciosamente incorrectos. -------------------------------------------------------------------------",
+            "displayFolder": "01 · Tiempo"
+          },
+          {
+            "name": "Var % vs AA",
+            "expression": [
+              "DIVIDE ( [Ventas Netas USD] - [Ventas Netas USD AA], [Ventas Netas USD AA] )"
+            ],
+            "formatString": "0.0%",
+            "displayFolder": "01 · Tiempo"
+          },
+          {
+            "name": "Var USD vs AA",
+            "expression": [
+              "[Ventas Netas USD] - [Ventas Netas USD AA]"
+            ],
+            "formatString": "#,0",
+            "displayFolder": "01 · Tiempo"
+          },
+          {
+            "name": "Ventas Netas USD YTD",
+            "expression": [
+              "TOTALYTD ( [Ventas Netas USD], v_dim_calendario[Fecha] )"
+            ],
+            "formatString": "#,0",
+            "displayFolder": "01 · Tiempo"
+          },
+          {
+            "name": "MAT Ventas USD",
+            "expression": [
+              "CALCULATE (",
+              "    [Ventas Netas USD],",
+              "    DATESINPERIOD (",
+              "        v_dim_calendario[Fecha],",
+              "        MAX ( v_dim_calendario[Fecha] ),",
+              "        -12,",
+              "        MONTH",
+              "    )",
+              ")"
+            ],
+            "formatString": "#,0",
+            "description": "MAT — Moving Annual Total. Es EL estándar de reporte de la industria farmacéutica: total móvil de 12 meses, que neutraliza la estacionalidad. Sin MAT, una caída de julio en respiratorios parece un problema comercial cuando en realidad es que julio del año pasado también fue alto.",
+            "displayFolder": "01 · Tiempo"
+          },
+          {
+            "name": "MAT Ventas USD AA",
+            "expression": [
+              "CALCULATE ( [MAT Ventas USD], SAMEPERIODLASTYEAR ( v_dim_calendario[Fecha] ) )"
+            ],
+            "formatString": "#,0",
+            "displayFolder": "01 · Tiempo"
+          },
+          {
+            "name": "MAT Var %",
+            "expression": [
+              "DIVIDE ( [MAT Ventas USD] - [MAT Ventas USD AA], [MAT Ventas USD AA] )"
+            ],
+            "formatString": "0.0%",
+            "displayFolder": "01 · Tiempo"
+          },
+          {
+            "name": "Ventas Netas USD MA3",
+            "expression": [
+              "AVERAGEX (",
+              "    DATESINPERIOD ( v_dim_calendario[Fecha], MAX ( v_dim_calendario[Fecha] ), -3, MONTH ),",
+              "    CALCULATE ( [Ventas Netas USD] )",
+              ")"
+            ],
+            "formatString": "#,0",
+            "displayFolder": "01 · Tiempo"
+          },
+          {
+            "name": "Último Dato",
+            "expression": [
+              "CALCULATE ( MAX ( v_fact_ventas[Fecha] ), REMOVEFILTERS () )"
+            ],
+            "formatString": "#,0.00",
+            "description": "------------------------------------------------------------------------- GOBIERNO DEL DATO El estado de la información va VISIBLE en el tablero, no escondido. Cuando el negocio ve el estado del dato, empieza a cuidarlo. -------------------------------------------------------------------------",
+            "displayFolder": "00 · Contexto y gobierno"
+          },
+          {
+            "name": "Días de Atraso",
+            "expression": [
+              "DATEDIFF ( [Último Dato], TODAY (), DAY )"
+            ],
+            "formatString": "#,0.0",
+            "displayFolder": "00 · Contexto y gobierno"
+          },
+          {
+            "name": "Estado de Vigencia",
+            "expression": [
+              "VAR Atraso = [Días de Atraso]",
+              "RETURN",
+              "    SWITCH (",
+              "        TRUE (),",
+              "        Atraso <= 5,  \"🟢 Al día\",",
+              "        Atraso <= 10, \"🟡 Con atraso\",",
+              "        \"🔴 Fuera de SLA\"",
+              "    )"
+            ],
+            "description": "Semáforo de vigencia con el SLA de carga acordado (5 días hábiles).",
+            "displayFolder": "00 · Contexto y gobierno"
+          },
+          {
+            "name": "Ventas en Revisión %",
+            "expression": [
+              "DIVIDE (",
+              "    CALCULATE ( [Ventas Netas USD], v_fact_ventas[Líneas en revisión] > 0 ),",
+              "    [Ventas Netas USD]",
+              ")"
+            ],
+            "formatString": "0.0%",
+            "description": "Porcentaje de la venta que descansa sobre líneas marcadas para revisión. No es lo mismo que 300 líneas estén marcadas a que esas 300 líneas sean el 40% de la facturación del mes.",
+            "displayFolder": "00 · Contexto y gobierno"
+          },
+          {
+            "name": "Encabezado de Confianza",
+            "expression": [
+              "VAR Critico = MAX ( v_estado_datos[Controles críticos] )",
+              "VAR Alerta  = MAX ( v_estado_datos[Controles en alerta] )",
+              "RETURN",
+              "    SWITCH (",
+              "        TRUE (),",
+              "        Critico > 0, \"🔴 \" & Critico & \" control(es) crítico(s) — cifra no publicable\",",
+              "        Alerta > 0,  \"🟡 \" & Alerta & \" alerta(s) de calidad — revisar antes de decidir\",",
+              "        \"🟢 Validado contra origen\"",
+              "    )"
+            ],
+            "displayFolder": "00 · Contexto y gobierno"
+          },
+          {
+            "name": "Título del Contexto",
+            "expression": [
+              "VAR Filial   = SELECTEDVALUE ( v_dim_filial[País], \"todas las filiales\" )",
+              "VAR Periodo  = SELECTEDVALUE ( v_dim_calendario[Año-Mes], \"el período seleccionado\" )",
+              "VAR Clase    = SELECTEDVALUE ( v_dim_producto[Clase terapéutica], \"todas las clases\" )",
+              "RETURN",
+              "    \"Ventas de \" & Clase & \" en \" & Filial & \" · \" & Periodo"
+            ],
+            "description": "------------------------------------------------------------------------- UTILIDADES DE PRESENTACIÓN ------------------------------------------------------------------------- Título dinámico: el usuario siempre sabe qué está mirando, aunque haya llegado por drill-through desde otra página.",
+            "displayFolder": "00 · Contexto y gobierno"
+          },
+          {
+            "name": "Objetivo USD",
+            "expression": [
+              "SUM ( v_fact_objetivos[Objetivo USD] )"
+            ],
+            "formatString": "#,0",
+            "description": "========================================================================= ADIUM PHARMA — Biblioteca DAX · 01 · TABLERO VAR (Ventas · Análisis · Rentabilidad)  Pregunta que responde el tablero: \"¿Cómo venimos contra objetivo, contra el año pasado y contra el mercado, y de dónde viene exactamente la diferencia?\"  La pieza que separa este tablero de un reporte de ventas común es el puente Precio–Volumen–Mix: no alcanza con decir que las ventas cayeron 8%; hay que decir cuánto de esa caída es precio, cuánto volumen y cuánto cambio de mezcla de productos. Son tres problemas distintos con tres dueños distintos. ========================================================================= ------------------------------------------------------------------------- OBJETIVO Y CUMPLIMIENTO -------------------------------------------------------------------------",
+            "displayFolder": "04 · Objetivo"
+          },
+          {
+            "name": "Cumplimiento %",
+            "expression": [
+              "DIVIDE ( [Ventas Netas USD], [Objetivo USD] )"
+            ],
+            "formatString": "0.0%",
+            "displayFolder": "04 · Objetivo"
+          },
+          {
+            "name": "Gap vs Objetivo USD",
+            "expression": [
+              "[Ventas Netas USD] - [Objetivo USD]"
+            ],
+            "formatString": "#,0",
+            "displayFolder": "04 · Objetivo"
+          },
+          {
+            "name": "Cumplimiento Proyectado %",
+            "expression": [
+              "VAR HabilesTranscurridos =",
+              "    CALCULATE (",
+              "        COUNTROWS ( v_dim_calendario ),",
+              "        v_dim_calendario[Es día hábil] = TRUE (),",
+              "        v_dim_calendario[Fecha] <= [Último Dato]",
+              "    )",
+              "VAR HabilesDelMes =",
+              "    CALCULATE (",
+              "        COUNTROWS ( v_dim_calendario ),",
+              "        v_dim_calendario[Es día hábil] = TRUE (),",
+              "        REMOVEFILTERS ( v_dim_calendario[Fecha] ),",
+              "        VALUES ( v_dim_calendario[Año-Mes] )",
+              "    )",
+              "VAR Proyeccion = DIVIDE ( [Ventas Netas USD] * HabilesDelMes, HabilesTranscurridos )",
+              "RETURN",
+              "    DIVIDE ( Proyeccion, [Objetivo USD] )"
+            ],
+            "formatString": "0.0%",
+            "description": "Cumplimiento proyectado a fin de mes, usando el ritmo de días hábiles transcurridos. Sirve para actuar DURANTE el mes, no para lamentarse después: es la diferencia entre un tablero de gestión y uno de autopsia.",
+            "displayFolder": "04 · Objetivo"
+          },
+          {
+            "name": "Semáforo de Cumplimiento",
+            "expression": [
+              "VAR C = [Cumplimiento %]",
+              "RETURN",
+              "    SWITCH (",
+              "        TRUE (),",
+              "        ISBLANK ( C ), BLANK (),",
+              "        C >= 1,    \"🟢\",",
+              "        C >= 0.90, \"🟡\",",
+              "        \"🔴\"",
+              "    )"
+            ],
+            "displayFolder": "00 · Contexto y gobierno"
+          },
+          {
+            "name": "Sell-out USD",
+            "expression": [
+              "SUM ( v_fact_sellout[Importe sell-out USD] )"
+            ],
+            "formatString": "#,0",
+            "description": "------------------------------------------------------------------------- SELL-IN vs SELL-OUT — el análisis que define a un analista de farma  Sell-in  = lo que el laboratorio le factura al distribuidor Sell-out = lo que la farmacia le vende al paciente (demanda real)  Si el sell-in crece y el sell-out no, no hay más demanda: hay stock acumulándose en el canal, y esa venta va a volver como devolución o como caída del mes siguiente. -------------------------------------------------------------------------",
+            "displayFolder": "02 · Mercado y sell-out"
+          },
+          {
+            "name": "Sell-out Unidades",
+            "expression": [
+              "SUM ( v_fact_sellout[Unidades sell-out] )"
+            ],
+            "formatString": "#,0.00",
+            "displayFolder": "02 · Mercado y sell-out"
+          },
+          {
+            "name": "Brecha Sell-in vs Sell-out %",
+            "expression": [
+              "DIVIDE ( [Unidades] - [Sell-out Unidades], [Sell-out Unidades] )"
+            ],
+            "formatString": "0.0%",
+            "displayFolder": "02 · Mercado y sell-out"
+          },
+          {
+            "name": "Alerta de Carga de Canal",
+            "expression": [
+              "VAR Brecha = [Brecha Sell-in vs Sell-out %]",
+              "RETURN",
+              "    SWITCH (",
+              "        TRUE (),",
+              "        ISBLANK ( Brecha ), BLANK (),",
+              "        Brecha > 0.25, \"🔴 Carga de canal: el sell-in supera la demanda real en más de 25%\",",
+              "        Brecha > 0.12, \"🟡 Sell-in por encima del sell-out — vigilar stock del canal\",",
+              "        Brecha < -0.15, \"🔵 El canal está desabastecido: se vende más de lo que se le entrega\",",
+              "        \"🟢 Sell-in alineado con la demanda\"",
+              "    )"
+            ],
+            "description": "Alerta de carga de canal: se dispara cuando el sell-in corre muy por encima del sell-out de forma sostenida.",
+            "displayFolder": "00 · Contexto y gobierno"
+          },
+          {
+            "name": "Mercado USD",
+            "expression": [
+              "SUM ( v_fact_sellout[Importe mercado USD] )"
+            ],
+            "formatString": "#,0",
+            "description": "------------------------------------------------------------------------- MARKET SHARE — la métrica reina, y la más fácil de calcular mal  Share es un cociente. Puede caer porque vendí menos O porque el mercado creció y yo crecí menos. Son dos historias distintas, con dos acciones distintas. Por eso siempre se muestra el share JUNTO a la venta absoluta. -------------------------------------------------------------------------",
+            "displayFolder": "02 · Mercado y sell-out"
+          },
+          {
+            "name": "Mercado Unidades",
+            "expression": [
+              "SUM ( v_fact_sellout[Unidades mercado] )"
+            ],
+            "formatString": "#,0.00",
+            "displayFolder": "02 · Mercado y sell-out"
+          },
+          {
+            "name": "Market Share Valores %",
+            "expression": [
+              "DIVIDE ( [Sell-out USD], [Mercado USD] )"
+            ],
+            "formatString": "0.0%",
+            "description": "Share en valores y en unidades: NUNCA uno solo. Se puede ganar share en unidades y perderlo en valores — eso significa que se está creciendo a costa de precio, que es una noticia mala disfrazada de buena.",
+            "displayFolder": "02 · Mercado y sell-out"
+          },
+          {
+            "name": "Market Share Unidades %",
+            "expression": [
+              "DIVIDE ( [Sell-out Unidades], [Mercado Unidades] )"
+            ],
+            "formatString": "0.0%",
+            "displayFolder": "02 · Mercado y sell-out"
+          },
+          {
+            "name": "Market Share Valores % AA",
+            "expression": [
+              "CALCULATE ( [Market Share Valores %], SAMEPERIODLASTYEAR ( v_dim_calendario[Fecha] ) )"
+            ],
+            "formatString": "0.0%",
+            "displayFolder": "02 · Mercado y sell-out"
+          },
+          {
+            "name": "Var Share pp",
+            "expression": [
+              "( [Market Share Valores %] - [Market Share Valores % AA] ) * 100"
+            ],
+            "formatString": "#,0.0",
+            "description": "La variación de un porcentaje se expresa en PUNTOS PORCENTUALES, no en porcentaje. \"El share cayó 10%\" es ambiguo; \"cayó 2 pp\" no lo es.",
+            "displayFolder": "02 · Mercado y sell-out"
+          },
+          {
+            "name": "Origen de la Variación de Share",
+            "expression": [
+              "VAR MiVar      = DIVIDE ( [Sell-out USD], CALCULATE ( [Sell-out USD], SAMEPERIODLASTYEAR ( v_dim_calendario[Fecha] ) ) ) - 1",
+              "VAR MercadoVar = DIVIDE ( [Mercado USD], CALCULATE ( [Mercado USD], SAMEPERIODLASTYEAR ( v_dim_calendario[Fecha] ) ) ) - 1",
+              "RETURN",
+              "    SWITCH (",
+              "        TRUE (),",
+              "        ISBLANK ( MiVar ) || ISBLANK ( MercadoVar ), BLANK (),",
+              "        MiVar < 0 && MercadoVar < 0,",
+              "            \"Cae el mercado y caemos con él (\" & FORMAT ( MercadoVar, \"0.0%\" ) & \" el mercado)\",",
+              "        MiVar < 0 && MercadoVar >= 0,",
+              "            \"Problema propio: el mercado creció \" & FORMAT ( MercadoVar, \"0.0%\" ) & \" y nosotros \" & FORMAT ( MiVar, \"0.0%\" ),",
+              "        MiVar >= 0 && MercadoVar > MiVar,",
+              "            \"Crecemos menos que el mercado (\" & FORMAT ( MiVar, \"0.0%\" ) & \" vs \" & FORMAT ( MercadoVar, \"0.0%\" ) & \")\",",
+              "        \"Ganamos share: crecemos \" & FORMAT ( MiVar, \"0.0%\" ) & \" contra un mercado de \" & FORMAT ( MercadoVar, \"0.0%\" )",
+              "    )"
+            ],
+            "description": "Descomposición de la variación de share: ¿fue porque yo caí o porque el mercado creció? Es la primera pregunta que hay que responder y casi nunca está en el tablero.",
+            "displayFolder": "00 · Contexto y gobierno"
+          },
+          {
+            "name": "Efecto Volumen USD",
+            "expression": [
+              "VAR PrecioAA   = CALCULATE ( [Precio Promedio USD], SAMEPERIODLASTYEAR ( v_dim_calendario[Fecha] ) )",
+              "VAR UnidadesAA = CALCULATE ( [Unidades], SAMEPERIODLASTYEAR ( v_dim_calendario[Fecha] ) )",
+              "RETURN",
+              "    ( [Unidades] - UnidadesAA ) * PrecioAA"
+            ],
+            "formatString": "#,0",
+            "description": "------------------------------------------------------------------------- PUENTE PRECIO – VOLUMEN – MIX  Descompone la variación de ventas vs año anterior en tres efectos:  Volumen : vendí más o menos unidades, a la mezcla y precio del año pasado Precio  : las mismas unidades, a distinto precio Mix     : cambió la composición hacia productos más caros o más baratos  La suma de los tres reconstruye exactamente la variación total. Ese cierre es lo que hace que el comité confíe en la descomposición: si no cierra, es un modelo de opinión, no de datos. -------------------------------------------------------------------------",
+            "displayFolder": "03 · Puente Precio-Volumen-Mix"
+          },
+          {
+            "name": "Efecto Precio USD",
+            "expression": [
+              "VAR PrecioAA = CALCULATE ( [Precio Promedio USD], SAMEPERIODLASTYEAR ( v_dim_calendario[Fecha] ) )",
+              "RETURN",
+              "    ( [Precio Promedio USD] - PrecioAA ) * [Unidades]"
+            ],
+            "formatString": "#,0",
+            "displayFolder": "03 · Puente Precio-Volumen-Mix"
+          },
+          {
+            "name": "Efecto Mix USD",
+            "expression": [
+              "[Var USD vs AA] - [Efecto Volumen USD] - [Efecto Precio USD]"
+            ],
+            "formatString": "#,0",
+            "description": "El mix es el residuo: lo que la variación total tiene y que volumen y precio a nivel agregado no explican. Se calcula como residuo a propósito — así el puente cierra por construcción y no hay que \"ajustar\" nada.",
+            "displayFolder": "03 · Puente Precio-Volumen-Mix"
+          },
+          {
+            "name": "Control Cierre del Puente",
+            "expression": [
+              "VAR Suma = [Efecto Volumen USD] + [Efecto Precio USD] + [Efecto Mix USD]",
+              "VAR Dif  = ABS ( Suma - [Var USD vs AA] )",
+              "RETURN",
+              "    IF ( Dif < 0.01, \"🟢 El puente cierra\", \"🔴 Descuadre de \" & FORMAT ( Dif, \"#,0.00\" ) )"
+            ],
+            "formatString": "#,0.00",
+            "description": "Control de cierre. Si esta medida no da cero, el puente está mal y hay que decirlo, no maquillarlo.",
+            "displayFolder": "00 · Contexto y gobierno"
+          },
+          {
+            "name": "SKU que explican el 80%",
+            "expression": [
+              "VAR TablaSKU =",
+              "    ADDCOLUMNS (",
+              "        VALUES ( v_dim_producto[SKU] ),",
+              "        \"@venta\", [Ventas Netas USD]",
+              "    )",
+              "VAR Total = SUMX ( TablaSKU, [@venta] )",
+              "VAR ConAcumulado =",
+              "    ADDCOLUMNS (",
+              "        TablaSKU,",
+              "        \"@acum\",",
+              "            VAR VentaActual = [@venta]",
+              "            RETURN",
+              "                SUMX ( FILTER ( TablaSKU, [@venta] >= VentaActual ), [@venta] )",
+              "    )",
+              "RETURN",
+              "    COUNTROWS ( FILTER ( ConAcumulado, DIVIDE ( [@acum], Total ) <= 0.80 ) ) + 1"
+            ],
+            "formatString": "0.0%",
+            "description": "------------------------------------------------------------------------- CONCENTRACIÓN Y MIX DE PORTAFOLIO ------------------------------------------------------------------------- Regla de Pareto sobre el portafolio: cuántos SKU explican el 80% de la venta. En farma la concentración suele ser brutal, y saber el número exacto cambia la conversación sobre dónde poner la fuerza de ventas.",
+            "displayFolder": "01 · Ventas y margen"
+          },
+          {
+            "name": "% del Total Visible",
+            "expression": [
+              "DIVIDE (",
+              "    [Ventas Netas USD],",
+              "    CALCULATE ( [Ventas Netas USD], ALLSELECTED ( v_dim_producto ) )",
+              ")"
+            ],
+            "formatString": "0.0%",
+            "description": "Participación del elemento en el total visible. ALLSELECTED —y no ALL— para que el porcentaje se calcule sobre lo que el usuario seleccionó en los slicers, no sobre la base entera. Es la diferencia entre \"20% del portafolio\" y \"20% de lo que estoy mirando\".",
+            "displayFolder": "01 · Ventas y margen"
+          },
+          {
+            "name": "Share de la Filial %",
+            "expression": [
+              "DIVIDE (",
+              "    [Ventas Netas USD],",
+              "    CALCULATE ( [Ventas Netas USD], ALLEXCEPT ( v_dim_filial, v_dim_filial[Filial] ) )",
+              ")"
+            ],
+            "formatString": "0.0%",
+            "description": "Share de la filial dentro del total corporativo, INMUNE al filtro de producto. ALLEXCEPT conserva la filial y quita el resto: así el share por filial no se rompe cuando el usuario filtra una clase terapéutica. Sin este cuidado, el comercial ve un número que no cuadra y deja de confiar en el tablero — y con razón.",
+            "displayFolder": "02 · Mercado y sell-out"
+          },
+          {
+            "name": "Margen Bruto USD AA",
+            "expression": [
+              "CALCULATE ( [Margen Bruto USD], SAMEPERIODLASTYEAR ( v_dim_calendario[Fecha] ) )"
+            ],
+            "formatString": "#,0",
+            "description": "------------------------------------------------------------------------- RENTABILIDAD -------------------------------------------------------------------------",
+            "displayFolder": "01 · Tiempo"
+          },
+          {
+            "name": "Var Margen pp",
+            "expression": [
+              "( [Margen Bruto %] - DIVIDE ( [Margen Bruto USD AA], [Ventas Netas USD AA] ) ) * 100"
+            ],
+            "formatString": "#,0.0",
+            "displayFolder": "01 · Ventas y margen"
+          },
+          {
+            "name": "Margen Neto de Devoluciones USD",
+            "expression": [
+              "[Margen Bruto USD] - SUM ( v_fact_ventas[Importe devuelto USD] )"
+            ],
+            "formatString": "#,0",
+            "description": "Margen neto de devoluciones: el margen que efectivamente queda después de que el canal devuelve. Es el número que importa y casi nunca se reporta.",
+            "displayFolder": "06 · Logística y riesgo"
+          },
+          {
+            "name": "Margen Neto de Devoluciones %",
+            "expression": [
+              "DIVIDE ( [Margen Neto de Devoluciones USD], [Ventas Netas USD] )"
+            ],
+            "formatString": "0.0%",
+            "displayFolder": "06 · Logística y riesgo"
+          },
+          {
+            "name": "Ofertas Emitidas",
+            "expression": [
+              "SUM ( v_fact_ofertas[Ofertas] )"
+            ],
+            "formatString": "#,0",
+            "description": "========================================================================= ADIUM PHARMA — Biblioteca DAX · 02 · TABLERO OFERTAS  Pregunta que responde: \"¿Cuánto nos cuesta la política comercial, cuánto trae de vuelta, y dónde conviene poner el próximo peso de descuento?\"  El tablero cruza tres capas: 1. lo que PASÓ        — ofertas emitidas, aceptadas, inversión, retorno 2. lo que VA A PASAR  — proyección de inversión del modelo del paso 4 3. lo que HABRÍA que hacer — recomendación del motor de IA del paso 5  Esa tercera capa es la que convierte el tablero en una herramienta de decisión en vez de un reporte de resultados. ========================================================================= ------------------------------------------------------------------------- ACTIVIDAD DE CAMPAÑA -------------------------------------------------------------------------",
+            "displayFolder": "05 · Ofertas e IA"
+          },
+          {
+            "name": "Ofertas Aceptadas",
+            "expression": [
+              "SUM ( v_fact_ofertas[Aceptada] )"
+            ],
+            "formatString": "#,0",
+            "displayFolder": "05 · Ofertas e IA"
+          },
+          {
+            "name": "Tasa de Aceptación %",
+            "expression": [
+              "DIVIDE ( [Ofertas Aceptadas], [Ofertas Emitidas] )"
+            ],
+            "formatString": "0.0%",
+            "displayFolder": "05 · Ofertas e IA"
+          },
+          {
+            "name": "Tasa de Aceptación por Valor %",
+            "expression": [
+              "DIVIDE (",
+              "    CALCULATE ( [Valor Ofertado USD], v_fact_ofertas[Aceptada] = 1 ),",
+              "    [Valor Ofertado USD]",
+              ")"
+            ],
+            "formatString": "0.0%",
+            "description": "Ponderado por valor, no por conteo. Que se acepte el 60% de las ofertas no dice nada si el 40% rechazado concentra todo el volumen.",
+            "displayFolder": "05 · Ofertas e IA"
+          },
+          {
+            "name": "Valor Ofertado USD",
+            "expression": [
+              "SUMX (",
+              "    v_fact_ofertas,",
+              "    v_fact_ofertas[Unidades ofertadas] * RELATED ( v_dim_producto[Precio de lista USD] )",
+              ")"
+            ],
+            "formatString": "#,0",
+            "displayFolder": "05 · Ofertas e IA"
+          },
+          {
+            "name": "Inversión Comercial USD",
+            "expression": [
+              "SUMX (",
+              "    FILTER ( v_fact_ofertas, v_fact_ofertas[Aceptada] = 1 ),",
+              "    v_fact_ofertas[Unidades ofertadas]",
+              "        * RELATED ( v_dim_producto[Precio de lista USD] )",
+              "        * v_fact_ofertas[Descuento %]",
+              ")"
+            ],
+            "formatString": "#,0",
+            "description": "------------------------------------------------------------------------- COSTO DE LA POLÍTICA COMERCIAL  \"Inversión comercial\" y no \"descuento otorgado\" a propósito: el nombre obliga a preguntarse cuál es el retorno. Un descuento sin retorno medido no es una inversión, es una resignación de margen. -------------------------------------------------------------------------",
+            "displayFolder": "05 · Ofertas e IA"
+          },
+          {
+            "name": "Inversión Comercial Ajustada USD",
+            "expression": [
+              "SUMX (",
+              "    FILTER ( v_fact_ofertas, v_fact_ofertas[Aceptada] = 1 ),",
+              "    v_fact_ofertas[Unidades ofertadas]",
+              "        * RELATED ( v_dim_producto[Precio de lista USD] )",
+              "        * v_fact_ofertas[Descuento %]",
+              "        * RELATED ( v_dim_tipo_oferta[Costo relativo] )",
+              ")"
+            ],
+            "formatString": "#,0",
+            "description": "Costo REAL de la oferta según su tipo. Una bonificación en producto no cuesta el precio de venta: cuesta el costo de fabricación. Tratar todas las ofertas igual sobreestima el costo de las bonificaciones ~30% y hace que el negocio elija mal el instrumento.",
+            "displayFolder": "05 · Ofertas e IA"
+          },
+          {
+            "name": "Descuento Medio Ponderado %",
+            "expression": [
+              "DIVIDE ( [Inversión Comercial USD], [Valor Ofertado USD] )"
+            ],
+            "formatString": "0.0%",
+            "displayFolder": "01 · Ventas y margen"
+          },
+          {
+            "name": "Inversión sobre Ventas %",
+            "expression": [
+              "DIVIDE ( [Inversión Comercial USD], [Ventas Netas USD] )"
+            ],
+            "formatString": "0.0%",
+            "description": "Inversión como porcentaje de la venta neta: el ratio que se lleva al comité. Una inversión que crece más rápido que la venta es una alarma, aunque el volumen esté subiendo.",
+            "displayFolder": "05 · Ofertas e IA"
+          },
+          {
+            "name": "Ventas con Oferta USD",
+            "expression": [
+              "CALCULATE (",
+              "    [Ventas Netas USD],",
+              "    v_dim_tipo_oferta[Código] <> \"SIN\"",
+              ")"
+            ],
+            "formatString": "#,0",
+            "description": "------------------------------------------------------------------------- RETORNO ------------------------------------------------------------------------- Ventas asociadas a una oferta: solo las líneas con tipo de oferta distinto de \"Sin oferta\".",
+            "displayFolder": "05 · Ofertas e IA"
+          },
+          {
+            "name": "Ventas sin Oferta USD",
+            "expression": [
+              "CALCULATE ( [Ventas Netas USD], v_dim_tipo_oferta[Código] = \"SIN\" )"
+            ],
+            "formatString": "#,0",
+            "displayFolder": "05 · Ofertas e IA"
+          },
+          {
+            "name": "% de Ventas con Oferta",
+            "expression": [
+              "DIVIDE ( [Ventas con Oferta USD], [Ventas Netas USD] )"
+            ],
+            "formatString": "0.0%",
+            "displayFolder": "05 · Ofertas e IA"
+          },
+          {
+            "name": "Margen de Ventas con Oferta USD",
+            "expression": [
+              "CALCULATE ( [Margen Bruto USD], v_dim_tipo_oferta[Código] <> \"SIN\" )"
+            ],
+            "formatString": "#,0",
+            "displayFolder": "05 · Ofertas e IA"
+          },
+          {
+            "name": "ROI de Ofertas",
+            "expression": [
+              "DIVIDE (",
+              "    [Margen de Ventas con Oferta USD] - [Inversión Comercial Ajustada USD],",
+              "    [Inversión Comercial Ajustada USD]",
+              ")"
+            ],
+            "formatString": "0.0%",
+            "description": "ROI de la política comercial. Se compara contra 0, no contra 1: acá el numerador ya es margen NETO de la inversión.",
+            "displayFolder": "05 · Ofertas e IA"
+          },
+          {
+            "name": "Nota Metodológica ROI",
+            "expression": [
+              "\"ROI comparativo, no causal: incluye ventas que podrían haber ocurrido sin oferta. Para medir impacto incremental hace falta un grupo de control.\""
+            ],
+            "description": "Advertencia honesta: este ROI NO es causal. Parte de la venta con oferta se habría hecho igual sin descuento — eso es canibalización, y sin un grupo de control no se puede separar. Se muestra como referencia comparativa entre filiales y tipos de oferta, no como medida de impacto incremental.",
+            "displayFolder": "00 · Contexto y gobierno"
+          },
+          {
+            "name": "Semáforo de ROI",
+            "expression": [
+              "VAR R = [ROI de Ofertas]",
+              "RETURN",
+              "    SWITCH (",
+              "        TRUE (),",
+              "        ISBLANK ( R ), BLANK (),",
+              "        R >= 3, \"🟢 Alto\",",
+              "        R >= 1, \"🟡 Aceptable\",",
+              "        \"🔴 La oferta no se paga\"",
+              "    )"
+            ],
+            "displayFolder": "00 · Contexto y gobierno"
+          },
+          {
+            "name": "Margen por USD Invertido",
+            "expression": [
+              "DIVIDE ( [Margen de Ventas con Oferta USD], [Inversión Comercial Ajustada USD] )"
+            ],
+            "formatString": "#,0",
+            "description": "------------------------------------------------------------------------- EFICIENCIA POR INSTRUMENTO Y POR SEGMENTO ------------------------------------------------------------------------- Margen generado por cada dólar invertido en descuento. Es la métrica que permite comparar instrumentos distintos (descuento directo vs bonificación vs rebate) en la misma unidad.",
+            "displayFolder": "01 · Ventas y margen"
+          },
+          {
+            "name": "Ranking de Eficiencia",
+            "expression": [
+              "RANKX (",
+              "    ALLSELECTED ( v_dim_tipo_oferta[Tipo de oferta] ),",
+              "    [Margen por USD Invertido],",
+              "    ,",
+              "    DESC,",
+              "    DENSE",
+              ")"
+            ],
+            "formatString": "#,0.00",
+            "description": "Ranking de eficiencia dentro del contexto visible.",
+            "displayFolder": "01 · Ventas y margen"
+          },
+          {
+            "name": "Inversión en Clientes A %",
+            "expression": [
+              "DIVIDE (",
+              "    CALCULATE ( [Inversión Comercial USD], v_dim_cliente[Segmento] = \"A\" ),",
+              "    CALCULATE ( [Inversión Comercial USD], REMOVEFILTERS ( v_dim_cliente[Segmento] ) )",
+              ")"
+            ],
+            "formatString": "0.0%",
+            "description": "Cuánta inversión se concentra en los clientes que MENOS la necesitan. Un cliente segmento A que compraría igual y recibe el descuento más alto es inversión mal asignada — y es el hallazgo más frecuente al abrir por primera vez un tablero de ofertas.",
+            "displayFolder": "05 · Ofertas e IA"
+          },
+          {
+            "name": "Inversión Proyectada USD",
+            "expression": [
+              "SUM ( v_forecast_ofertas[Inversión proyectada USD] )"
+            ],
+            "formatString": "#,0",
+            "description": "------------------------------------------------------------------------- CAPA PREDICTIVA — proyección del modelo del paso 4 -------------------------------------------------------------------------",
+            "displayFolder": "05 · Ofertas e IA"
+          },
+          {
+            "name": "Desvío del Forecast %",
+            "expression": [
+              "DIVIDE (",
+              "    [Inversión Comercial USD] - [Inversión Proyectada USD],",
+              "    [Inversión Proyectada USD]",
+              ")"
+            ],
+            "formatString": "0.0%",
+            "displayFolder": "01 · Ventas y margen"
+          },
+          {
+            "name": "Precisión del Forecast %",
+            "expression": [
+              "VAR Holdout = FILTER ( v_forecast_ofertas, v_forecast_ofertas[Es holdout] = 1 )",
+              "VAR Error   = SUMX ( Holdout, ABS ( v_forecast_ofertas[Inversión USD] - v_forecast_ofertas[Inversión proyectada USD] ) )",
+              "VAR Real    = SUMX ( Holdout, v_forecast_ofertas[Inversión USD] )",
+              "RETURN",
+              "    1 - DIVIDE ( Error, Real )"
+            ],
+            "formatString": "0.0%",
+            "description": "Precisión del forecast expresada como 1 - WMAPE, calculada SOLO sobre el holdout. Mostrar la precisión in-sample sería mentir con estadística correcta: el modelo siempre acierta donde entrenó.",
+            "displayFolder": "01 · Ventas y margen"
+          },
+          {
+            "name": "Descuento Recomendado %",
+            "expression": [
+              "AVERAGE ( v_fact_recomendaciones[Descuento recomendado] )"
+            ],
+            "formatString": "0.0%",
+            "description": "------------------------------------------------------------------------- CAPA PRESCRIPTIVA — motor de IA del paso 5 Es lo que hace que el tablero termine en una acción y no en un gráfico. -------------------------------------------------------------------------",
+            "displayFolder": "05 · Ofertas e IA"
+          },
+          {
+            "name": "Ganancia Estimada USD",
+            "expression": [
+              "SUM ( v_fact_recomendaciones[Ganancia vs no ofertar USD] )"
+            ],
+            "formatString": "#,0",
+            "displayFolder": "01 · Ventas y margen"
+          },
+          {
+            "name": "Stock Rescatado USD",
+            "expression": [
+              "SUM ( v_fact_recomendaciones[Valor de stock rescatado USD] )"
+            ],
+            "formatString": "#,0",
+            "displayFolder": "06 · Logística y riesgo"
+          },
+          {
+            "name": "Recomendaciones Activas",
+            "expression": [
+              "COUNTROWS ( v_fact_recomendaciones )"
+            ],
+            "formatString": "#,0",
+            "displayFolder": "05 · Ofertas e IA"
+          },
+          {
+            "name": "Brecha vs Descuento Actual pp",
+            "expression": [
+              "( [Descuento Recomendado %] - [Descuento Medio Ponderado %] ) * 100"
+            ],
+            "formatString": "#,0.0",
+            "description": "Brecha entre lo que el motor recomienda y lo que la filial está haciendo. Es el visual que dispara la conversación: \"acá estás dando 8 puntos más de descuento de los que hacen falta\".",
+            "displayFolder": "05 · Ofertas e IA"
+          },
+          {
+            "name": "Recomendaciones que Requieren Test",
+            "expression": [
+              "CALCULATE (",
+              "    COUNTROWS ( v_fact_recomendaciones ),",
+              "    v_fact_recomendaciones[Confianza de la recomendación] = \"Requiere test controlado\"",
+              ")"
+            ],
+            "formatString": "#,0",
+            "description": "El motor nunca extrapola fuera del rango de descuentos con evidencia histórica. Cuando el óptimo cae en ese borde, lo declara: la acción correcta no es aplicarlo a toda la cartera, es testearlo en un subconjunto.",
+            "displayFolder": "05 · Ofertas e IA"
+          },
+          {
+            "name": "Justificativo Seleccionado",
+            "expression": [
+              "IF (",
+              "    HASONEVALUE ( v_fact_recomendaciones[Justificativo] ),",
+              "    SELECTEDVALUE ( v_fact_recomendaciones[Justificativo] ),",
+              "    \"Seleccioná una recomendación para ver por qué el motor la propone.\"",
+              ")"
+            ],
+            "displayFolder": "00 · Contexto y gobierno"
+          },
+          {
+            "name": "Titular de Recomendaciones",
+            "expression": [
+              "VAR N        = [Recomendaciones Activas]",
+              "VAR Ganancia = [Ganancia Estimada USD]",
+              "VAR Rescate  = [Stock Rescatado USD]",
+              "VAR Test     = [Recomendaciones que Requieren Test]",
+              "RETURN",
+              "    IF (",
+              "        N = 0,",
+              "        \"No hay recomendaciones para el contexto seleccionado.\",",
+              "        FORMAT ( N, \"#,0\" ) & \" recomendaciones · \" &",
+              "        FORMAT ( Ganancia, \"#,0\" ) & \" USD de margen incremental estimado · \" &",
+              "        FORMAT ( Rescate, \"#,0\" ) & \" USD de stock crítico rescatado\" &",
+              "        IF ( Test > 0, \" · \" & Test & \" requieren test controlado antes de generalizar\", \"\" )",
+              "    )"
+            ],
+            "description": "Resumen ejecutivo autogenerado para el encabezado del tablero.",
+            "displayFolder": "00 · Contexto y gobierno"
+          },
+          {
+            "name": "Líneas Despachadas",
+            "expression": [
+              "SUM ( v_fact_ventas[Líneas] )"
+            ],
+            "formatString": "#,0",
+            "description": "========================================================================= ADIUM PHARMA — Biblioteca DAX · 03 · TABLERO LOGÍSTICA  Pregunta que responde: \"¿Estamos entregando bien, cuánto nos cuesta lo que vuelve, y qué pedidos de los que están por salir van a volver?\"  Es el único de los tres tableros con una capa operativa en tiempo de decisión: el scoring de riesgo se mira ANTES de despachar, no después de que la devolución ya ocurrió. ========================================================================= ------------------------------------------------------------------------- NIVEL DE SERVICIO  Todos los promedios de esta sección son PONDERADOS. El modelo expone el numerador (lead time × línea) y no el promedio ya calculado, justamente para poder ponderar bien en cualquier nivel de agregación. Promediar promedios es el error silencioso más caro de un tablero logístico: da un número plausible y equivocado. -------------------------------------------------------------------------",
+            "displayFolder": "01 · Ventas y margen"
+          },
+          {
+            "name": "OTIF %",
+            "expression": [
+              "DIVIDE ( SUM ( v_fact_ventas[Líneas OTIF] ), [Líneas Despachadas] )"
+            ],
+            "formatString": "0.0%",
+            "description": "OTIF = On Time In Full. El estándar de servicio de la industria: entregado a tiempo Y completo. Las dos condiciones a la vez — de ahí que se mida sobre líneas y no sobre pedidos.",
+            "displayFolder": "06 · Logística y riesgo"
+          },
+          {
+            "name": "Fill Rate %",
+            "expression": [
+              "DIVIDE ( SUM ( v_fact_ventas[Líneas completas] ), [Líneas Despachadas] )"
+            ],
+            "formatString": "0.0%",
+            "displayFolder": "06 · Logística y riesgo"
+          },
+          {
+            "name": "Entregas a Tiempo %",
+            "expression": [
+              "DIVIDE (",
+              "    SUM ( v_fact_ventas[Líneas OTIF] ),",
+              "    SUM ( v_fact_ventas[Líneas completas] )",
+              ")"
+            ],
+            "formatString": "0.0%",
+            "description": "Puntualidad aislada del completado: separar las dos causas permite saber si el problema es del transportista (tiempo) o del depósito (completitud).",
+            "displayFolder": "06 · Logística y riesgo"
+          },
+          {
+            "name": "Lead Time Promedio",
+            "expression": [
+              "DIVIDE ( SUM ( v_fact_ventas[Lead time x línea] ), [Líneas Despachadas] )"
+            ],
+            "formatString": "#,0.0",
+            "displayFolder": "06 · Logística y riesgo"
+          },
+          {
+            "name": "SLA Objetivo",
+            "expression": [
+              "AVERAGE ( v_dim_filial[SLA entrega (días)] )"
+            ],
+            "formatString": "#,0.0",
+            "displayFolder": "04 · Objetivo"
+          },
+          {
+            "name": "Exceso sobre SLA",
+            "expression": [
+              "[Lead Time Promedio] - [SLA Objetivo]"
+            ],
+            "formatString": "#,0.0",
+            "displayFolder": "01 · Ventas y margen"
+          },
+          {
+            "name": "OTIF % AA",
+            "expression": [
+              "CALCULATE ( [OTIF %], SAMEPERIODLASTYEAR ( v_dim_calendario[Fecha] ) )"
+            ],
+            "formatString": "0.0%",
+            "displayFolder": "06 · Logística y riesgo"
+          },
+          {
+            "name": "Var OTIF pp",
+            "expression": [
+              "( [OTIF %] - [OTIF % AA] ) * 100"
+            ],
+            "formatString": "#,0.0",
+            "displayFolder": "06 · Logística y riesgo"
+          },
+          {
+            "name": "Semáforo OTIF",
+            "expression": [
+              "VAR O = [OTIF %]",
+              "RETURN",
+              "    SWITCH (",
+              "        TRUE (),",
+              "        ISBLANK ( O ), BLANK (),",
+              "        O >= 0.95, \"🟢 En objetivo\",",
+              "        O >= 0.88, \"🟡 Por debajo del objetivo\",",
+              "        \"🔴 Nivel de servicio crítico\"",
+              "    )"
+            ],
+            "displayFolder": "00 · Contexto y gobierno"
+          },
+          {
+            "name": "Unidades Devueltas",
+            "expression": [
+              "SUM ( v_fact_devoluciones[Unidades devueltas] )"
+            ],
+            "formatString": "#,0",
+            "description": "------------------------------------------------------------------------- DEVOLUCIONES -------------------------------------------------------------------------",
+            "displayFolder": "01 · Ventas y margen"
+          },
+          {
+            "name": "Importe Devuelto USD",
+            "expression": [
+              "SUM ( v_fact_devoluciones[Importe devuelto USD] )"
+            ],
+            "formatString": "#,0",
+            "displayFolder": "01 · Ventas y margen"
+          },
+          {
+            "name": "Tasa de Devolución Valor %",
+            "expression": [
+              "DIVIDE ( [Importe Devuelto USD], [Ventas Brutas USD] )"
+            ],
+            "formatString": "0.0%",
+            "description": "Dos tasas, no una. La tasa en valor es la que impacta el resultado; la tasa en unidades es la que dimensiona el problema operativo. Cuando divergen mucho, se está devolviendo producto caro (o barato) de forma desproporcionada, y eso es en sí mismo un hallazgo.",
+            "displayFolder": "06 · Logística y riesgo"
+          },
+          {
+            "name": "Tasa de Devolución Unidades %",
+            "expression": [
+              "DIVIDE ( [Unidades Devueltas], CALCULATE ( [Unidades], v_fact_ventas[Tipo documento] = \"FC\" ) )"
+            ],
+            "formatString": "0.0%",
+            "displayFolder": "06 · Logística y riesgo"
+          },
+          {
+            "name": "Tasa de Devolución Valor % AA",
+            "expression": [
+              "CALCULATE ( [Tasa de Devolución Valor %], SAMEPERIODLASTYEAR ( v_dim_calendario[Fecha] ) )"
+            ],
+            "formatString": "0.0%",
+            "displayFolder": "06 · Logística y riesgo"
+          },
+          {
+            "name": "Var Tasa Devolución pp",
+            "expression": [
+              "( [Tasa de Devolución Valor %] - [Tasa de Devolución Valor % AA] ) * 100"
+            ],
+            "formatString": "#,0.0",
+            "displayFolder": "06 · Logística y riesgo"
+          },
+          {
+            "name": "Devoluciones Evitables USD",
+            "expression": [
+              "CALCULATE ( [Importe Devuelto USD], v_dim_motivo_devolucion[Evitabilidad] = \"Evitable\" )"
+            ],
+            "formatString": "#,0",
+            "description": "Separar lo evitable de lo que pasa y ya. Un 6% de devoluciones donde el 80% es evitable es un problema de gestión; el mismo 6% mayormente no evitable es una característica del negocio. Actuar igual en los dos casos es desperdiciar esfuerzo.",
+            "displayFolder": "06 · Logística y riesgo"
+          },
+          {
+            "name": "% Devoluciones Evitables",
+            "expression": [
+              "DIVIDE ( [Devoluciones Evitables USD], [Importe Devuelto USD] )"
+            ],
+            "formatString": "0.0%",
+            "displayFolder": "06 · Logística y riesgo"
+          },
+          {
+            "name": "Margen Perdido por Devoluciones USD",
+            "expression": [
+              "[Importe Devuelto USD] * DIVIDE ( [Margen Bruto USD], [Ventas Netas USD] )"
+            ],
+            "formatString": "#,0",
+            "description": "Impacto real en el resultado: lo devuelto valuado a margen perdido, no a precio de venta. El costo de una devolución no es solo el margen que se pierde — también hay logística inversa y, muchas veces, destrucción de producto. Acá se reporta la parte medible con el dato disponible.",
+            "displayFolder": "06 · Logística y riesgo"
+          },
+          {
+            "name": "Motivo Principal de Devolución",
+            "expression": [
+              "VAR TablaMotivos =",
+              "    ADDCOLUMNS (",
+              "        VALUES ( v_dim_motivo_devolucion[Motivo de devolución] ),",
+              "        \"@importe\", [Importe Devuelto USD]",
+              "    )",
+              "VAR Top = TOPN ( 1, TablaMotivos, [@importe], DESC )",
+              "RETURN",
+              "    CONCATENATEX ( Top, v_dim_motivo_devolucion[Motivo de devolución] )",
+              "        & \" (\" & FORMAT ( DIVIDE ( MAXX ( Top, [@importe] ), [Importe Devuelto USD] ), \"0%\" ) & \" del total)\""
+            ],
+            "displayFolder": "00 · Contexto y gobierno"
+          },
+          {
+            "name": "Stock Unidades",
+            "expression": [
+              "SUM ( v_fact_stock[Stock unidades] )"
+            ],
+            "formatString": "#,0",
+            "description": "------------------------------------------------------------------------- STOCK Y VENCIMIENTOS -------------------------------------------------------------------------",
+            "displayFolder": "06 · Logística y riesgo"
+          },
+          {
+            "name": "Valor de Stock USD",
+            "expression": [
+              "SUM ( v_fact_stock[Valor de stock USD] )"
+            ],
+            "formatString": "#,0",
+            "displayFolder": "06 · Logística y riesgo"
+          },
+          {
+            "name": "Días de Cobertura",
+            "expression": [
+              "DIVIDE ( SUM ( v_fact_stock[Cobertura x stock] ), [Stock Unidades] )"
+            ],
+            "formatString": "#,0.0",
+            "description": "Cobertura ponderada por stock. Igual que el lead time: el modelo trae el numerador para poder ponderar en cualquier corte.",
+            "displayFolder": "06 · Logística y riesgo"
+          },
+          {
+            "name": "Estado de Cobertura",
+            "expression": [
+              "VAR D = [Días de Cobertura]",
+              "RETURN",
+              "    SWITCH (",
+              "        TRUE (),",
+              "        ISBLANK ( D ), BLANK (),",
+              "        D < 30,  \"🔴 Riesgo de quiebre\",",
+              "        D <= 90, \"🟢 En rango\",",
+              "        D <= 150, \"🟡 Sobrestock — candidato a oferta\",",
+              "        \"🔴 Sobrestock severo\"",
+              "    )"
+            ],
+            "displayFolder": "00 · Contexto y gobierno"
+          },
+          {
+            "name": "Unidades por Vencer",
+            "expression": [
+              "SUM ( v_fact_stock[Unidades por vencer 180d] )"
+            ],
+            "formatString": "#,0",
+            "displayFolder": "06 · Logística y riesgo"
+          },
+          {
+            "name": "Valor en Riesgo de Vencimiento USD",
+            "expression": [
+              "SUMX (",
+              "    v_fact_stock,",
+              "    v_fact_stock[Unidades por vencer 180d]",
+              "        * RELATED ( v_dim_producto[Costo estándar USD] )",
+              ")"
+            ],
+            "formatString": "#,0",
+            "description": "Valor en riesgo de vencimiento, a costo. Es una pérdida potencial cierta si no se mueve el producto — y es exactamente el input que toma el motor de IA del paso 5 para priorizar qué ofertar.",
+            "displayFolder": "06 · Logística y riesgo"
+          },
+          {
+            "name": "% de Stock por Vencer",
+            "expression": [
+              "DIVIDE ( [Unidades por Vencer], [Stock Unidades] )"
+            ],
+            "formatString": "0.0%",
+            "displayFolder": "06 · Logística y riesgo"
+          },
+          {
+            "name": "Importe en Riesgo USD",
+            "expression": [
+              "SUM ( v_fact_scoring_devoluciones[Importe en riesgo USD] )"
+            ],
+            "formatString": "#,0",
+            "description": "------------------------------------------------------------------------- CAPA PREDICTIVA — scoring del modelo del paso 3  Acá está el salto de un tablero descriptivo a uno operativo: el riesgo se consulta ANTES del despacho. Un modelo que solo explica devoluciones que ya ocurrieron es un informe; uno que las anticipa es una herramienta. -------------------------------------------------------------------------",
+            "displayFolder": "06 · Logística y riesgo"
+          },
+          {
+            "name": "Pedidos en Riesgo Crítico",
+            "expression": [
+              "CALCULATE (",
+              "    COUNTROWS ( v_fact_scoring_devoluciones ),",
+              "    v_fact_scoring_devoluciones[Banda de riesgo] = \"Crítico\"",
+              ")"
+            ],
+            "formatString": "#,0",
+            "displayFolder": "06 · Logística y riesgo"
+          },
+          {
+            "name": "Probabilidad Media de Devolución",
+            "expression": [
+              "AVERAGE ( v_fact_scoring_devoluciones[Probabilidad de devolución] )"
+            ],
+            "formatString": "0.0%",
+            "displayFolder": "06 · Logística y riesgo"
+          },
+          {
+            "name": "Captura en el Top 10% de Riesgo",
+            "expression": [
+              "VAR N = COUNTROWS ( v_fact_scoring_devoluciones )",
+              "VAR Corte =",
+              "    PERCENTILEX.INC (",
+              "        v_fact_scoring_devoluciones,",
+              "        v_fact_scoring_devoluciones[Probabilidad de devolución],",
+              "        0.90",
+              "    )",
+              "VAR DevolucionesEnTop =",
+              "    CALCULATE (",
+              "        SUM ( v_fact_scoring_devoluciones[Devuelta real] ),",
+              "        v_fact_scoring_devoluciones[Probabilidad de devolución] >= Corte",
+              "    )",
+              "VAR DevolucionesTotales = SUM ( v_fact_scoring_devoluciones[Devuelta real] )",
+              "RETURN",
+              "    DIVIDE ( DevolucionesEnTop, DevolucionesTotales )"
+            ],
+            "formatString": "0.0%",
+            "description": "Traducción operativa del modelo. No se comunica \"AUC 0,82\" a un gerente de logística: se comunica cuántas devoluciones evita revisando el 10% de los pedidos. Es el mismo modelo, dicho en el idioma de quien decide.",
+            "displayFolder": "06 · Logística y riesgo"
+          },
+          {
+            "name": "Lectura del Modelo de Riesgo",
+            "expression": [
+              "VAR Captura = [Captura en el Top 10% de Riesgo]",
+              "VAR Monto   = [Importe en Riesgo USD]",
+              "RETURN",
+              "    \"Revisando el 10% de pedidos con mayor riesgo se anticipan el \"",
+              "        & FORMAT ( Captura, \"0%\" )",
+              "        & \" de las devoluciones. Exposición estimada del período: USD \"",
+              "        & FORMAT ( Monto, \"#,0\" ) & \".\""
+            ],
+            "displayFolder": "00 · Contexto y gobierno"
+          },
+          {
+            "name": "Tasa Devolución Proyectada %",
+            "expression": [
+              "AVERAGE ( v_forecast_devoluciones[Tasa dev proyectada] )"
+            ],
+            "formatString": "0.0%",
+            "description": "------------------------------------------------------------------------- CAPA PREDICTIVA — proyección mensual del paso 3 -------------------------------------------------------------------------",
+            "displayFolder": "06 · Logística y riesgo"
+          },
+          {
+            "name": "Importe Devuelto Proyectado USD",
+            "expression": [
+              "SUM ( v_forecast_devoluciones[Importe dev proyectado] )"
+            ],
+            "formatString": "#,0",
+            "displayFolder": "01 · Ventas y margen"
+          },
+          {
+            "name": "Provisión Sugerida USD",
+            "expression": [
+              "[Importe Devuelto Proyectado USD]"
+            ],
+            "formatString": "#,0",
+            "description": "Provisión sugerida para el mes siguiente, sobre la proyección del modelo. Que la contabilidad y el tablero salgan del MISMO número es, en sí mismo, medio trabajo de Data Steward resuelto.",
+            "displayFolder": "01 · Ventas y margen"
+          },
+          {
+            "name": "Contribución a Devoluciones %",
+            "expression": [
+              "DIVIDE (",
+              "    [Importe Devuelto USD],",
+              "    CALCULATE ( [Importe Devuelto USD], REMOVEFILTERS ( v_dim_transportista ) )",
+              ")"
+            ],
+            "formatString": "0.0%",
+            "description": "------------------------------------------------------------------------- PERFORMANCE DE TRANSPORTISTAS ------------------------------------------------------------------------- Contribución de cada transportista al problema total de devoluciones. Ordenar por tasa sola premia al que mueve tres pedidos; hay que mirar tasa Y peso a la vez.",
+            "displayFolder": "06 · Logística y riesgo"
+          },
+          {
+            "name": "Riesgo Frío sin Control USD",
+            "expression": [
+              "CALCULATE (",
+              "    [Ventas Netas USD],",
+              "    v_dim_producto[Condición de conservación] = \"Cadena de frío\",",
+              "    v_dim_transportista[Control de temperatura] = \"Sin control de frío\"",
+              ")"
+            ],
+            "formatString": "#,0",
+            "description": "El cruce que explica buena parte de las devoluciones del negocio: producto que requiere cadena de frío despachado por un operador que no la controla. Es un hallazgo accionable de inmediato — se cambia la asignación y listo.",
+            "displayFolder": "06 · Logística y riesgo"
+          },
+          {
+            "name": "Alerta de Cadena de Frío",
+            "expression": [
+              "VAR Expuesto = [Riesgo Frío sin Control USD]",
+              "RETURN",
+              "    IF (",
+              "        Expuesto > 0,",
+              "        \"🔴 USD \" & FORMAT ( Expuesto, \"#,0\" )",
+              "            & \" despachados en cadena de frío por operadores sin control de temperatura\",",
+              "        \"🟢 Todo el producto de frío viaja con control de temperatura\"",
+              "    )"
+            ],
+            "displayFolder": "00 · Contexto y gobierno"
+          }
+        ]
+      }
+    ],
+    "relationships": [
+      {
+        "name": "v_dim_calendario-v_fact_ventas-Fecha",
+        "fromTable": "v_fact_ventas",
+        "fromColumn": "Fecha",
+        "toTable": "v_dim_calendario",
+        "toColumn": "Fecha",
+        "crossFilteringBehavior": "oneDirection"
+      },
+      {
+        "name": "v_dim_calendario-v_fact_devoluciones-Fecha",
+        "fromTable": "v_fact_devoluciones",
+        "fromColumn": "Fecha",
+        "toTable": "v_dim_calendario",
+        "toColumn": "Fecha",
+        "crossFilteringBehavior": "oneDirection"
+      },
+      {
+        "name": "v_dim_calendario-v_fact_ofertas-Fecha",
+        "fromTable": "v_fact_ofertas",
+        "fromColumn": "Fecha",
+        "toTable": "v_dim_calendario",
+        "toColumn": "Fecha",
+        "crossFilteringBehavior": "oneDirection"
+      },
+      {
+        "name": "v_dim_calendario-v_fact_sellout-Fecha",
+        "fromTable": "v_fact_sellout",
+        "fromColumn": "Fecha",
+        "toTable": "v_dim_calendario",
+        "toColumn": "Fecha",
+        "crossFilteringBehavior": "oneDirection"
+      },
+      {
+        "name": "v_dim_calendario-v_fact_objetivos-Fecha",
+        "fromTable": "v_fact_objetivos",
+        "fromColumn": "Fecha",
+        "toTable": "v_dim_calendario",
+        "toColumn": "Fecha",
+        "crossFilteringBehavior": "oneDirection"
+      },
+      {
+        "name": "v_dim_calendario-v_fact_stock-Fecha",
+        "fromTable": "v_fact_stock",
+        "fromColumn": "Fecha",
+        "toTable": "v_dim_calendario",
+        "toColumn": "Fecha",
+        "crossFilteringBehavior": "oneDirection"
+      },
+      {
+        "name": "v_dim_calendario-v_fact_scoring_devoluciones-Fecha",
+        "fromTable": "v_fact_scoring_devoluciones",
+        "fromColumn": "Fecha",
+        "toTable": "v_dim_calendario",
+        "toColumn": "Fecha",
+        "crossFilteringBehavior": "oneDirection"
+      },
+      {
+        "name": "v_dim_calendario-v_forecast_devoluciones-Fecha",
+        "fromTable": "v_forecast_devoluciones",
+        "fromColumn": "Fecha",
+        "toTable": "v_dim_calendario",
+        "toColumn": "Fecha",
+        "crossFilteringBehavior": "oneDirection"
+      },
+      {
+        "name": "v_dim_calendario-v_forecast_ofertas-Fecha",
+        "fromTable": "v_forecast_ofertas",
+        "fromColumn": "Fecha",
+        "toTable": "v_dim_calendario",
+        "toColumn": "Fecha",
+        "crossFilteringBehavior": "oneDirection"
+      },
+      {
+        "name": "v_dim_producto-v_fact_ventas-Id producto",
+        "fromTable": "v_fact_ventas",
+        "fromColumn": "Id producto",
+        "toTable": "v_dim_producto",
+        "toColumn": "Id producto",
+        "crossFilteringBehavior": "oneDirection"
+      },
+      {
+        "name": "v_dim_producto-v_fact_devoluciones-Id producto",
+        "fromTable": "v_fact_devoluciones",
+        "fromColumn": "Id producto",
+        "toTable": "v_dim_producto",
+        "toColumn": "Id producto",
+        "crossFilteringBehavior": "oneDirection"
+      },
+      {
+        "name": "v_dim_producto-v_fact_ofertas-Id producto",
+        "fromTable": "v_fact_ofertas",
+        "fromColumn": "Id producto",
+        "toTable": "v_dim_producto",
+        "toColumn": "Id producto",
+        "crossFilteringBehavior": "oneDirection"
+      },
+      {
+        "name": "v_dim_producto-v_fact_sellout-Id producto",
+        "fromTable": "v_fact_sellout",
+        "fromColumn": "Id producto",
+        "toTable": "v_dim_producto",
+        "toColumn": "Id producto",
+        "crossFilteringBehavior": "oneDirection"
+      },
+      {
+        "name": "v_dim_producto-v_fact_objetivos-Id producto",
+        "fromTable": "v_fact_objetivos",
+        "fromColumn": "Id producto",
+        "toTable": "v_dim_producto",
+        "toColumn": "Id producto",
+        "crossFilteringBehavior": "oneDirection"
+      },
+      {
+        "name": "v_dim_producto-v_fact_stock-Id producto",
+        "fromTable": "v_fact_stock",
+        "fromColumn": "Id producto",
+        "toTable": "v_dim_producto",
+        "toColumn": "Id producto",
+        "crossFilteringBehavior": "oneDirection"
+      },
+      {
+        "name": "v_dim_producto-v_fact_scoring_devoluciones-Id producto",
+        "fromTable": "v_fact_scoring_devoluciones",
+        "fromColumn": "Id producto",
+        "toTable": "v_dim_producto",
+        "toColumn": "Id producto",
+        "crossFilteringBehavior": "oneDirection"
+      },
+      {
+        "name": "v_dim_producto-v_fact_recomendaciones-Id producto",
+        "fromTable": "v_fact_recomendaciones",
+        "fromColumn": "Id producto",
+        "toTable": "v_dim_producto",
+        "toColumn": "Id producto",
+        "crossFilteringBehavior": "oneDirection"
+      },
+      {
+        "name": "v_dim_cliente-v_fact_ventas-Id cliente",
+        "fromTable": "v_fact_ventas",
+        "fromColumn": "Id cliente",
+        "toTable": "v_dim_cliente",
+        "toColumn": "Id cliente",
+        "crossFilteringBehavior": "oneDirection"
+      },
+      {
+        "name": "v_dim_cliente-v_fact_devoluciones-Id cliente",
+        "fromTable": "v_fact_devoluciones",
+        "fromColumn": "Id cliente",
+        "toTable": "v_dim_cliente",
+        "toColumn": "Id cliente",
+        "crossFilteringBehavior": "oneDirection"
+      },
+      {
+        "name": "v_dim_cliente-v_fact_ofertas-Id cliente",
+        "fromTable": "v_fact_ofertas",
+        "fromColumn": "Id cliente",
+        "toTable": "v_dim_cliente",
+        "toColumn": "Id cliente",
+        "crossFilteringBehavior": "oneDirection"
+      },
+      {
+        "name": "v_dim_cliente-v_fact_scoring_devoluciones-Id cliente",
+        "fromTable": "v_fact_scoring_devoluciones",
+        "fromColumn": "Id cliente",
+        "toTable": "v_dim_cliente",
+        "toColumn": "Id cliente",
+        "crossFilteringBehavior": "oneDirection"
+      },
+      {
+        "name": "v_dim_filial-v_fact_ventas-Id filial",
+        "fromTable": "v_fact_ventas",
+        "fromColumn": "Id filial",
+        "toTable": "v_dim_filial",
+        "toColumn": "Id filial",
+        "crossFilteringBehavior": "oneDirection"
+      },
+      {
+        "name": "v_dim_filial-v_fact_devoluciones-Id filial",
+        "fromTable": "v_fact_devoluciones",
+        "fromColumn": "Id filial",
+        "toTable": "v_dim_filial",
+        "toColumn": "Id filial",
+        "crossFilteringBehavior": "oneDirection"
+      },
+      {
+        "name": "v_dim_filial-v_fact_ofertas-Id filial",
+        "fromTable": "v_fact_ofertas",
+        "fromColumn": "Id filial",
+        "toTable": "v_dim_filial",
+        "toColumn": "Id filial",
+        "crossFilteringBehavior": "oneDirection"
+      },
+      {
+        "name": "v_dim_filial-v_fact_sellout-Id filial",
+        "fromTable": "v_fact_sellout",
+        "fromColumn": "Id filial",
+        "toTable": "v_dim_filial",
+        "toColumn": "Id filial",
+        "crossFilteringBehavior": "oneDirection"
+      },
+      {
+        "name": "v_dim_filial-v_fact_objetivos-Id filial",
+        "fromTable": "v_fact_objetivos",
+        "fromColumn": "Id filial",
+        "toTable": "v_dim_filial",
+        "toColumn": "Id filial",
+        "crossFilteringBehavior": "oneDirection"
+      },
+      {
+        "name": "v_dim_filial-v_fact_scoring_devoluciones-Id filial",
+        "fromTable": "v_fact_scoring_devoluciones",
+        "fromColumn": "Id filial",
+        "toTable": "v_dim_filial",
+        "toColumn": "Id filial",
+        "crossFilteringBehavior": "oneDirection"
+      },
+      {
+        "name": "v_dim_filial-v_fact_recomendaciones-Id filial",
+        "fromTable": "v_fact_recomendaciones",
+        "fromColumn": "Id filial",
+        "toTable": "v_dim_filial",
+        "toColumn": "Id filial",
+        "crossFilteringBehavior": "oneDirection"
+      },
+      {
+        "name": "v_dim_filial-v_forecast_devoluciones-Id filial",
+        "fromTable": "v_forecast_devoluciones",
+        "fromColumn": "Id filial",
+        "toTable": "v_dim_filial",
+        "toColumn": "Id filial",
+        "crossFilteringBehavior": "oneDirection"
+      },
+      {
+        "name": "v_dim_filial-v_forecast_ofertas-Id filial",
+        "fromTable": "v_forecast_ofertas",
+        "fromColumn": "Id filial",
+        "toTable": "v_dim_filial",
+        "toColumn": "Id filial",
+        "crossFilteringBehavior": "oneDirection"
+      },
+      {
+        "name": "v_dim_deposito-v_fact_ventas-Id depósito",
+        "fromTable": "v_fact_ventas",
+        "fromColumn": "Id depósito",
+        "toTable": "v_dim_deposito",
+        "toColumn": "Id depósito",
+        "crossFilteringBehavior": "oneDirection"
+      },
+      {
+        "name": "v_dim_deposito-v_fact_stock-Id depósito",
+        "fromTable": "v_fact_stock",
+        "fromColumn": "Id depósito",
+        "toTable": "v_dim_deposito",
+        "toColumn": "Id depósito",
+        "crossFilteringBehavior": "oneDirection"
+      },
+      {
+        "name": "v_dim_transportista-v_fact_ventas-Id transportista",
+        "fromTable": "v_fact_ventas",
+        "fromColumn": "Id transportista",
+        "toTable": "v_dim_transportista",
+        "toColumn": "Id transportista",
+        "crossFilteringBehavior": "oneDirection"
+      },
+      {
+        "name": "v_dim_transportista-v_fact_devoluciones-Id transportista",
+        "fromTable": "v_fact_devoluciones",
+        "fromColumn": "Id transportista",
+        "toTable": "v_dim_transportista",
+        "toColumn": "Id transportista",
+        "crossFilteringBehavior": "oneDirection"
+      },
+      {
+        "name": "v_dim_transportista-v_fact_scoring_devoluciones-Id transportista",
+        "fromTable": "v_fact_scoring_devoluciones",
+        "fromColumn": "Id transportista",
+        "toTable": "v_dim_transportista",
+        "toColumn": "Id transportista",
+        "crossFilteringBehavior": "oneDirection"
+      },
+      {
+        "name": "v_dim_tipo_oferta-v_fact_ventas-Id tipo oferta",
+        "fromTable": "v_fact_ventas",
+        "fromColumn": "Id tipo oferta",
+        "toTable": "v_dim_tipo_oferta",
+        "toColumn": "Id tipo oferta",
+        "crossFilteringBehavior": "oneDirection"
+      },
+      {
+        "name": "v_dim_tipo_oferta-v_fact_ofertas-Id tipo oferta",
+        "fromTable": "v_fact_ofertas",
+        "fromColumn": "Id tipo oferta",
+        "toTable": "v_dim_tipo_oferta",
+        "toColumn": "Id tipo oferta",
+        "crossFilteringBehavior": "oneDirection"
+      },
+      {
+        "name": "v_dim_motivo_devolucion-v_fact_devoluciones-Id motivo",
+        "fromTable": "v_fact_devoluciones",
+        "fromColumn": "Id motivo",
+        "toTable": "v_dim_motivo_devolucion",
+        "toColumn": "Id motivo",
+        "crossFilteringBehavior": "oneDirection"
+      }
+    ],
+    "roles": [
+      {
+        "name": "Filial",
+        "modelPermission": "read",
+        "tablePermissions": [
+          {
+            "name": "v_dim_filial",
+            "filterExpression": "-- Reemplazar por la tabla puente Seguridad(Email, Id filial)\n-- publicada en el workspace:\n-- v_dim_filial[Id filial] IN\n--     CALCULATETABLE ( VALUES ( Seguridad[Id filial] ),\n--         Seguridad[Email] = USERPRINCIPALNAME () )\nTRUE ()"
+          }
+        ]
+      }
+    ],
+    "annotations": [
+      {
+        "name": "PBI_QueryOrder",
+        "value": "[\"OrigenDatos\", \"RutaDatos\", \"ServidorSQL\", \"BaseSQL\", \"v_dim_calendario\", \"v_dim_producto\", \"v_dim_cliente\", \"v_dim_filial\", \"v_dim_deposito\", \"v_dim_transportista\", \"v_dim_motivo_devolucion\", \"v_dim_tipo_oferta\", \"v_fact_ventas\", \"v_fact_devoluciones\", \"v_fact_ofertas\", \"v_fact_sellout\", \"v_fact_objetivos\", \"v_fact_stock\", \"v_fact_scoring_devoluciones\", \"v_fact_recomendaciones\", \"v_forecast_devoluciones\", \"v_forecast_ofertas\", \"v_estado_datos\", \"_Medidas\"]"
+      },
+      {
+        "name": "__PBI_TimeIntelligenceEnabled",
+        "value": "0"
+      }
+    ]
+  }
+}

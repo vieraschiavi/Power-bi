@@ -1,7 +1,22 @@
-# MV DAX Lab — dependencias de la app (el motor dxl/ no necesita ninguna).
-streamlit>=1.36
-pandas
-pytest
+# MV DAX Lab — dependencias.
+#
+# El motor (dxl/) NO necesita ninguna: corre con la stdlib. Estas son las de
+# la app y las herramientas alrededor.
 
-# El overlay de escritorio (opcional, corre aparte):
-#   pip install anthropic pynput pillow
+# --- app ---
+streamlit>=1.36
+
+# --- tests ---
+pytest>=8.0
+
+# --- generación de capturas y video (solo para regenerar el material) ---
+#   python daxlingo/media/capturar.py
+#   python daxlingo/media/build_video.py
+playwright>=1.45
+pillow>=10.0
+imageio-ffmpeg>=0.5
+
+# --- overlay de escritorio (proceso aparte) ---
+#   python daxlingo/overlay/DAX_Overlay.py
+anthropic>=0.34
+pynput>=1.7

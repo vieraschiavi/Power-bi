@@ -1,86 +1,152 @@
 # MV DAX Lab
 
 **Tu modelo de Power BI, explicado, corregido y exportado.**
+*Your Power BI model: explained, fixed and exported. · Seu modelo de Power BI,
+explicado, corrigido e exportado.*
 
-Plataforma estilo Kobra para DAX / Power BI / Fabric: carga un modelo real
-(`.pbit`, proyecto **PBIP**, `model.bim`, y lectura parcial de `.pbix`), lo
-audita, genera y explica DAX en español, lo transforma, y lo devuelve como
-`.pbit`/PBIP **con tablero, filtros y navegación** — o lo publica en Fabric.
-Incluye una **Academia DAX** gamificada (concepto inspirado en plataformas de
-práctica tipo "Duolingo de DAX", con contenido 100% propio), el **DAX
-Overlay** de escritorio (F9 / Shift+F9 / Ctrl+F9) y tres servidores **MCP**
-para agentes de IA.
+Producto completo —programa, web y video, los tres en **ES / EN / PT**— para
+trabajar modelos de Power BI con IA: carga `.pbit`, **PBIP**, `model.bim` (y
+lectura parcial de `.pbix`), audita el modelo, genera y explica DAX en tu
+idioma, transforma, y lo devuelve como `.pbit`/PBIP **con tablero, filtros y
+navegación** — o lo publica en **Microsoft Fabric**.
+
+| Pieza | Dónde | Qué es |
+|---|---|---|
+| Motor | `dxl/` | Python puro, sin dependencias. Importable y testeable solo. |
+| App | `app/app.py` | Streamlit, 14 pestañas, trilingüe. |
+| Escritorio | `desktop/` | Electron + React con instalador `.exe` (NSIS). |
+| Overlay | `overlay/` | F9 / Shift+F9 / Ctrl+F9 sobre cualquier pantalla. |
+| MCP | `mcp/servidor.py` | Servidor MCP propio (stdio, sin dependencias). |
+| Web | `web/` | Landing trilingüe con capturas y video reales. |
+| Pagos | `api/` | MercadoPago + licencias firmadas (Vercel). |
+| Media | `media/` | Genera las capturas y el video desde la app real. |
+| Tests | `tests/` | 66 tests Python + 15 Node. |
 
 ## Correr
 
 ```bash
 pip install -r daxlingo/requirements.txt
 streamlit run daxlingo/app/app.py          # la app completa
-python3 -m pytest daxlingo/tests/ -q       # la suite (39 tests, sin red)
-python3 daxlingo/mcp/servidor.py           # servidor MCP propio (stdio)
-python3 daxlingo/overlay/DAX_Overlay.py    # overlay de escritorio (pide GUI)
+python3 -m pytest daxlingo/tests/ -q       # 66 tests, sin red
+cd daxlingo/api && node --test             # 15 tests de pagos/licencias
+python3 daxlingo/mcp/servidor.py           # servidor MCP (stdio)
+python3 daxlingo/overlay/DAX_Overlay.py    # overlay de escritorio
+cd daxlingo/desktop && npm install && npm start   # ventana Electron
 ```
 
-La landing comercial está en `daxlingo/web/index.html` (HTML autocontenido,
-sin build).
-
-## Qué hace cada módulo (`dxl/`)
+## El motor (`dxl/`)
 
 | Módulo | Responsabilidad |
 |---|---|
-| `modelo.py` | Carga/escritura `.pbit` (zip UTF-16), PBIP, `.bim`; lectura parcial `.pbix` con aviso honesto (el modelo del `.pbix` es un binario propietario) |
-| `catalogo.py` | Vista aplanada del TMSL + búsqueda difusa (sin acentos, singular/plural) + validación de referencias DAX (anti-alucinación) |
-| `analizador.py` | 15 reglas de buenas prácticas con severidad, arreglo y auto-fix; puntaje de salud 0-100 |
-| `explicador.py` | Explica DAX en español sin IA: funciones (KB propia de ~60), contexto, pasos, nivel |
-| `generador.py` | NL→DAX: motor de reglas local (total, %, YTD, YoY, media móvil, ranking, top N…) + Claude opcional (BYOK); **todo validado contra el catálogo** |
-| `transformador.py` | Transformaciones sobre copia: DIVIDE, formatos, ocultar claves, tabla de medidas, renombrar con propagación, agregar/eliminar medida |
-| `tablero.py` | Genera el layout del reporte (KPIs, línea, barras, dona, matriz, slicers, botones de navegación) con `prototypeQuery` reales |
-| `ejercicios.py` | Academia: verificación local normalizada, XP y niveles (banco en `datos/ejercicios.json`) |
-| `asistente.py` | Bandeja overlay ↔ app (archivos JSON) + parser respuesta-IA → acción (medida / columna calculada) |
-| `ia.py` | Cliente Claude compartido: modelos a elección con fallback y reintentos ante saturación |
-| `fabric.py` | Publicación en Fabric por API REST (token BYOK) + guía de integración Git del PBIP |
-| `herramientas.py` | Las 10 herramientas del stack, operativas: detección, export `.dax`/`.bim`, config MCP |
+| `modelo.py` | Carga/escritura `.pbit` (zip UTF-16), PBIP, `.bim`; lectura parcial `.pbix` con aviso honesto |
+| `catalogo.py` | Vista aplanada del TMSL, búsqueda difusa (acentos, singular/plural) y validación anti-alucinación |
+| `analizador.py` | 15 reglas de buenas prácticas **agrupadas**, con severidad, arreglo automático y puntaje de salud |
+| `explicador.py` | Explica DAX sin IA ni red (base propia de ~60 funciones) |
+| `generador.py` | NL→DAX: motor de reglas local + IA opcional; **todo validado contra el catálogo** |
+| `transformador.py` | Transformaciones sobre copia: DIVIDE, formatos, claves, tabla de medidas, renombrar con propagación |
+| `tablero.py` | Layout del reporte con `prototypeQuery` reales: KPIs, línea, barras, dona, matriz, slicers y navegación |
+| `ejercicios.py` | Academia: verificación local normalizada, XP y niveles |
+| `asistente.py` | Bandeja overlay ↔ app + parser respuesta-IA → acción aplicable |
+| `proveedores_ia.py` | 8 proveedores de IA (BYOK) + configuración MCP por agente |
+| `ia.py` | Prompts y usos de dominio sobre ese transporte |
+| `licencia.py` | Firma/verificación de claves, ediciones y prueba de 7 días |
+| `fabric.py` | Publicación en Fabric por API REST + guía de integración Git |
+| `herramientas.py` | Las 10 herramientas del stack, operativas |
+| `i18n.py` | Todos los textos en ES/EN/PT, con test de paridad |
 
-## MCP (agentes de IA)
+## La IA que elijas (BYOK)
 
-La acción «Configuración MCP» (pestaña 🛠️ Herramientas) genera un
-`.mcp.json` con tres servidores:
+Claude, ChatGPT (OpenAI), Gemini, **Copilot / Azure OpenAI**, Groq, Mistral,
+DeepSeek y **Ollama local**. Se eligen proveedor y modelo en ⚙️ Configuración,
+con botón para probar la conexión; si el modelo está saturado cae al siguiente
+con reintentos. **Sin ninguna clave** funcionan el motor de reglas, el
+analizador, el explicador, el mapa de relaciones, la Academia y todo el export.
 
-1. **`powerbi-remote`** — el MCP remoto oficial de Power BI:
-   `https://api.fabric.microsoft.com/v1/mcp/powerbi` (autenticación Entra
-   ID; inspección de modelos publicados, gestión de DAX, documentación).
-2. **`powerbi-modeling`** — el MCP local de Microsoft contra Power BI
-   Desktop (Windows).
-3. **`mv-dax-lab`** — el servidor propio (`mcp/servidor.py`, stdio, sin
-   dependencias): `cargar_modelo`, `resumen_modelo`, `analizar_modelo`,
-   `generar_dax` (con `aplicar`), `explicar_dax`, `exportar`.
+## MCP
 
-## DAX Overlay (escritorio)
+⚙️ Configuración y 🛠️ Herramientas generan el archivo de configuración para el
+agente que uses — Claude Code/Desktop (`.mcp.json`), ChatGPT/Codex
+(`mcp.json`), GitHub Copilot (`.vscode/mcp.json`) o Gemini CLI
+(`.gemini/settings.json`) — con **tres servidores**:
 
-Adaptación para Power BI del SQL Overlay del autor. `pip install anthropic
-pynput pillow` y `python daxlingo/overlay/DAX_Overlay.py`:
+1. **`powerbi-remote`** — el MCP remoto oficial:
+   `https://api.fabric.microsoft.com/v1/mcp/powerbi` (Entra ID).
+2. **`powerbi-modeling`** — el MCP local de Microsoft contra Power BI Desktop.
+3. **`mv-dax-lab`** — el propio: `cargar_modelo`, `resumen_modelo`,
+   `analizar_modelo`, `generar_dax`, `explicar_dax`, `exportar`.
 
-| Atajo | Acción |
-|---|---|
-| `F9` | Captura **toda la pantalla** y la resuelve con Claude |
-| `Shift+F9` | Seleccionás un **rectángulo** con el mouse |
-| `Ctrl+F9` | Ventana para **escribir la consulta** sin captura |
-| `Ctrl+Shift+M` | Limpia la memoria de capturas previas |
+## Ediciones y licencias
 
-Modelos en cadena (editable arriba del archivo): Opus 5 → Sonnet 5 →
-Haiku 4.5, con reintentos ante saturación. Cada respuesta va a la **bandeja**
-(`~/.mvdaxlab/bandeja`); la pestaña «🖥️ Asistente de pantalla» de la app la
-levanta y aplica las medidas/columnas propuestas al modelo cargado.
+| Edición | Instalador | Qué habilita | ¿La variable de entorno la cambia? |
+|---|---|---|---|
+| `owner` | `MV-DAX-Lab-OWNER-Setup` | Todo, sin vencimiento | sí (en desarrollo) |
+| `profesional` | `MV-DAX-Lab-Setup` | Todo mientras la licencia esté vigente | **no** |
+| `demo` | `MV-DAX-Lab-DEMO-Setup` | 7 días con todo | **no** |
+
+La edición viene **horneada** en `edicion.json` y **bloqueada** en las que se
+venden: si no, el cliente pone `MVDAX_EDICION=owner` y se lleva el producto
+gratis (hay un test que lo verifica). Vencida la prueba **siguen abiertos**
+analizador, explicador, relaciones y Academia; se cierran generar,
+transformar, exportar, Fabric y overlay.
+
+⚠️ **La edición OWNER no se publica en un release público.** Regala el producto
+entero. Publicá solo `cliente` y `demo`.
+
+```bash
+cd daxlingo/desktop
+MVDAX_LICENSE_SECRET=... node scripts/build-instaladores.js todos
+```
+
+## Instalador de Windows
+
+`npm run dist` genera un NSIS que **deja elegir la carpeta**, crea acceso en
+**escritorio, barra de tareas y menú Inicio** con el icono del producto, se
+registra en **Agregar o quitar programas** y trae **desinstalador** que
+pregunta antes de borrar tus datos (licencia y preferencias sobreviven a una
+reinstalación). El runtime de Python va embebido: el cliente **no instala
+Python** — ver `desktop/runtime/LEEME.md`.
+
+## Web y pagos
+
+`web/` es la landing trilingüe (HTML/CSS/JS vanilla, sin build) con las
+**capturas reales** de las 14 pestañas en los 3 idiomas y el **video demo** por
+idioma. `api/` son las funciones serverless de MercadoPago:
+
+- `checkout.js` — crea la preferencia (token solo en el servidor; conversión a
+  UYU porque un collector uruguayo rechaza preferencias en USD).
+- `verificar-pago.js` — consulta el pago **contra la API real** y solo entonces
+  firma la licencia.
+- `_licencia.js` — firma HMAC-SHA256, **mismo formato** que `dxl/licencia.py`
+  (hay un test que compara las dos implementaciones byte a byte).
+
+El deploy sale de la raíz del repo (`vercel.json` → `outputDirectory:
+daxlingo/web`, funciones en `/api`). Variables necesarias: `MP_ACCESS_TOKEN`,
+`MVDAX_LICENSE_SECRET`, y opcionalmente `MP_CURRENCY` / `MP_TASA_UYU`.
+
+## Capturas y video: se regeneran, no se dibujan
+
+```bash
+python3 daxlingo/media/capturar.py      # levanta la app real y la fotografía
+python3 daxlingo/media/build_video.py   # arma demo-es/en/pt.mp4 (1:46 c/u)
+```
+
+`capturar.py` arranca la app, carga el modelo demo, hace clic en cada pestaña
+y guarda la captura. Si una pestaña se rompe, **la captura sale rota y nos
+enteramos nosotros**, no el cliente.
 
 ## Decisiones honestas
 
-- **`.pbix`**: el modelo tabular viaja comprimido en un binario propietario
-  de Analysis Services; no se puede leer desde afuera de Power BI. Se lee el
-  reporte + catálogo parcial y se explica el camino (.pbit/PBIP) — no se
-  inventa lo que no se puede leer.
-- **IA aditiva, nunca bloqueante**: sin API key funcionan el motor de reglas,
-  el analizador, el explicador, la Academia y el export completo.
-- **Anti-alucinación**: toda expresión generada (por reglas o por IA) se
-  valida contra el catálogo real; una referencia inexistente la descarta.
-- **Los modelos no salen de tu máquina**: el único tráfico de red es la
-  llamada opcional a la API de Anthropic o a Fabric, con tus claves.
+- **`.pbix`**: su modelo tabular es un binario propietario de Analysis
+  Services; no se puede leer desde afuera de Power BI. Se lee el reporte +
+  catálogo parcial y se explica el camino corto (.pbit/PBIP) en vez de
+  inventar lo que no se puede leer.
+- **IA aditiva, nunca bloqueante**: sin clave el producto sigue siendo útil.
+- **Anti-alucinación**: toda expresión —de reglas o de IA— se valida contra el
+  catálogo real; una referencia inexistente la descarta.
+- **HMAC en las licencias**: la clave que verifica es la misma que firma, y en
+  el escritorio viaja horneada en el build. Frena el caso masivo (pasar la
+  clave, inventarla, editar el vencimiento); el corte de verdad es
+  server-side, contra la API de MercadoPago. Está explicado en el docstring de
+  `licencia.py`, no escondido.
+- **Los modelos no salen de tu máquina**: el único tráfico es la consulta a la
+  IA que configures y la publicación a Fabric, ambas con tus claves.

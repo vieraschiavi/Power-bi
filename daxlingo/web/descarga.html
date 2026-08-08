@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MV DAX Lab — Descarga y licencia</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23f2b441'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/estilos.css">
+<style>
+  .caja{background:var(--navy2);border:1px solid var(--line);border-radius:16px;
+        padding:26px;margin-top:22px}
+  .clave{font-family:var(--mono);font-size:.9rem;background:#12294a;
+         border:1px solid var(--line2);border-radius:10px;padding:14px;
+         word-break:break-all;color:var(--amber);margin:14px 0}
+  .paso{display:flex;gap:14px;margin:14px 0}
+  .paso .n{flex:0 0 26px;height:26px;border-radius:50%;background:var(--amber);
+           color:var(--amber-ink);font-weight:800;display:flex;
+           align-items:center;justify-content:center;font-size:.85rem}
+  .oculto{display:none}
+</style>
+</head>
+<body>
+
+<nav><div class="wrap">
+  <a class="marca" href="index.html"><i class="marca-cuadro"></i>MV <b>DAX Lab</b></a>
+  <div class="idiomas" role="group" aria-label="Idioma" style="margin-left:auto">
+    <button data-lang="es" aria-pressed="true">ES</button>
+    <button data-lang="en" aria-pressed="false">EN</button>
+    <button data-lang="pt" aria-pressed="false">PT</button>
+  </div>
+</div></nav>
+
+<section><div class="wrap" style="max-width:760px">
+
+  <h2 id="titulo">Descargá MV DAX Lab</h2>
+  <p class="lead" id="bajada">
+    La prueba trae los 7 días con todo desbloqueado. Si ya compraste, tu clave
+    de licencia aparece más abajo apenas MercadoPago confirma el pago.
+  </p>
+
+  <div class="caja">
+    <h3 style="margin-bottom:10px">🪟 Windows</h3>
+    <p style="color:var(--muted);font-size:.9rem">
+      Instalador <code>.exe</code>: elegís la carpeta, deja el acceso en el
+      escritorio y en el menú Inicio, y se desinstala desde «Agregar o quitar
+      programas». No necesitás instalar Python.
+    </p>
+    <div class="botones">
+      <a class="btn-a" id="btn-exe"
+         href="https://github.com/vieraschiavi/Power-bi/releases/latest">
+         Descargar el instalador</a>
+      <a class="btn-b" href="index.html#precios">Ver los planes</a>
+    </div>
+  </div>
+
+  <div class="caja">
+    <h3 style="margin-bottom:10px">🐧 Linux / macOS · o desde el código</h3>
+    <pre class="linea-r" style="font-size:.8rem">git clone https://github.com/vieraschiavi/Power-bi
+cd Power-bi
+pip install -r daxlingo/requirements.txt
+streamlit run daxlingo/app/app.py</pre>
+  </div>
+
+  <div class="caja oculto" id="caja-licencia">
+    <h3 id="lic-titulo">🔑 Tu licencia</h3>
+    <p id="lic-estado" style="color:var(--muted);font-size:.9rem"></p>
+    <div class="clave" id="lic-clave"></div>
+    <div class="paso"><span class="n">1</span>
+      <span>Abrí MV DAX Lab e id a la pestaña <b>🔑 Licencia</b>.</span></div>
+    <div class="paso"><span class="n">2</span>
+      <span>Pegá la clave y tocá <b>Activar</b>.</span></div>
+    <div class="paso"><span class="n">3</span>
+      <span>Guardá este correo: la clave sirve para reinstalar.</span></div>
+    <button class="btn-b" id="btn-copiar">Copiar la clave</button>
+  </div>
+
+  <p style="color:var(--faint);font-size:.85rem;margin-top:24px" id="ayuda">
+    ¿Pagaste y no ves la clave? Escribinos a
+    <a href="mailto:vieraschiavi@gmail.com">vieraschiavi@gmail.com</a> con el
+    número de operación de MercadoPago y te la emitimos a mano.
+  </p>
+
+</div></section>
+
+<script src="assets/i18n.js"></script>
+<script>
+// Página de post-pago: pregunta al servidor si el pago está aprobado y, solo
+// entonces, muestra la licencia. La clave la emite el servidor —acá nunca se
+// fabrica— y el polling se corta solo para no golpear la API sin sentido.
+(function () {
+  "use strict";
+
+  var TXT = {
+    es: { esperando: "Confirmando el pago con MercadoPago…",
+          aprobado: "Pago confirmado. Esta es tu clave:",
+          pendiente: "El pago figura como «{estado}». Cuando MercadoPago lo " +
+                     "acredite, recargá esta página y la clave aparece acá.",
+          error: "No pudimos verificar el pago automáticamente.",
+          copiado: "Clave copiada" },
+    en: { esperando: "Confirming the payment with MercadoPago…",
+          aprobado: "Payment confirmed. Here is your key:",
+          pendiente: "The payment shows as “{estado}”. Once MercadoPago " +
+                     "clears it, reload this page and the key will be here.",
+          error: "We could not verify the payment automatically.",
+          copiado: "Key copied" },
+    pt: { esperando: "Confirmando o pagamento com o MercadoPago…",
+          aprobado: "Pagamento confirmado. Esta é a sua chave:",
+          pendiente: "O pagamento está como “{estado}”. Quando o MercadoPago " +
+                     "liberar, recarregue esta página e a chave aparece aqui.",
+          error: "Não conseguimos verificar o pagamento automaticamente.",
+          copiado: "Chave copiada" },
+  };
+
+  function idioma() {
+    var g = localStorage.getItem("mvdaxlab.idioma");
+    return TXT[g] ? g : "es";
+  }
+  var t = TXT[idioma()];
+
+  var params = new URLSearchParams(location.search);
+  var idPago = params.get("payment_id") || params.get("collection_id");
+  var caja = document.getElementById("caja-licencia");
+  var estado = document.getElementById("lic-estado");
+  var claveNodo = document.getElementById("lic-clave");
+
+  if (idPago && /^[0-9]+$/.test(idPago)) {
+    caja.classList.remove("oculto");
+    estado.textContent = t.esperando;
+    claveNodo.style.display = "none";
+    verificar(0);
+  }
+
+  function verificar(intento) {
+    fetch("/api/verificar-pago?payment_id=" + encodeURIComponent(idPago))
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d.aprobado && d.licencia) {
+          estado.textContent = t.aprobado;
+          claveNodo.style.display = "";
+          claveNodo.textContent = d.licencia;
+          return;
+        }
+        estado.textContent = t.pendiente.replace("{estado}", d.estado || "?");
+        // Hasta 5 reintentos espaciados: un pago con tarjeta puede tardar
+        // unos segundos en acreditarse. Más que eso, no tiene sentido.
+        if (intento < 5) setTimeout(function () { verificar(intento + 1); }, 4000);
+      })
+      .catch(function () { estado.textContent = t.error; });
+  }
+
+  document.getElementById("btn-copiar").addEventListener("click", function () {
+    navigator.clipboard.writeText(claveNodo.textContent).then(function () {
+      var b = document.getElementById("btn-copiar");
+      var previo = b.textContent;
+      b.textContent = t.copiado;
+      setTimeout(function () { b.textContent = previo; }, 1800);
+    });
+  });
+
+  document.querySelectorAll(".idiomas button").forEach(function (b) {
+    b.setAttribute("aria-pressed", String(b.dataset.lang === idioma()));
+    b.addEventListener("click", function () {
+      localStorage.setItem("mvdaxlab.idioma", b.dataset.lang);
+      location.reload();
+    });
+  });
+})();
+</script>
+</body>
+</html>

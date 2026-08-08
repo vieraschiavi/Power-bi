@@ -1,0 +1,100 @@
+/* Pantalla de arranque — mismo design system que la app y la landing. */
+
+:root {
+  --navy: #081527;
+  --navy2: #0c2137;
+  --amber: #f2b441;
+  --amber-ink: #1c1305;
+  --ink: #eaf1fb;
+  --muted: #9db0c8;
+  --line: #1d3149;
+  --rojo: #c1443c;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+  background: linear-gradient(160deg, #0d2440, var(--navy));
+  color: var(--ink);
+  height: 100vh;
+  overflow: hidden;
+  user-select: none;
+}
+
+.pantalla {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 40px;
+  text-align: center;
+}
+
+.marca { display: flex; align-items: center; gap: 14px; }
+.marca h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.02em; }
+.marca h1 b { color: var(--amber); }
+.cuadro {
+  width: 34px; height: 34px; border-radius: 8px;
+  background: var(--amber);
+  box-shadow: 0 0 34px rgba(242, 180, 65, 0.45);
+}
+
+.lema { color: var(--muted); font-size: 0.96rem; }
+
+.arranque { margin-top: 26px; width: min(430px, 80vw); }
+.barra {
+  height: 5px; background: var(--line); border-radius: 999px; overflow: hidden;
+}
+.barra span {
+  display: block; height: 100%; background: var(--amber);
+  border-radius: 999px; transition: width 0.6s ease;
+}
+.paso { margin-top: 14px; color: var(--ink); font-size: 0.9rem; }
+.detalle { margin-top: 4px; color: #7a8da7; font-size: 0.78rem; }
+
+.error {
+  margin-top: 22px;
+  background: var(--navy2);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--rojo);
+  border-radius: 14px;
+  padding: 22px 26px;
+  max-width: 620px;
+  text-align: left;
+}
+.error h2 { font-size: 1.1rem; margin-bottom: 8px; }
+.error p { color: var(--muted); font-size: 0.9rem; }
+.registro {
+  margin-top: 12px;
+  background: #0a1a30;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.74rem;
+  color: var(--muted);
+  max-height: 190px;
+  overflow: auto;
+  white-space: pre-wrap;
+  user-select: text;
+}
+
+.botones { display: flex; gap: 10px; margin-top: 16px; }
+.btn-a, .btn-b {
+  font: inherit; font-size: 0.88rem; font-weight: 700;
+  padding: 9px 18px; border-radius: 10px; cursor: pointer;
+}
+.btn-a { background: var(--amber); color: var(--amber-ink); border: 0; }
+.btn-b { background: none; color: var(--ink); border: 1px solid var(--line); }
+.btn-a:hover { background: #e39a2e; }
+.btn-b:hover { border-color: var(--amber); }
+
+footer { position: fixed; bottom: 22px; }
+.enlace {
+  background: none; border: 0; color: #7a8da7; font: inherit;
+  font-size: 0.8rem; cursor: pointer; text-decoration: underline;
+}
+.enlace:hover { color: var(--amber); }

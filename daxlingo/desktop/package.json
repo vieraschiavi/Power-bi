@@ -1,0 +1,92 @@
+{
+  "name": "mv-dax-lab",
+  "productName": "MV DAX Lab",
+  "version": "1.0.0",
+  "description": "DAX, Power BI y Fabric con IA — analiza, genera, transforma y exporta tu modelo.",
+  "author": {
+    "name": "MV",
+    "email": "vieraschiavi@gmail.com"
+  },
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "main.cjs",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "start": "npm run build && electron .",
+    "dist": "npm run build && electron-builder --win",
+    "dist:portable": "npm run build && electron-builder --win portable",
+    "ediciones": "node scripts/build-instaladores.js todos"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "electron": "^31.3.1",
+    "electron-builder": "^24.13.3",
+    "vite": "^5.4.0"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "build": {
+    "appId": "uy.mv.daxlab",
+    "productName": "MV DAX Lab",
+    "copyright": "© MV",
+    "directories": {
+      "output": "dist-instalador",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "edicion.json",
+      "dist/**/*",
+      "!**/*.map"
+    ],
+    "extraResources": [
+      {
+        "from": "../",
+        "to": "app",
+        "filter": [
+          "dxl/**/*",
+          "app/**/*",
+          "datos/**/*",
+          "mcp/**/*",
+          "overlay/**/*",
+          ".streamlit/**/*",
+          "requirements.txt",
+          "!**/__pycache__/**"
+        ]
+      },
+      {
+        "from": "runtime",
+        "to": "runtime",
+        "filter": ["**/*"]
+      }
+    ],
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] }
+      ],
+      "icon": "build/icono.ico",
+      "artifactName": "MV-DAX-Lab-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "menuCategory": "MV DAX Lab",
+      "shortcutName": "MV DAX Lab",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false,
+      "installerIcon": "build/icono.ico",
+      "uninstallerIcon": "build/icono.ico",
+      "installerHeaderIcon": "build/icono.ico",
+      "include": "build/instalador.nsh",
+      "license": "build/LICENCIA.txt"
+    }
+  }
+}
