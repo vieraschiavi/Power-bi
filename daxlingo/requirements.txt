@@ -1,0 +1,7 @@
+# MV DAX Lab — dependencias de la app (el motor dxl/ no necesita ninguna).
+streamlit>=1.36
+pandas
+pytest
+
+# El overlay de escritorio (opcional, corre aparte):
+#   pip install anthropic pynput pillow

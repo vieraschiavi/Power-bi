@@ -1,0 +1,202 @@
+{
+  "modelo_practica": {
+    "descripcion": "Modelo de práctica: una estrella mínima de ventas.",
+    "tablas": {
+      "Ventas": ["Fecha (fecha)", "IdCliente", "IdProducto", "Cantidad", "Importe", "Costo"],
+      "Clientes": ["IdCliente", "Nombre", "Pais", "Segmento"],
+      "Productos": ["IdProducto", "Producto", "Categoria", "PrecioLista"],
+      "Calendario": ["Fecha (marcada como tabla de fechas)", "Anio", "Mes", "AnioMes"]
+    },
+    "relaciones": [
+      "Ventas[IdCliente] → Clientes[IdCliente]",
+      "Ventas[IdProducto] → Productos[IdProducto]",
+      "Ventas[Fecha] → Calendario[Fecha]"
+    ]
+  },
+  "ejercicios": [
+    {
+      "id": "N1-01",
+      "nivel": 1,
+      "xp": 10,
+      "titulo": "Tu primera medida",
+      "enunciado": "Creá la medida que suma la columna Importe de la tabla Ventas.",
+      "pista": "La agregación más básica: SUM sobre una columna.",
+      "solucion": "SUM ( Ventas[Importe] )",
+      "acepta": ["SUM(Ventas[Importe])"],
+      "moraleja": "SUM respeta el contexto del visual: cada fila del reporte filtra qué se suma."
+    },
+    {
+      "id": "N1-02",
+      "nivel": 1,
+      "xp": 10,
+      "titulo": "Contar filas",
+      "enunciado": "Contá cuántas filas tiene la tabla Ventas (cada fila es una línea de venta).",
+      "pista": "Hay una función que cuenta filas de una tabla entera.",
+      "solucion": "COUNTROWS ( Ventas )",
+      "moraleja": "COUNTROWS(Tabla) es más claro y rápido que COUNT sobre una columna cualquiera."
+    },
+    {
+      "id": "N1-03",
+      "nivel": 1,
+      "xp": 15,
+      "titulo": "Clientes únicos",
+      "enunciado": "Calculá cuántos clientes DISTINTOS compraron (desde la tabla Ventas).",
+      "pista": "El mismo cliente puede aparecer en muchas filas: hay que contar valores únicos.",
+      "solucion": "DISTINCTCOUNT ( Ventas[IdCliente] )",
+      "moraleja": "DISTINCTCOUNT cuenta valores únicos en el contexto: la base de cualquier métrica de alcance."
+    },
+    {
+      "id": "N1-04",
+      "nivel": 1,
+      "xp": 15,
+      "titulo": "Ticket promedio",
+      "enunciado": "Calculá el promedio de la columna Importe de Ventas.",
+      "pista": "AVERAGE promedia una columna.",
+      "solucion": "AVERAGE ( Ventas[Importe] )",
+      "moraleja": "Ojo: AVERAGE promedia FILAS, no el total sobre clientes. Para eso hace falta un iterador."
+    },
+    {
+      "id": "N2-01",
+      "nivel": 2,
+      "xp": 20,
+      "titulo": "División segura",
+      "enunciado": "Margen %: (Importe − Costo) dividido Importe, SIN riesgo de dividir por cero. Usá SUM para agregar cada columna.",
+      "pista": "Hay una función pensada exactamente para dividir sin explotar.",
+      "solucion": "DIVIDE ( SUM ( Ventas[Importe] ) - SUM ( Ventas[Costo] ), SUM ( Ventas[Importe] ) )",
+      "acepta": ["DIVIDE(SUM(Ventas[Importe])-SUM(Ventas[Costo]),SUM(Ventas[Importe]))"],
+      "moraleja": "DIVIDE devuelve BLANK ante denominador 0 — el visual queda vacío en vez de mostrar infinito."
+    },
+    {
+      "id": "N2-02",
+      "nivel": 2,
+      "xp": 20,
+      "titulo": "Iterar fila por fila",
+      "enunciado": "Facturación teórica: para cada fila de Ventas multiplicá Cantidad por PrecioLista del producto (usá RELATED) y sumá todo.",
+      "pista": "SUMX itera; RELATED trae el precio desde Productos.",
+      "solucion": "SUMX ( Ventas, Ventas[Cantidad] * RELATED ( Productos[PrecioLista] ) )",
+      "moraleja": "SUMX evalúa la expresión en cada fila (contexto de fila) y suma: lo que SUM no puede hacer."
+    },
+    {
+      "id": "N2-03",
+      "nivel": 2,
+      "xp": 25,
+      "titulo": "Cambiar el contexto",
+      "enunciado": "Ventas del segmento «Empresas», sin importar qué segmento esté filtrado en el visual: sumá Importe forzando Clientes[Segmento] = \"Empresas\".",
+      "pista": "CALCULATE evalúa una expresión cambiando los filtros.",
+      "solucion": "CALCULATE ( SUM ( Ventas[Importe] ), Clientes[Segmento] = \"Empresas\" )",
+      "moraleja": "CALCULATE es LA función de DAX: sus filtros reemplazan a los del visual para esa expresión."
+    },
+    {
+      "id": "N2-04",
+      "nivel": 2,
+      "xp": 25,
+      "titulo": "% del total",
+      "enunciado": "Participación: ventas del contexto actual divididas por las ventas SIN el filtro de Clientes (todos los clientes). Usá ALL y DIVIDE.",
+      "pista": "El denominador es CALCULATE(..., ALL(Clientes)).",
+      "solucion": "DIVIDE ( SUM ( Ventas[Importe] ), CALCULATE ( SUM ( Ventas[Importe] ), ALL ( Clientes ) ) )",
+      "moraleja": "ALL quita filtros: el patrón «valor / valor sin filtros» es toda participación sobre el total."
+    },
+    {
+      "id": "N3-01",
+      "nivel": 3,
+      "xp": 30,
+      "titulo": "Acumulado del año",
+      "enunciado": "Ventas acumuladas desde el 1 de enero hasta la fecha del contexto (YTD), usando Calendario[Fecha].",
+      "pista": "Hay una función de inteligencia de tiempo que hace exactamente esto.",
+      "solucion": "TOTALYTD ( SUM ( Ventas[Importe] ), Calendario[Fecha] )",
+      "moraleja": "TOTALYTD necesita una tabla de calendario continua y marcada como tabla de fechas."
+    },
+    {
+      "id": "N3-02",
+      "nivel": 3,
+      "xp": 30,
+      "titulo": "Mismo período, año anterior",
+      "enunciado": "Ventas del mismo período del año pasado: CALCULATE + la función que desplaza las fechas un año atrás.",
+      "pista": "SAMEPERIODLASTYEAR recibe la columna de fechas del calendario.",
+      "solucion": "CALCULATE ( SUM ( Ventas[Importe] ), SAMEPERIODLASTYEAR ( Calendario[Fecha] ) )",
+      "moraleja": "La comparación interanual correcta desplaza el CONTEXTO de fechas, no resta 365 días a mano."
+    },
+    {
+      "id": "N3-03",
+      "nivel": 3,
+      "xp": 35,
+      "titulo": "Variación interanual",
+      "enunciado": "Variación % vs año anterior usando variables: VAR Actual, VAR Anterior (SAMEPERIODLASTYEAR) y RETURN con DIVIDE(Actual - Anterior, Anterior).",
+      "pista": "VAR nombre = expresión ... RETURN resultado.",
+      "solucion": "VAR Actual = SUM ( Ventas[Importe] ) VAR Anterior = CALCULATE ( SUM ( Ventas[Importe] ), SAMEPERIODLASTYEAR ( Calendario[Fecha] ) ) RETURN DIVIDE ( Actual - Anterior, Anterior )",
+      "patrones": ["var \\w+=sum\\(ventas\\[importe\\]\\)var \\w+=calculate\\(sum\\(ventas\\[importe\\]\\),sameperiodlastyear\\(calendario\\[fecha\\]\\)\\)return divide\\(\\w+-\\w+,\\w+\\)"],
+      "moraleja": "Las variables se evalúan una sola vez: más rápido, más legible y sin repetir expresiones."
+    },
+    {
+      "id": "N3-04",
+      "nivel": 3,
+      "xp": 35,
+      "titulo": "Media móvil de 3 meses",
+      "enunciado": "Promedio móvil de las ventas de los últimos 3 meses: AVERAGEX sobre DATESINPERIOD(Calendario[Fecha], LASTDATE(Calendario[Fecha]), -3, MONTH) con CALCULATE(SUM(Ventas[Importe])).",
+      "pista": "DATESINPERIOD arma la ventana; AVERAGEX promedia dentro de ella.",
+      "solucion": "AVERAGEX ( DATESINPERIOD ( Calendario[Fecha], LASTDATE ( Calendario[Fecha] ), -3, MONTH ), CALCULATE ( SUM ( Ventas[Importe] ) ) )",
+      "moraleja": "La media móvil suaviza la serie: la ventana viaja con el contexto de cada punto del gráfico."
+    },
+    {
+      "id": "N4-01",
+      "nivel": 4,
+      "xp": 40,
+      "titulo": "Ranking de países",
+      "enunciado": "Posición de cada país por ventas, descendente y sin saltos: RANKX sobre ALLSELECTED(Clientes[Pais]) con CALCULATE(SUM(Ventas[Importe])), orden DESC y empate DENSE.",
+      "pista": "RANKX(tabla, expresión, , DESC, DENSE) — ojo con el argumento vacío.",
+      "solucion": "RANKX ( ALLSELECTED ( Clientes[Pais] ), CALCULATE ( SUM ( Ventas[Importe] ) ), , DESC, DENSE )",
+      "moraleja": "ALLSELECTED rankea dentro de lo que los slicers dejan visible — el ranking que el usuario espera."
+    },
+    {
+      "id": "N4-02",
+      "nivel": 4,
+      "xp": 40,
+      "titulo": "Un solo valor o nada",
+      "enunciado": "Mostrá el país seleccionado si hay UNO solo en el contexto; si hay varios, el texto \"Varios\". Una sola función lo resuelve.",
+      "pista": "SELECTEDVALUE tiene un segundo argumento con el valor alternativo.",
+      "solucion": "SELECTEDVALUE ( Clientes[Pais], \"Varios\" )",
+      "moraleja": "SELECTEDVALUE reemplaza el patrón viejo IF(HASONEVALUE(...), VALUES(...), ...) en una línea."
+    },
+    {
+      "id": "N4-03",
+      "nivel": 4,
+      "xp": 45,
+      "titulo": "Top 5 como filtro",
+      "enunciado": "Ventas concentradas en los 5 productos que más venden: CALCULATE + KEEPFILTERS(TOPN(5, ALLSELECTED(Productos[Producto]), CALCULATE(SUM(Ventas[Importe])), DESC)).",
+      "pista": "TOPN devuelve una tabla; KEEPFILTERS la aplica sin pisar los filtros del visual.",
+      "solucion": "CALCULATE ( SUM ( Ventas[Importe] ), KEEPFILTERS ( TOPN ( 5, ALLSELECTED ( Productos[Producto] ), CALCULATE ( SUM ( Ventas[Importe] ) ), DESC ) ) )",
+      "moraleja": "TOPN como filtro de CALCULATE: el patrón detrás de todo «top N» que responde a los slicers."
+    },
+    {
+      "id": "N5-01",
+      "nivel": 5,
+      "xp": 50,
+      "titulo": "Clientes nuevos del período",
+      "enunciado": "Clientes cuya PRIMERA compra cae en el período del contexto: contá las filas de VALUES(Ventas[IdCliente]) donde CALCULATE(MIN(Ventas[Fecha])) es mayor o igual que MIN(Calendario[Fecha]). Usá COUNTROWS + FILTER.",
+      "pista": "FILTER sobre VALUES(Ventas[IdCliente]); adentro, CALCULATE(MIN(...)) evalúa por cliente.",
+      "solucion": "COUNTROWS ( FILTER ( VALUES ( Ventas[IdCliente] ), CALCULATE ( MIN ( Ventas[Fecha] ) ) >= MIN ( Calendario[Fecha] ) ) )",
+      "moraleja": "El patrón «clientes nuevos» combina contexto de fila y de filtro: si lo dominás, dominás DAX."
+    },
+    {
+      "id": "N5-02",
+      "nivel": 5,
+      "xp": 50,
+      "titulo": "Relación inactiva a demanda",
+      "enunciado": "Supongamos que Ventas tiene también FechaEntrega relacionada INACTIVA con el calendario. Sumá Importe usando esa relación: CALCULATE + USERELATIONSHIP(Ventas[FechaEntrega], Calendario[Fecha]).",
+      "pista": "USERELATIONSHIP se pasa como filtro de CALCULATE.",
+      "solucion": "CALCULATE ( SUM ( Ventas[Importe] ), USERELATIONSHIP ( Ventas[FechaEntrega], Calendario[Fecha] ) )",
+      "moraleja": "Dos fechas por tabla de hechos = una relación activa y otra que se enciende por medida."
+    },
+    {
+      "id": "N5-03",
+      "nivel": 5,
+      "xp": 55,
+      "titulo": "Pareto: % acumulado",
+      "enunciado": "El % acumulado de ventas de los productos que venden MÁS O IGUAL que el del contexto: SUMX de FILTER(ALLSELECTED(Productos[Producto]), CALCULATE(SUM(Ventas[Importe])) >= [ventas del actual]) dividido el total. Escribilo con VAR VentasActual = CALCULATE(SUM(Ventas[Importe])) y VAR Total = CALCULATE(SUM(Ventas[Importe]), ALLSELECTED(Productos)).",
+      "pista": "Tres VAR y un RETURN con DIVIDE.",
+      "solucion": "VAR VentasActual = CALCULATE ( SUM ( Ventas[Importe] ) ) VAR Total = CALCULATE ( SUM ( Ventas[Importe] ), ALLSELECTED ( Productos ) ) VAR Acum = SUMX ( FILTER ( ALLSELECTED ( Productos[Producto] ), CALCULATE ( SUM ( Ventas[Importe] ) ) >= VentasActual ), CALCULATE ( SUM ( Ventas[Importe] ) ) ) RETURN DIVIDE ( Acum, Total )",
+      "patrones": ["var \\w+=calculate\\(sum\\(ventas\\[importe\\]\\)\\)var \\w+=calculate\\(sum\\(ventas\\[importe\\]\\),allselected\\(productos\\)\\)var \\w+=sumx\\(filter\\(allselected\\(productos\\[producto\\]\\),calculate\\(sum\\(ventas\\[importe\\]\\)\\)>=\\w+\\),calculate\\(sum\\(ventas\\[importe\\]\\)\\)\\)return divide\\(\\w+,\\w+\\)"],
+      "moraleja": "La curva de Pareto en DAX puro: iteradores + contexto. Después de esto, el resto es práctica."
+    }
+  ]
+}
