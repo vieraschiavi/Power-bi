@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld("mvdax", {
   estadoActual: () => ipcRenderer.invoke("estado-actual"),
   reintentar: () => ipcRenderer.invoke("reintentar"),
   abrirExterno: (url) => ipcRenderer.invoke("abrir-externo", url),
+  sitio: () => ipcRenderer.invoke("sitio"),
   alCambiarEstado: (fn) => {
     const oyente = (_evento, estado) => fn(estado);
     ipcRenderer.on("estado", oyente);

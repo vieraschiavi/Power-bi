@@ -31,7 +31,11 @@ module.exports = async (req, res) => {
   const p = PLANES[plan];
   if (!p) { res.status(400).json({ error: "plan_invalido" }); return; }
 
-  const base = "https://" + (req.headers.host || "mvdaxlab.vercel.app");
+  // El host lo pone Vercel en el request, así que las URLs de retorno salen
+  // solas con el dominio real, sea el que sea. MVDAXLAB_SITIO es el respaldo
+  // para invocaciones sin header Host (tests, cron, curl a mano).
+  const base = req.headers.host ? "https://" + req.headers.host
+                                : (process.env.MVDAXLAB_SITIO || "");
   const token = process.env.MP_ACCESS_TOKEN;
   const link = process.env["MP_LINK_" + plan.toUpperCase()];
 

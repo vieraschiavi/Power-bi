@@ -82,11 +82,17 @@ function construir(nombre) {
     ? fs.readFileSync(ARCHIVO_EDICION, "utf8") : null;
 
   try {
+    // El sitio se conserva del archivo del repo (o se pisa con MVDAXLAB_SITIO):
+    // si se perdiera acá, los instaladores saldrían apuntando al dominio por
+    // defecto y los botones de compra llevarían a ningún lado.
+    const sitio = process.env.MVDAXLAB_SITIO ||
+      (edicionOriginal ? (leerJson(ARCHIVO_EDICION).sitio || "") : "");
     escribirJson(ARCHIVO_EDICION, {
       _comentario: "Generado por scripts/build-instaladores.js — no editar a mano.",
       edicion: cfg.edicion,
       bloqueada: cfg.bloqueada,
       secreto: secreto,
+      sitio: sitio,
     });
 
     const paquete = leerJson(PAQUETE);

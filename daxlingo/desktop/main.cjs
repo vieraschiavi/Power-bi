@@ -47,6 +47,14 @@ function archivoEdicion() {
   return { edicion: "demo", bloqueada: false };
 }
 
+// Sitio público del producto. Vive en edicion.json para que el instalador
+// apunte al dominio real sin recompilar nada.
+function sitio(ruta) {
+  const base = (archivoEdicion().sitio || "https://mvdaxlab.vercel.app")
+    .replace(/\/+$/, "");
+  return ruta ? base + ruta : base;
+}
+
 // Python: primero el runtime embebido que trae el instalador; si no está
 // (desarrollo, Linux, macOS), el del sistema. Sin runtime embebido el
 // usuario final tendría que instalar Python — por eso el instalador lo lleva.
@@ -216,11 +224,11 @@ function construirMenu() {
       submenu: [
         {
           label: "Sitio de MV DAX Lab",
-          click: () => shell.openExternal("https://mvdaxlab.vercel.app"),
+          click: () => shell.openExternal(sitio()),
         },
         {
           label: "Comprar una licencia",
-          click: () => shell.openExternal("https://mvdaxlab.vercel.app/#precios"),
+          click: () => shell.openExternal(sitio("/#precios")),
         },
         { type: "separator" },
         {
@@ -290,6 +298,7 @@ if (!lock) {
     ipcMain.handle("estado-actual", () => ultimoEstado);
     ipcMain.handle("reintentar", async () => { await arrancarMotor(); });
     ipcMain.handle("abrir-externo", (_e, url) => shell.openExternal(url));
+    ipcMain.handle("sitio", () => sitio());
 
     construirMenu();
     crearVentana();

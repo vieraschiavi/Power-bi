@@ -411,6 +411,40 @@ def test_estado_de_una_suscripcion_vencida(datos):
     assert estado.permite("analizar") and estado.permite("academia")
 
 
+def test_el_dominio_no_esta_clavado_en_el_codigo():
+    """
+    El sitio público sale de un solo lugar configurable (`dxl.SITIO` /
+    `edicion.json`). Estuvo repetido en seis archivos apuntando a un dominio
+    que ni siquiera existía todavía: cuando el deploy real tenga otro nombre,
+    los botones de compra y de renovación tienen que seguirlo solos.
+    """
+    import dxl
+
+    permitidos = {
+        # El único default, y su espejo en Electron y en la config del build.
+        RAIZ / "dxl" / "__init__.py",
+        RAIZ / "desktop" / "main.cjs",
+        RAIZ / "desktop" / "edicion.json",
+        RAIZ / "web" / "descarga.html",   # texto de ayuda, no un enlace vivo
+    }
+    sospechosos = []
+    for archivo in RAIZ.rglob("*"):
+        if archivo.suffix not in (".py", ".js", ".jsx", ".cjs", ".html"):
+            continue
+        # Los tests usan hosts de mentira como dato de entrada: eso no es un
+        # dominio clavado en el producto.
+        if archivo in permitidos or "node_modules" in archivo.parts \
+                or "dist" in archivo.parts or "tests" in archivo.parts \
+                or archivo.name.endswith(".test.js"):
+            continue
+        if "vercel.app" in archivo.read_text(encoding="utf-8", errors="ignore"):
+            sospechosos.append(str(archivo.relative_to(RAIZ)))
+    assert not sospechosos, f"Dominio clavado en: {sospechosos}"
+
+    assert dxl.sitio("/#precios").endswith("/#precios")
+    assert "://" not in dxl.dominio()
+
+
 def test_la_web_no_filtra_secretos():
     """Ni tokens de MercadoPago ni claves de IA en lo que se sirve al público."""
     sospechosos = re.compile(

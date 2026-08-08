@@ -20,7 +20,7 @@ const pedido = (body, metodo = "POST") => ({
   method: metodo,
   body,
   headers: {
-    host: "mvdaxlab.vercel.app",
+    host: "ejemplo.vercel.app",
     "x-forwarded-for": "10.0.0." + Math.floor(Math.random() * 250),
   },
 });
