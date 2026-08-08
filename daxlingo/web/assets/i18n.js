@@ -1,7 +1,8 @@
 // MV DAX Lab · Textos de la landing en ES / EN / PT.
 //
 // Espejo de `dxl/i18n.py`: mismas tres claves por texto. Hay un test que
-// verifica que ningún texto quede sin traducir (tests/test_web.py).
+// verifica que ningún texto quede sin traducir y que el HTML no use claves
+// inexistentes (tests/test_producto.py).
 // Cada clave se referencia en el HTML con data-i="clave".
 
 window.TEXTOS = {
