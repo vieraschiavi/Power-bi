@@ -36,7 +36,7 @@ test("pago aprobado ⇒ emite una licencia verificable", async () => {
   const original = global.fetch;
   global.fetch = async () => ({
     ok: true,
-    json: async () => ({ status: "approved", metadata: { plan: "profesional" },
+    json: async () => ({ status: "approved", metadata: { plan: "perpetua" },
                          payer: { email: "cliente@ejemplo.com" } }),
   });
   try {
@@ -44,7 +44,7 @@ test("pago aprobado ⇒ emite una licencia verificable", async () => {
     await verificarPago(pedido("123456"), res);
     assert.equal(res.cuerpo.aprobado, true);
     const payload = verificar(res.cuerpo.licencia, SECRETO);
-    assert.equal(payload.plan, "profesional");
+    assert.equal(payload.plan, "perpetua");
     assert.equal(payload.equipos, 1);
     assert.equal(payload.email, "cliente@ejemplo.com");
   } finally { global.fetch = original; }
@@ -55,7 +55,7 @@ test("pago pendiente o rechazado ⇒ NO emite licencia", async () => {
   for (const estado of ["pending", "rejected", "in_process", "cancelled"]) {
     global.fetch = async () => ({
       ok: true,
-      json: async () => ({ status: estado, metadata: { plan: "profesional" } }),
+      json: async () => ({ status: estado, metadata: { plan: "perpetua" } }),
     });
     const res = respuesta();
     await verificarPago(pedido("123456"), res);

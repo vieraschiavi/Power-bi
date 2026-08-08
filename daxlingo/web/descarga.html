@@ -73,6 +73,17 @@ streamlit run daxlingo/app/app.py</pre>
     <div class="paso"><span class="n">3</span>
       <span>Guardá este correo: la clave sirve para reinstalar.</span></div>
     <button class="btn-b" id="btn-copiar">Copiar la clave</button>
+
+    <div class="oculto" id="lic-renovacion" style="margin-top:18px;
+         border-top:1px solid var(--line);padding-top:16px">
+      <p style="color:var(--muted);font-size:.88rem">
+        <b style="color:var(--ink)">Suscripción mensual:</b> tu clave vale 32
+        días y se renueva sola mientras la suscripción siga activa. Guardá
+        este enlace — entrás y copiás la clave nueva cuando el programa te la
+        pida:
+      </p>
+      <a class="clave" style="display:block;color:var(--amber)" href="#"></a>
+    </div>
   </div>
 
   <p style="color:var(--faint);font-size:.85rem;margin-top:24px" id="ayuda">
@@ -120,11 +131,27 @@ streamlit run daxlingo/app/app.py</pre>
 
   var params = new URLSearchParams(location.search);
   var idPago = params.get("payment_id") || params.get("collection_id");
+  var idSuscripcion = params.get("preapproval_id");
   var caja = document.getElementById("caja-licencia");
   var estado = document.getElementById("lic-estado");
   var claveNodo = document.getElementById("lic-clave");
+  var renovacion = document.getElementById("lic-renovacion");
 
-  if (idPago && /^[0-9]+$/.test(idPago)) {
+  // Las dos modalidades vuelven acá, pero con parámetros distintos: el pago
+  // único trae payment_id y la suscripción, preapproval_id. Cada una consulta
+  // su endpoint — un preapproval no es un pago y no se puede mirar igual.
+  var consulta = null;
+  if (idSuscripcion && /^[a-zA-Z0-9-]{8,64}$/.test(idSuscripcion)) {
+    consulta = { url: "/api/verificar-suscripcion?preapproval_id=" +
+                      encodeURIComponent(idSuscripcion),
+                 ok: "vigente", recurrente: true, id: idSuscripcion };
+  } else if (idPago && /^[0-9]+$/.test(idPago)) {
+    consulta = { url: "/api/verificar-pago?payment_id=" +
+                      encodeURIComponent(idPago),
+                 ok: "aprobado", recurrente: false, id: idPago };
+  }
+
+  if (consulta) {
     caja.classList.remove("oculto");
     estado.textContent = t.esperando;
     claveNodo.style.display = "none";
@@ -132,13 +159,23 @@ streamlit run daxlingo/app/app.py</pre>
   }
 
   function verificar(intento) {
-    fetch("/api/verificar-pago?payment_id=" + encodeURIComponent(idPago))
+    fetch(consulta.url)
       .then(function (r) { return r.json(); })
       .then(function (d) {
-        if (d.aprobado && d.licencia) {
+        if (d[consulta.ok] && d.licencia) {
           estado.textContent = t.aprobado;
           claveNodo.style.display = "";
           claveNodo.textContent = d.licencia;
+          if (consulta.recurrente) {
+            // La licencia mensual vence: el cliente necesita saber dónde
+            // volver a buscar la siguiente. Sin esto, el mes que viene se
+            // queda afuera sin entender por qué.
+            renovacion.classList.remove("oculto");
+            renovacion.querySelector("a").href =
+              "descarga.html?preapproval_id=" + encodeURIComponent(consulta.id);
+            renovacion.querySelector("a").textContent =
+              location.origin + "/descarga.html?preapproval_id=" + consulta.id;
+          }
           return;
         }
         estado.textContent = t.pendiente.replace("{estado}", d.estado || "?");

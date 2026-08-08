@@ -137,10 +137,15 @@ h2{font-size:1.75rem;margin-bottom:10px;letter-spacing:-.01em}
 .video-caja video{width:100%;display:block}
 
 /* ---- precios ---- */
-.precios{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;
-  align-items:start}
-@media(max-width:1000px){.precios{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:600px){.precios{grid-template-columns:1fr}}
+.precios{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;
+  align-items:start;max-width:900px}
+@media(max-width:860px){.precios{grid-template-columns:1fr}}
+/* Las dos modalidades desbloquean lo mismo, así que la lista de funciones va
+   una sola vez debajo y no repetida en cada tarjeta. */
+.incluye{margin-top:26px;background:var(--tint);border:1px solid var(--line-d);
+  border-radius:14px;padding:20px 24px;max-width:900px}
+.incluye h3{color:var(--ink-d);font-size:1rem;margin-bottom:6px}
+.incluye p{color:var(--muted-d);font-size:.9rem}
 .plan{border:1px solid var(--line-d);border-radius:16px;padding:24px;
   background:var(--paper);display:flex;flex-direction:column;height:100%}
 .plan.destacado{border-color:var(--amber);
