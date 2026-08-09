@@ -18,7 +18,7 @@ LEMA = "Tu modelo de Power BI, explicado, corregido y exportado."
 # publiques, poné el dominio real en MVDAXLAB_SITIO (o en `sitio` dentro de
 # desktop/edicion.json) y toda la app —botones de compra, renovación de la
 # suscripción, menú de escritorio, cierre del video— pasa a apuntar ahí.
-SITIO = os.environ.get("MVDAXLAB_SITIO", "https://mvdaxlab.vercel.app").rstrip("/")
+SITIO = os.environ.get("MVDAXLAB_SITIO", "https://power-bi-mv13.vercel.app").rstrip("/")
 
 
 def sitio(ruta: str = "") -> str:

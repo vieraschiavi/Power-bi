@@ -50,7 +50,7 @@ function archivoEdicion() {
 // Sitio público del producto. Vive en edicion.json para que el instalador
 // apunte al dominio real sin recompilar nada.
 function sitio(ruta) {
-  const base = (archivoEdicion().sitio || "https://mvdaxlab.vercel.app")
+  const base = (archivoEdicion().sitio || "https://power-bi-mv13.vercel.app")
     .replace(/\/+$/, "");
   return ruta ? base + ruta : base;
 }

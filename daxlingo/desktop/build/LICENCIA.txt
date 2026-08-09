@@ -41,4 +41,4 @@ Al instalar MV DAX Lab aceptás estas condiciones.
    Estas condiciones se rigen por la ley de la República Oriental del
    Uruguay.
 
-Contacto: vieraschiavi@gmail.com — https://mvdaxlab.vercel.app
+Contacto: vieraschiavi@gmail.com — https://power-bi-mv13.vercel.app

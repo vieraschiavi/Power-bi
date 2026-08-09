@@ -4,6 +4,10 @@ Lo que se publica es `daxlingo/web` (landing estática trilingüe) más las
 funciones Node de `api/`. El resto del repo —el proyecto Power BI de Adium, el
 motor Python, el escritorio— no viaja a la web.
 
+**Producción: https://power-bi-mv13.vercel.app** — es la URL que va en el
+formulario de credenciales de producción de MercadoPago, y la que el programa
+y el instalador traen por defecto (`dxl.SITIO`, `desktop/edicion.json`).
+
 ## Configuración del proyecto en Vercel
 
 | Ajuste | Valor | Por qué |
@@ -21,6 +25,24 @@ Deployment → Framework Settings*.
 `vercel.json` no admite claves de comentario (`"//"` hace fallar la validación
 del schema con `should NOT have additional property`), así que la explicación
 vive acá y no ahí.
+
+## Protección de deployments (esto tenía la web invisible)
+
+El proyecto quedó importado con **Vercel Authentication** en
+`all_except_custom_domains`: cualquiera que entrara a
+`power-bi-mv13.vercel.app` recibía un `302` al login de Vercel en vez de la
+landing. Compilaba perfecto y no se veía nada — y MercadoPago, que entra sin
+sesión, tampoco podía validar el sitio.
+
+Ahora está en **`preview`**: producción es pública y los previews de cada PR
+siguen pidiendo login. Está en *Settings → Deployment Protection → Vercel
+Authentication*. Si alguna vez la landing empieza a redirigir a
+`vercel.com/sso-api`, mirá acá primero.
+
+> El header `x-robots-tag: noindex` que devuelve el dominio `*.vercel.app` lo
+> pone Vercel y no se saca: es para que las URLs de deployment no compitan en
+> Google con el dominio propio. No afecta a MercadoPago ni a quien tenga el
+> enlace. Se va solo cuando conectes un dominio propio.
 
 ## Variables de entorno
 
@@ -44,8 +66,14 @@ entero.
 ## Verificar que quedó bien
 
 ```bash
-curl -s https://<dominio>/                       # la landing responde 200
-curl -s -X POST https://<dominio>/api/checkout \
+curl -s -o /dev/null -w '%{http_code}\n' https://power-bi-mv13.vercel.app/
+# 200 → la landing es pública. 302 a vercel.com/sso-api → mirá la sección de
+# protección de arriba.
+
+curl -s https://power-bi-mv13.vercel.app/api/checkout       # {"error":"metodo"} con 405:
+                                                            # la función está viva (solo acepta POST)
+
+curl -s -X POST https://power-bi-mv13.vercel.app/api/checkout \
      -H 'content-type: application/json' \
      -d '{"plan":"perpetua"}'                    # {"url":"https://..."} si hay token
 ```
@@ -53,12 +81,13 @@ curl -s -X POST https://<dominio>/api/checkout \
 Si `/api/checkout` devuelve `medio_pago_no_configurado`, la función corre bien
 y lo que falta es la variable de entorno.
 
-## Después del deploy
+## Si más adelante cambia el dominio
 
-Con el dominio definitivo, para que el programa y el instalador apunten ahí:
+Con un dominio propio, para que el programa, el instalador y el video apunten
+ahí (hoy los tres traen `power-bi-mv13.vercel.app`):
 
 ```bash
 export MVDAXLAB_SITIO="https://<dominio>"
-# y el mismo valor en el campo "sitio" de daxlingo/desktop/edicion.json
+# el mismo valor en el campo "sitio" de daxlingo/desktop/edicion.json
 python3 daxlingo/media/build_video.py   # el cierre del video toma el dominio real
 ```
