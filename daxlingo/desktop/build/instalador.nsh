@@ -20,7 +20,7 @@
   WriteRegStr SHCTX "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTALL_APP_KEY}" \
     "Publisher" "MV"
   WriteRegStr SHCTX "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTALL_APP_KEY}" \
-    "URLInfoAbout" "https://mvdaxlab.vercel.app"
+    "URLInfoAbout" "https://power-bi-mv13.vercel.app"
 !macroend
 
 !macro customUnInstall
