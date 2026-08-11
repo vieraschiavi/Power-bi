@@ -605,3 +605,34 @@ def test_el_main_pasa_el_nombre_de_variable_que_el_motor_lee():
     assert "MVDAXLAB_EDICION_ARCHIVO" in main
     assert "MVDAX_EDICION_ARCHIVO:" not in main, \
         "quedó el nombre viejo, que el motor ignora"
+
+
+def test_sellar_una_instalacion_como_owner_y_volver_atras(tmp_path):
+    """`DESBLOQUEAR_OWNER.bat` pasa una instalación a owner reescribiendo el
+    sello. Tiene que dejarla sin clave ni vencimiento, conservar el secreto de
+    licencias y el sitio, y poder revertirse."""
+    import subprocess
+    destino = _copia_instalada(
+        tmp_path, {"edicion": "profesional", "bloqueada": True,
+                   "secreto": "SECRETO-REAL", "sitio": "https://ejemplo"})
+    instalacion = tmp_path            # contiene resources/app/…
+    sello = destino / "edicion.json"
+    sellador = RAIZ / "desktop" / "scripts" / "sellar_edicion.py"
+
+    def correr(*args):
+        r = subprocess.run([sys.executable, str(sellador), str(instalacion),
+                            *args], capture_output=True, text=True)
+        assert r.returncode == 0, r.stderr
+        return json.loads(sello.read_text(encoding="utf-8"))
+
+    sellado = correr("--edicion", "owner")
+    assert sellado["edicion"] == "owner" and sellado["bloqueada"] is True
+    assert sellado["secreto"] == "SECRETO-REAL", "se perdió el secreto"
+    assert sellado["sitio"] == "https://ejemplo", "se perdió el sitio"
+    # Y el motor lo tiene que ver, incluso con la variable en contra.
+    assert _edicion_en(destino, tmp_path,
+                       MVDAXLAB_EDICION_ARCHIVO=str(sello),
+                       MVDAX_EDICION="demo") == "owner"
+
+    restaurado = correr("--revertir")
+    assert restaurado["edicion"] == "profesional"
