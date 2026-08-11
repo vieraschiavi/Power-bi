@@ -116,9 +116,7 @@ jobs:
           #   /S           silencioso
           #   /NCRC        saltea el chequeo CRC del .exe (son 176 MB)
           #   /currentuser fija el modo de instalación, que es lo que el
-          #                paquete usa igual (nsis.perMachine: false). Sin
-          #                esto el instalador tiene que deducirlo, y esa es
-          #                la parte que se cayó en el intento anterior.
+          #                paquete usa igual (nsis.perMachine: false)
           #   /D=          carpeta destino
           #
           # Sin -Wait, y con espera acotada a mano: el paquete tiene
@@ -126,26 +124,57 @@ jobs:
           # LANZA la app — y `Start-Process -Wait` se queda esperando a un
           # proceso que no va a salir nunca. Así colgó el primer intento
           # hasta el timeout del job.
-          $p = Start-Process $exe.FullName -PassThru `
-                 -ArgumentList "/S /NCRC /currentuser /D=$destino"
-          if (-not $p.WaitForExit(300000)) {
-            $p.Kill()
-            throw "el instalador no terminó en 5 minutos"
-          }
-          Write-Host "el instalador salió con $($p.ExitCode)"
-
-          # El código de salida NO decide: el desinstalador de NSIS y los
-          # instaladores que se relanzan hacen salir al proceso de arriba
-          # antes de que el trabajo real termine. Lo que decide es si la app
-          # quedó en disco.
+          #
+          # POR QUÉ SE REINTENTA
+          # -------------------
+          # El instalador se cae de manera INTERMITENTE con -1073741819
+          # (0xC0000005) dentro de `System.dll`, el plugin System de NSIS,
+          # a los ~2 s de arrancar y sin instalar nada. Pasó en 2 de 4
+          # corridas del mismo código. No es el `/currentuser` ni el `/NCRC`
+          # —se cayó igual con los dos puestos—, así que la causa sigue sin
+          # estar identificada.
+          #
+          # Se reintenta para que la caída no tape los otros nueve pasos,
+          # pero NO se disimula: cada intento fallido sale como ::warning::
+          # y al final se dice cuántos hicieron falta. Si esto empieza a
+          # necesitar 2 y 3 intentos seguido, es un problema del producto
+          # —el cliente vería el mismo crash— y hay que ir al fondo.
           $appExe = Join-Path $destino "MV DAX Lab.exe"
-          foreach ($i in 1..60) {
+          $INTENTOS = 3
+          $codigos = @()
+
+          for ($intento = 1; $intento -le $INTENTOS; $intento++) {
+            if ($intento -gt 1) {
+              Write-Host "::warning::el instalador no dejó nada instalado; reintento $intento de $INTENTOS"
+              Remove-Item $destino -Recurse -Force -ErrorAction SilentlyContinue
+            }
+
+            $p = Start-Process $exe.FullName -PassThru `
+                   -ArgumentList "/S /NCRC /currentuser /D=$destino"
+            if (-not $p.WaitForExit(300000)) {
+              $p.Kill()
+              throw "el instalador no terminó en 5 minutos"
+            }
+            $codigos += $p.ExitCode
+            Write-Host "intento ${intento}: el instalador salió con $($p.ExitCode)"
+
+            # El código de salida NO decide: los instaladores de NSIS se
+            # relanzan y el proceso de arriba sale antes de que termine el
+            # trabajo. Lo que decide es si la app quedó en disco.
+            foreach ($i in 1..60) {
+              if (Test-Path $appExe) { break }
+              Start-Sleep -Seconds 2
+            }
+
+            Get-Process -Name "MV DAX Lab" -ErrorAction SilentlyContinue |
+              ForEach-Object { Write-Host "bajando la app que abrió el instalador (PID $($_.Id))"; $_.Kill() }
+
             if (Test-Path $appExe) { break }
-            Start-Sleep -Seconds 2
           }
 
-          Get-Process -Name "MV DAX Lab" -ErrorAction SilentlyContinue |
-            ForEach-Object { Write-Host "bajando la app que abrió el instalador (PID $($_.Id))"; $_.Kill() }
+          if ((Test-Path $appExe) -and ($codigos.Count -gt 1)) {
+            Write-Host "::warning::la instalación necesitó $($codigos.Count) intentos (códigos: $($codigos -join ', '))"
+          }
 
           if (-not (Test-Path $appExe)) {
             # Que el próximo run no vuelva a ser adivinanza: dónde se miró,
@@ -161,7 +190,7 @@ jobs:
             Get-WinEvent -FilterHashtable @{LogName='Application'; Id=1000,1001} `
                          -MaxEvents 5 -ErrorAction SilentlyContinue |
               ForEach-Object { Write-Host (($_.Message -split "`n" | Select-Object -First 5) -join ' | ') }
-            throw "el instalador salió con $($p.ExitCode) y no dejó la app instalada"
+            throw "el instalador no dejó la app instalada en $INTENTOS intentos (códigos: $($codigos -join ', '))"
           }
           Write-Host "la app quedó instalada en $destino"
 
