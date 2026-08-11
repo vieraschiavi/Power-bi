@@ -43,16 +43,49 @@ if not exist "node_modules" (
     )
 )
 
+REM ---------------------------------------------------------------------
+REM  En que disco trabajar. Por defecto, el mismo donde esta este proyecto:
+REM  la carpeta .cache-build de aca al lado. NO se usa la carpeta por
+REM  defecto de electron-builder (C:\Users\...\AppData\Local) porque el
+REM  Electron de 111 MB y sus reintentos llenan el disco del sistema y el
+REM  build muere con "Espacio en disco insuficiente".
+REM
+REM  Para mandarla a otro disco, cualquiera de las dos:
+REM      CONSTRUIR_OWNER.bat E:\mv-cache
+REM      set MVDAX_BUILD_CACHE=E:\mv-cache
+REM ---------------------------------------------------------------------
+set "CACHE=%~1"
+if not defined CACHE set "CACHE=%MVDAX_BUILD_CACHE%"
+
 echo.
 echo  ============================================================
 echo   Construyendo MV DAX Lab - edicion OWNER
 echo  ============================================================
 echo.
+if defined CACHE (
+    echo   Disco de trabajo: %CACHE%
+) else (
+    echo   Disco de trabajo: %~dp0.cache-build
+    echo   ^(para usar otro: CONSTRUIR_OWNER.bat E:\mv-cache^)
+)
 
-call node scripts/build-instaladores.js owner
+call node scripts/build-instaladores.js owner %CACHE%
 if errorlevel 1 (
     echo.
     echo  [X] La construccion fallo. El detalle esta mas arriba.
+    echo.
+    echo   Las dos fallas mas comunes y como salir de cada una:
+    echo.
+    echo   - "Espacio en disco insuficiente"
+    echo       Liberá espacio, o mandá la cache a otro disco:
+    echo         CONSTRUIR_OWNER.bat E:\mv-cache
+    echo.
+    echo   - "Cannot create symbolic link" / "no dispone de un privilegio"
+    echo       Prendé el Modo desarrollador de Windows
+    echo       ^(Configuracion ^> Privacidad y seguridad ^> Para
+    echo        desarrolladores^), o hace clic derecho en este archivo y
+    echo       elegí "Ejecutar como administrador".
+    echo.
     pause
     exit /b 1
 )

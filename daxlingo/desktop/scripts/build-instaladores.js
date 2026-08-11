@@ -19,10 +19,17 @@
 // Uso:
 //   node scripts/build-instaladores.js todos
 //   node scripts/build-instaladores.js owner|cliente|demo
+//   node scripts/build-instaladores.js owner E:\mv-cache   ← caché en otro disco
+//
+// El segundo argumento elige DÓNDE trabaja electron-builder. Por defecto es
+// `.cache-build` al lado de este proyecto, o sea el mismo disco donde lo
+// tenés: la caché por defecto de electron-builder vive en C: y llenar el
+// disco del sistema rompe el build a mitad de camino.
 
 const { execSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
+const { preparar } = require("./preparar-cache.js");
 
 function ejecutar(comando) {
   execSync(comando, { cwd: RAIZ, stdio: "inherit" });
@@ -134,9 +141,19 @@ function compilarFront() {
 }
 
 const pedido = (process.argv[2] || "cliente").toLowerCase();
-compilarFront();
-if (pedido === "todos") {
-  for (const nombre of Object.keys(EDICIONES)) construir(nombre);
-} else {
-  construir(pedido);
-}
+
+// La caché va primero: elige el disco, comprueba que haya lugar y deja
+// winCodeSign descomprimido sin los symlinks de macOS, que en Windows exigen
+// privilegios que un usuario común no tiene. Ver scripts/preparar-cache.js.
+preparar(process.argv[3]).then((cache) => {
+  console.log(`  ELECTRON_BUILDER_CACHE = ${cache}`);
+  compilarFront();
+  if (pedido === "todos") {
+    for (const nombre of Object.keys(EDICIONES)) construir(nombre);
+  } else {
+    construir(pedido);
+  }
+}).catch((e) => {
+  console.error(e);
+  process.exit(1);
+});
