@@ -59,14 +59,25 @@
         ]
       },
       {
+        "from": "edicion.json",
+        "to": "app/edicion.json"
+      },
+      {
         "from": "runtime",
         "to": "runtime",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "win": {
       "target": [
-        { "target": "nsis", "arch": ["x64"] }
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
       ],
       "icon": "build/icono.ico",
       "artifactName": "MV-DAX-Lab-Setup-${version}.${ext}"

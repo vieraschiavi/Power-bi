@@ -11,6 +11,7 @@ video existan de verdad en los tres idiomas.
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 import sys
@@ -533,3 +534,74 @@ def test_no_confunde_la_medida_nombrada_con_otra_parecida(cat_demo):
     r = generador.generar("Ventas Netas USD vs año anterior", cat_demo)
     assert r["ok"] and "[Ventas Netas USD]" in r["dax"], r["dax"]
     assert "[Ventas Brutas USD]" not in r["dax"], r["dax"]
+
+
+# ==========================================================================
+# El sello de edición dentro de una copia instalada
+# ==========================================================================
+def _copia_instalada(tmp_path, sello: dict | None):
+    """Reproduce el árbol que deja electron-builder: resources/app/dxl/… y el
+    sello donde el proceso Python pueda abrirlo de verdad."""
+    import shutil
+    res = tmp_path / "resources"
+    destino = res / "app"
+    shutil.copytree(RAIZ / "dxl", destino / "dxl",
+                    ignore=shutil.ignore_patterns("__pycache__"))
+    if sello is not None:
+        (destino / "edicion.json").write_text(json.dumps(sello),
+                                              encoding="utf-8")
+    return destino
+
+
+def _edicion_en(destino, tmp_path, **entorno) -> str:
+    import subprocess
+    guion = (
+        "import os, sys\n"
+        f"sys.path.insert(0, {str(destino)!r})\n"
+        f"os.environ['MVDAXLAB_DATOS'] = {str(tmp_path / 'datos')!r}\n"
+        "from dxl import licencia as lic\n"
+        "print(lic.edicion_actual())\n")
+    r = subprocess.run([sys.executable, "-c", guion], capture_output=True,
+                       text=True, env={**os.environ, **entorno})
+    assert r.returncode == 0, r.stderr
+    return r.stdout.strip()
+
+
+def test_una_copia_vendida_no_se_convierte_en_owner_con_una_variable(tmp_path):
+    """El candado de la edición tiene que sobrevivir a MVDAX_EDICION=owner.
+
+    Estuvo roto y no se notaba: `edicion.json` viajaba SOLO dentro de
+    app.asar, que es un sistema de archivos virtual de Electron y el proceso
+    Python no puede abrir. El motor caía al default («demo», sin bloquear) y
+    entonces la variable de entorno mandaba: cualquiera que comprara la
+    licencia profesional podía ponerse owner y llevarse el producto entero.
+    """
+    destino = _copia_instalada(
+        tmp_path, {"edicion": "profesional", "bloqueada": True, "secreto": "s"})
+    sello = destino / "edicion.json"
+    assert sello.exists(), "el sello tiene que quedar donde Python lo lea"
+    obtenida = _edicion_en(destino, tmp_path,
+                           MVDAXLAB_EDICION_ARCHIVO=str(sello),
+                           MVDAX_EDICION="owner")
+    assert obtenida == "profesional", \
+        f"una variable de entorno convirtió la copia vendida en {obtenida}"
+
+
+def test_el_empaquetado_lleva_el_sello_a_donde_python_lo_busca():
+    """`extraResources` tiene que dejar edicion.json en resources/app/, que es
+    `parents[1]` desde dxl/licencia.py. Si se saca, vuelve el agujero."""
+    paquete = json.loads(
+        (RAIZ / "desktop" / "package.json").read_text(encoding="utf-8"))
+    destinos = [e.get("to") for e in paquete["build"]["extraResources"]
+                if isinstance(e, dict)]
+    assert "app/edicion.json" in destinos, \
+        f"el sello no viaja a resources/app/: {destinos}"
+
+
+def test_el_main_pasa_el_nombre_de_variable_que_el_motor_lee():
+    """main.cjs exportaba MVDAX_EDICION_ARCHIVO y licencia.py lee
+    MVDAXLAB_EDICION_ARCHIVO: la variable no la leía nadie."""
+    main = (RAIZ / "desktop" / "main.cjs").read_text(encoding="utf-8")
+    assert "MVDAXLAB_EDICION_ARCHIVO" in main
+    assert "MVDAX_EDICION_ARCHIVO:" not in main, \
+        "quedó el nombre viejo, que el motor ignora"
