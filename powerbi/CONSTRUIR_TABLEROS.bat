@@ -15,7 +15,10 @@ REM  por pereza: el binario .pbix solo lo puede escribir Power BI Desktop.
 REM ===========================================================================
 
 setlocal enabledelayedexpansion
-cd /d "%~dp0"
+REM Este .bat vive en powerbi/ pero trabaja sobre la raiz del repo: se movio
+REM aca para que la raiz sea inequivocamente MV DAX Lab, el producto. Quien
+REM haga doble clic en la raiz tiene que abrir el producto, no este pipeline.
+cd /d "%~dp0.."
 
 echo.
 echo  ============================================================

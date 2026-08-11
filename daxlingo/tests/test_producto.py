@@ -453,3 +453,83 @@ def test_la_web_no_filtra_secretos():
         if archivo.suffix.lower() in (".html", ".js", ".css", ".json"):
             texto = archivo.read_text(encoding="utf-8", errors="ignore")
             assert not sospechosos.search(texto), f"¡Secreto en {archivo}!"
+
+
+# ==========================================================================
+# Los ejemplos que el producto promete: tienen que andar sobre SU demo
+# ==========================================================================
+# El placeholder de la pestaña «Generar DAX» sugiere cinco pedidos, y la
+# landing muestra uno de ellos resolviéndose en el hero. Dos no funcionaban
+# contra el modelo demo que viene en la caja: el usuario abría el programa,
+# copiaba el ejemplo sugerido y recibía «No encontré qué comparar». Un test
+# que solo prueba el motor con un modelo de juguete no lo agarra — este corre
+# los ejemplos reales contra el modelo real que se distribuye.
+EJEMPLOS_DEL_PLACEHOLDER = [
+    ("total de ventas", "[Ventas Brutas USD]"),
+    ("% del total por país", "[Ventas Brutas USD]"),
+    ("ventas vs año anterior", "SAMEPERIODLASTYEAR"),
+    ("media móvil 3 meses de ventas", "DATESINPERIOD"),
+    ("ranking de país por ventas", "RANKX"),
+]
+
+
+@pytest.fixture(scope="module")
+def cat_demo():
+    from dxl import catalogo, modelo as modmod
+    ruta = RAIZ / "datos" / "demo" / "modelo_demo.bim"
+    assert ruta.exists(), "el modelo demo tiene que viajar con el producto"
+    return catalogo.Catalogo.desde_modelo(modmod.cargar(ruta)["modelo"])
+
+
+@pytest.mark.parametrize("pedido,esperado", EJEMPLOS_DEL_PLACEHOLDER)
+def test_los_ejemplos_sugeridos_funcionan_sobre_el_modelo_demo(
+        cat_demo, pedido, esperado):
+    from dxl import generador
+    r = generador.generar(pedido, cat_demo)
+    assert r["ok"], f"«{pedido}» falló: {r['advertencias']}"
+    assert esperado in r["dax"], f"«{pedido}» → {r['dax']}"
+
+
+def test_el_porcentaje_del_total_no_suma_un_ano_ni_un_id(cat_demo):
+    """Sin objetivo explícito hay que caer en una medida del modelo, no en la
+    primera columna numérica: esa suele ser el Año del calendario, y sumar
+    años da un número enorme y perfectamente inútil."""
+    from dxl import generador
+    r = generador.generar("% del total", cat_demo)
+    assert r["ok"]
+    assert "[Año]" not in r["dax"] and "[Anio]" not in r["dax"], r["dax"]
+
+
+def test_avisa_cuando_el_pedido_encajaba_en_varias_medidas(cat_demo):
+    """«ventas» con Brutas y Netas en el modelo es ambiguo de verdad. Elegir
+    en silencio es cómo se entrega un número que nadie revisa."""
+    from dxl import generador
+    r = generador.generar("ventas vs año anterior", cat_demo)
+    assert r["ok"]
+    assert "Ventas Netas USD" in r["explicacion"], r["explicacion"]
+
+
+@pytest.mark.parametrize("pedido,esperado", [
+    ("Ventas Brutas USD vs last year", "[Ventas Brutas USD]"),
+    ("Unidades year to date", "TOTALYTD"),
+    ("moving average 3 months Unidades", "DATESINPERIOD"),
+    ("Unidades vs ano anterior", "SAMEPERIODLASTYEAR"),
+    ("distinct Cliente", "DISTINCTCOUNT"),
+])
+def test_el_motor_de_reglas_tambien_entiende_ingles_y_portugues(
+        cat_demo, pedido, esperado):
+    """El producto se vende en tres idiomas: un usuario en inglés no puede
+    recibir «no reconocí el patrón» con los ejemplos que la UI le sugiere."""
+    from dxl import generador
+    r = generador.generar(pedido, cat_demo)
+    assert r["ok"], f"«{pedido}» falló: {r['advertencias']}"
+    assert esperado in r["dax"], f"«{pedido}» → {r['dax']}"
+
+
+def test_no_confunde_la_medida_nombrada_con_otra_parecida(cat_demo):
+    """Nombrar la medida entera manda: si el pedido dice «Ventas Netas USD»,
+    la variación tiene que ser de esa y no de la primera que se le parezca."""
+    from dxl import generador
+    r = generador.generar("Ventas Netas USD vs año anterior", cat_demo)
+    assert r["ok"] and "[Ventas Netas USD]" in r["dax"], r["dax"]
+    assert "[Ventas Brutas USD]" not in r["dax"], r["dax"]

@@ -36,24 +36,88 @@ NAVY, NAVY2, AMBAR, TINTA, APAGADO = ("#081527", "#0c2137", "#f2b441",
 st.set_page_config(page_title=f"{MARCA} · DAX + Power BI + Fabric",
                    page_icon="🟨", layout="wide")
 
+# El CSS pinta el fondo oscuro sí o sí, así que TAMBIÉN tiene que pintar cada
+# color de texto. Streamlit solo lee `.streamlit/config.toml` desde el
+# directorio actual: si la app arranca desde otra carpeta —el capturador, el
+# .bat del cliente, `streamlit run` a mano— el tema no carga, queda el claro
+# por defecto (texto #31333F, primario rojo #FF4B4B) y el resultado es texto
+# oscuro sobre fondo oscuro: ilegible. Depender del config para la
+# legibilidad era el bug. Acá no se hereda nada.
 st.markdown(f"""<style>
-.stApp {{ background: linear-gradient(180deg,{NAVY} 0%,#0a1a30 100%); }}
-section[data-testid="stSidebar"] {{ background:{NAVY2}; }}
+.stApp {{ background: linear-gradient(180deg,{NAVY} 0%,#0a1a30 100%);
+    color:{TINTA}; }}
+.stApp, .stApp p, .stApp li, .stApp label, .stApp span, .stApp div,
+.stMarkdown, [data-testid="stMarkdownContainer"] {{ color:{TINTA}; }}
+h1,h2,h3,h4,h5,h6 {{ color:{TINTA} !important; }}
+small, .stCaption, [data-testid="stCaptionContainer"] {{ color:{APAGADO} !important; }}
+
+section[data-testid="stSidebar"] {{ background:{NAVY2};
+    border-right:1px solid #1d3149; }}
+section[data-testid="stSidebar"] * {{ color:{TINTA}; }}
+section[data-testid="stSidebar"] [data-testid="stCaptionContainer"],
+section[data-testid="stSidebar"] small {{ color:{APAGADO} !important; }}
+
 [data-testid="stMetric"] {{ background:{NAVY2}; border:1px solid #1d3149;
     border-radius:14px; padding:14px 16px;
     box-shadow:0 2px 10px rgba(0,0,0,.35); }}
-[data-testid="stMetricValue"] {{ color:{AMBAR}; font-weight:700; }}
-[data-testid="stMetricLabel"] {{ color:{APAGADO}; }}
-h1,h2,h3 {{ color:{TINTA}; }}
+[data-testid="stMetricValue"] {{ color:{AMBAR} !important; font-weight:700; }}
+[data-testid="stMetricLabel"], [data-testid="stMetricLabel"] * {{
+    color:{APAGADO} !important; }}
+
+/* Controles: sin esto los inputs salen blancos con texto blanco. */
+.stSelectbox div[data-baseweb="select"] > div, .stTextInput input,
+.stTextArea textarea, .stNumberInput input, div[data-baseweb="popover"] li {{
+    background:#12294a !important; color:{TINTA} !important;
+    border-color:#24405f !important; }}
+.stSlider [data-baseweb="slider"] div[role="slider"] {{ background:{AMBAR}; }}
+
+/* El primario del tema claro es rojo: acá manda el ámbar de la marca. */
+.stButton > button, .stDownloadButton > button, .stFormSubmitButton > button {{
+    background:{NAVY2}; color:{TINTA}; border:1px solid #24405f;
+    border-radius:9px; font-weight:600; }}
+.stButton > button:hover, .stDownloadButton > button:hover {{
+    border-color:{AMBAR}; color:{AMBAR}; }}
+.stButton > button[kind="primary"], .stDownloadButton > button[kind="primary"],
+.stFormSubmitButton > button[kind="primary"] {{
+    background:{AMBAR}; color:#1c1305; border:0; }}
+.stButton > button[kind="primary"]:hover {{ background:#ffc95c; color:#1c1305; }}
+
 .dxl-badge {{ background:{AMBAR}; color:#1c1305; border-radius:20px;
     padding:2px 12px; font-weight:700; font-size:0.8rem; }}
 .dxl-caja {{ background:{NAVY2}; border-left:4px solid {AMBAR};
     border-radius:8px; padding:12px 16px; margin:8px 0; color:{TINTA}; }}
 .dxl-ok {{ border-left-color:#00c896; }}
 .dxl-mal {{ border-left-color:#c1443c; }}
-code {{ color:{AMBAR}; }}
-.stTabs [data-baseweb="tab"] {{ color:{APAGADO}; }}
-.stTabs [aria-selected="true"] {{ color:{AMBAR}; }}
+code, .stCode code {{ color:{AMBAR}; }}
+pre, .stCode {{ background:#0a1b30 !important; border:1px solid #1d3149;
+    border-radius:10px; }}
+
+/* Las 14 pestañas se envuelven en varias filas en vez de esconderse detrás de
+   una flecha de desborde: en una pantalla angosta, la mitad del producto
+   quedaba invisible salvo que supieras que había que scrollear la barra. */
+/* Las 14 pestañas entran en varias filas en vez de esconderse detrás de una
+   flecha de desborde: en una pantalla angosta la mitad del producto quedaba
+   invisible salvo que supieras que la barra scrollea. Se apunta por rol y por
+   atributo porque el nombre interno cambia entre versiones de Streamlit. */
+.stTabs div[role="tablist"], .stTabs [data-baseweb="tab-list"] {{
+    gap:2px; border-bottom:1px solid #1d3149;
+    flex-wrap:wrap !important; overflow:visible !important;
+    scrollbar-width:none; }}
+.stTabs div[role="tablist"]::-webkit-scrollbar {{ display:none; }}
+.stTabs [data-baseweb="tab-border"] {{ display:none; }}
+.stTabs [data-baseweb="tab"] {{ color:{APAGADO} !important; }}
+.stTabs [data-baseweb="tab"] * {{ color:inherit !important; }}
+.stTabs [data-baseweb="tab"]:hover {{ color:{TINTA} !important; }}
+.stTabs [aria-selected="true"], .stTabs [aria-selected="true"] * {{
+    color:{AMBAR} !important; }}
+.stTabs [data-baseweb="tab-highlight"] {{ background:{AMBAR}; }}
+
+[data-testid="stExpander"] {{ border:1px solid #1d3149; border-radius:10px;
+    background:{NAVY2}; }}
+[data-testid="stExpander"] summary, [data-testid="stExpander"] summary * {{
+    color:{TINTA} !important; }}
+[data-testid="stDataFrame"], [data-testid="stTable"] {{ color:{TINTA}; }}
+
 /* La barra de Streamlit (Deploy, menú de la nube) no es parte del producto:
    fuera. Sin esto queda una franja blanca arriba de una app oscura. */
 header[data-testid="stHeader"] {{ background:transparent; height:0; }}
@@ -92,16 +156,20 @@ def _(clave: str) -> str:
 
 def modelo_demo() -> Path | None:
     """
-    El modelo demo que se distribuye con el producto. Va copiado en
-    `datos/demo/` para que el instalador lo lleve adentro — desde el repo
-    también sirve el original de `powerbi/archivos/`, que es su fuente.
+    El modelo demo que se distribuye con el producto: `datos/demo/`, que es lo
+    que el instalador lleva adentro.
+
+    Desde el repo de desarrollo también sirve cualquier PBIP que haya en
+    `powerbi/archivos/`, que es de donde salió. Se busca por patrón y no por
+    nombre a propósito: el producto no nombra ninguna empresa, ni siquiera en
+    una ruta de respaldo que el cliente podría ver en un mensaje de error.
     """
-    candidatos = [
-        RAIZ / "datos" / "demo" / "modelo_demo.bim",
-        RAIZ.parent / "powerbi" / "archivos" / "Adium_VAR.SemanticModel"
-        / "model.bim",
-    ]
-    return next((c for c in candidatos if c.exists()), None)
+    empaquetado = RAIZ / "datos" / "demo" / "modelo_demo.bim"
+    if empaquetado.exists():
+        return empaquetado
+    fuentes = sorted((RAIZ.parent / "powerbi" / "archivos")
+                     .glob("*.SemanticModel/model.bim"))
+    return fuentes[0] if fuentes else None
 
 
 def cat_actual() -> catalogo.Catalogo | None:

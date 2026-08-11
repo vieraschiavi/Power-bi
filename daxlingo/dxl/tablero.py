@@ -6,7 +6,8 @@ El layout es el formato interno de Power BI Desktop: cada visual necesita su
 `prototypeQuery` (la consulta semántica) y sus proyecciones en el rol correcto
 del tipo de visual — con el rol equivocado el visual se dibuja vacío, sin
 error, que es lo peor. La técnica está heredada y probada del generador de
-tableros de Adium (powerbi/generar_pbit.py de este mismo repo).
+los tableros del proyecto original de este repo
+(powerbi/generar_pbit.py).
 """
 from __future__ import annotations
 

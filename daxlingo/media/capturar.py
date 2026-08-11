@@ -29,6 +29,7 @@ from pathlib import Path
 RAIZ = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(RAIZ))
 
+from dxl import tema_streamlit  # noqa: E402
 from dxl.i18n import IDIOMAS, t  # noqa: E402
 
 SALIDA = RAIZ / "web" / "assets" / "img"
@@ -86,7 +87,12 @@ def arrancar_app(idioma: str, datos: Path) -> tuple[subprocess.Popen, int]:
                "MVDAXLAB_BANDEJA": str(datos / "bandeja"),
                # Edición owner: las capturas muestran la app completa, sin el
                # cartel de licencia tapando las funciones.
-               "MVDAX_EDICION": "owner"}
+               "MVDAX_EDICION": "owner",
+               # El tema por variable de entorno, no por config.toml:
+               # Streamlit solo lee `.streamlit/config.toml` del directorio
+               # actual, y acá se arranca desde donde sea. Sin esto el marco
+               # sale con el tema claro por defecto.
+               **tema_streamlit()}
     proceso = subprocess.Popen(
         [sys.executable, "-m", "streamlit", "run", str(RAIZ / "app" / "app.py"),
          "--server.port", str(puerto), "--server.headless", "true",
@@ -106,6 +112,126 @@ def esperar(puerto: int, intentos: int = 60) -> bool:
         except Exception:
             time.sleep(1)
     return False
+
+
+# Qué escribir en cada pestaña antes de la foto. Una captura de un formulario
+# vacío no vende nada: la pestaña estrella —NL→DAX— salía con un input en
+# blanco. Acá se maneja la app como la manejaría alguien mostrándola, y la
+# foto sale con el resultado puesto.
+#
+# El pedido va en el idioma de la captura, PERO nombrando una medida que
+# existe: el modelo de ejemplo tiene los nombres en español, así que pedir
+# «sales» en inglés no encuentra nada y la captura de venta sale con un error.
+# Lo que se muestra trilingüe es el patrón («vs last year», «vs ano anterior»),
+# que es lo que el motor entiende en los tres idiomas.
+PEDIDOS = {"es": "ventas vs año anterior",
+           "en": "Unidades vs last year",
+           "pt": "Unidades vs ano anterior"}
+CONSULTA_OVERLAY = {
+    "es": "¿por qué el total del año no coincide con la suma de los meses?",
+    "en": "why doesn't the year total match the sum of the months?",
+    "pt": "por que o total do ano não bate com a soma dos meses?"}
+
+
+def guionar(pagina, slug: str, idioma: str) -> None:
+    """Deja cada pestaña mostrando un resultado, no un formulario vacío.
+
+    Cada paso va en su propio try: si un guion deja de encajar porque cambió
+    un widget, se pierde ese resultado en la captura —no las 14 capturas.
+    """
+    # Streamlit deja en el DOM el contenido de TODAS las pestañas, no solo la
+    # abierta: un `get_by_role` global agarra el widget de cualquier otra y
+    # toca lo que no debe —así se cambió una preferencia y la tanda siguiente
+    # se fue al pasto. Todo se busca dentro del panel visible.
+    panel = pagina.locator('[role="tabpanel"]:visible').first
+
+    def escribir(clave_placeholder: str, texto: str) -> bool:
+        campo = panel.get_by_placeholder(t(clave_placeholder, idioma))
+        if not campo.count():
+            return False
+        campo.first.fill(texto)
+        campo.first.press("Enter")
+        return True
+
+    try:
+        if slug == "generar":
+            if escribir("gen_ejemplos", PEDIDOS[idioma]):
+                pagina.wait_for_timeout(3000)
+
+        elif slug == "explicador":
+            # La segunda opción del selector es la primera medida real del
+            # modelo: elegirla muestra la explicación paso a paso, que es lo
+            # que se vende, en vez de un textarea vacío.
+            sel = panel.get_by_role("combobox")
+            if sel.count():
+                sel.first.click()
+                pagina.wait_for_timeout(700)
+                # baseweb pinta las opciones como div[role=option], no como
+                # <li>: con el selector de más no cerraba nunca y el desplegable
+                # quedaba abierto tapando la barra de pestañas — de ahí que las
+                # 8 capturas siguientes salieran «sin pestaña».
+                opciones = pagina.locator('[role="option"]')
+                if opciones.count() > 1:
+                    opciones.nth(1).click()
+                    pagina.wait_for_timeout(2500)
+                else:
+                    pagina.keyboard.press("Escape")
+
+        elif slug == "overlay":
+            # Sin API key el botón contesta «falta la clave», así que acá solo
+            # se deja la consulta escrita: se ve para qué sirve la pestaña sin
+            # mostrar un error en la foto de venta.
+            escribir("ov_placeholder", CONSULTA_OVERLAY[idioma])
+            pagina.wait_for_timeout(1200)
+
+        elif slug == "exportar":
+            boton = panel.get_by_role("button", name=t("ex_btn_pbit", idioma))
+            if boton.count():
+                boton.first.click()
+                pagina.wait_for_timeout(4000)
+    except Exception as exc:      # noqa: BLE001 — un guion roto no frena la tanda
+        print(f"  · guion «{slug}» sin efecto: {exc}")
+
+
+def recortar(archivo: Path, margen: int = 28) -> None:
+    """Corta el fondo vacío que queda debajo del contenido.
+
+    Una pestaña corta —la Guía, la Licencia— deja media pantalla de navy
+    liso. En la galería de la web todas las tarjetas tienen el mismo alto, así
+    que esa mitad vacía empuja el contenido real hacia arriba y la captura se
+    ve descentrada. Recortando hasta la última fila con contenido, el
+    contenido queda centrado en su tarjeta.
+
+    Se compara contra el color de la esquina inferior derecha (fondo puro) con
+    una tolerancia: el fondo es un degradado, no un color plano, así que una
+    comparación exacta no recorta nada.
+    """
+    from PIL import Image
+
+    with Image.open(archivo) as img:
+        img = img.convert("RGB")
+        ancho, alto = img.size
+        pixeles = img.load()
+        fondo = pixeles[ancho - 4, alto - 4]
+        limite = alto
+        for y in range(alto - 1, 0, -1):
+            fila_vacia = True
+            # Muestreo cada 8 px: barrer 3360 columnas por fila multiplica el
+            # tiempo por nada — un elemento visible siempre es más ancho.
+            for x in range(0, ancho, 8):
+                p = pixeles[x, y]
+                if (abs(p[0] - fondo[0]) + abs(p[1] - fondo[1])
+                        + abs(p[2] - fondo[2])) > 24:
+                    fila_vacia = False
+                    break
+            if not fila_vacia:
+                limite = min(alto, y + margen)
+                break
+        # Un piso razonable: sin esto, una pestaña casi vacía daría una tira
+        # de 100 px que en la galería se ve como un error, no como una captura.
+        limite = max(limite, int(alto * 0.42))
+        if limite < alto:
+            img.crop((0, 0, ancho, limite)).save(archivo)
 
 
 def capturar_idioma(idioma: str) -> list[Path]:
@@ -144,14 +270,20 @@ def capturar_idioma(idioma: str) -> list[Path]:
             for slug, clave in PESTANAS:
                 etiqueta = t(clave, idioma)
                 try:
+                    # Cualquier desplegable que haya quedado abierto tapa la
+                    # barra de pestañas y arruina de acá en adelante.
+                    pagina.keyboard.press("Escape")
+                    pagina.wait_for_timeout(250)
                     pestana = pagina.get_by_role("tab", name=etiqueta)
                     if not pestana.count():
                         print(f"  ! sin pestaña «{etiqueta}»")
                         continue
                     pestana.first.click()
                     pagina.wait_for_timeout(2500)
+                    guionar(pagina, slug, idioma)
                     archivo = destino / f"{slug}.png"
                     pagina.screenshot(path=str(archivo))
+                    recortar(archivo)
                     hechas.append(archivo)
                     print(f"  ✓ {idioma}/{slug}.png")
                 except Exception as exc:

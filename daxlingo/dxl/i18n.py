@@ -135,12 +135,12 @@ T: dict[str, dict[str, str]] = {
 """,
     },
     "guia_demo": {
-        "es": "La demo carga el modelo Adium de este mismo repo (117 medidas "
-              "reales) desde **📥 Modelo**, sin subir nada.",
-        "en": "The demo loads the Adium model from this very repo (117 real "
-              "measures) from **📥 Model**, with nothing to upload.",
-        "pt": "A demo carrega o modelo Adium deste mesmo repo (117 medidas "
-              "reais) em **📥 Modelo**, sem enviar nada.",
+        "es": "La demo trae un modelo de ejemplo con 117 medidas y 20 tablas, "
+              "listo en **📥 Modelo**, sin subir nada.",
+        "en": "The demo ships an example model with 117 measures and 20 "
+              "tables, ready in **📥 Model**, with nothing to upload.",
+        "pt": "A demo traz um modelo de exemplo com 117 medidas e 20 tabelas, "
+              "pronto em **📥 Modelo**, sem enviar nada.",
     },
 
     # ---- modelo --------------------------------------------------------
@@ -153,9 +153,9 @@ T: dict[str, dict[str, str]] = {
     },
     "btn_cargar": {"es": "Cargar archivo", "en": "Load file",
                    "pt": "Carregar arquivo"},
-    "modelo_demo": {"es": "Modelo demo (Adium · 117 medidas)",
-                    "en": "Demo model (Adium · 117 measures)",
-                    "pt": "Modelo demo (Adium · 117 medidas)"},
+    "modelo_demo": {"es": "Modelo de ejemplo · 117 medidas, 20 tablas",
+                    "en": "Example model · 117 measures, 20 tables",
+                    "pt": "Modelo de exemplo · 117 medidas, 20 tabelas"},
     "btn_demo": {"es": "Cargar el modelo demo", "en": "Load the demo model",
                  "pt": "Carregar o modelo demo"},
     "no_se_pudo_cargar": {"es": "No se pudo cargar", "en": "Could not load",
