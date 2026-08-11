@@ -1,0 +1,13 @@
+# Lo que va DENTRO del instalador, y nada más.
+#
+# `requirements.txt` es el del desarrollo: incluye pytest y las herramientas
+# para regenerar capturas y video (playwright arrastra un Chromium entero).
+# Eso no tiene por qué viajar en el paquete del cliente: infla el instalador
+# cientos de megas y alarga el build sin darle nada al usuario.
+
+# --- la app ---
+streamlit>=1.36
+
+# --- overlay de pantalla (F9), que sí es una función del producto ---
+anthropic>=0.34
+pynput>=1.7

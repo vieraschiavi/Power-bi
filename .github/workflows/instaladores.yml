@@ -1,0 +1,245 @@
+# Construye los instaladores de Windows y los PRUEBA instalándolos.
+#
+# Existe porque el desarrollo pasa en Linux y un .exe de Windows no se puede
+# ni compilar ni ejecutar ahí: sin este runner, "el instalador funciona" sería
+# una afirmación sin respaldo. Acá se instala de verdad, se arranca el motor
+# empaquetado, se comprueba el candado de la edición, se corre
+# DESBLOQUEAR_OWNER.bat y se desinstala.
+#
+# La edición OWNER se construye para verificar que compila, pero NO se sube
+# como artifact: este repositorio es público y cualquiera podría bajarla.
+# Para tenerla: daxlingo/desktop/CONSTRUIR_OWNER.bat en tu máquina, o instalar
+# la de cliente y pasarle DESBLOQUEAR_OWNER.bat.
+
+name: Instaladores de Windows
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, "claude/**"]
+    paths:
+      - "daxlingo/desktop/**"
+      - "daxlingo/dxl/**"
+      - "daxlingo/app/**"
+      - "daxlingo/requirements-app.txt"
+      - ".github/workflows/instaladores.yml"
+
+permissions:
+  contents: read
+
+env:
+  PYTHON_EMBED: "3.11.9"
+  INSTALL_DIR: "C:\\pruebainstal"
+
+jobs:
+  construir-y-probar:
+    runs-on: windows-latest
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # ------------------------------------------------------------------
+      # Runtime de Python embebido: es lo que hace que el cliente no tenga
+      # que instalar Python. La carpeta va vacía en el repo (ver
+      # desktop/runtime/LEEME.md), así que se arma acá.
+      # ------------------------------------------------------------------
+      - name: Preparar el runtime de Python embebido
+        shell: pwsh
+        working-directory: daxlingo/desktop
+        run: |
+          $ver = "${{ env.PYTHON_EMBED }}"
+          $zip = "python-$ver-embed-amd64.zip"
+          Invoke-WebRequest "https://www.python.org/ftp/python/$ver/$zip" -OutFile $zip
+          Expand-Archive $zip -DestinationPath runtime -Force
+          Remove-Item $zip
+
+          # Sin descomentar `import site`, pip instala pero nada se importa:
+          # el runtime embebido arranca con el sistema de paquetes apagado.
+          $pth = Get-ChildItem runtime -Filter "python*._pth" | Select-Object -First 1
+          (Get-Content $pth.FullName) -replace '^#\s*import site', 'import site' |
+            Set-Content $pth.FullName
+
+          Invoke-WebRequest "https://bootstrap.pypa.io/get-pip.py" -OutFile get-pip.py
+          .\runtime\python.exe get-pip.py --no-warn-script-location
+          Remove-Item get-pip.py
+          .\runtime\python.exe -m pip install --no-warn-script-location `
+            -r ..\requirements-app.txt
+
+      - name: Comprobar que el runtime arranca solo
+        shell: pwsh
+        working-directory: daxlingo/desktop
+        run: |
+          .\runtime\python.exe -c "import sys, streamlit; print('python', sys.version); print('streamlit', streamlit.__version__)"
+
+      - name: Instalar dependencias de Node
+        working-directory: daxlingo/desktop
+        run: npm install
+
+      # ------------------------------------------------------------------
+      # Los tres instaladores. build-instaladores.js compila el front una vez
+      # y hornea el sello de cada edición.
+      # ------------------------------------------------------------------
+      - name: Construir los tres instaladores
+        working-directory: daxlingo/desktop
+        env:
+          MVDAX_LICENSE_SECRET: ${{ secrets.MVDAX_LICENSE_SECRET }}
+        run: node scripts/build-instaladores.js todos
+
+      - name: Listar lo construido
+        shell: pwsh
+        working-directory: daxlingo/desktop
+        run: Get-ChildItem dist-instalador -Filter *.exe | Select-Object Name, @{n='MB';e={[math]::Round($_.Length/1MB,1)}}
+
+      # ------------------------------------------------------------------
+      # Instalación real, silenciosa, en un directorio elegido: eso prueba de
+      # una vez el /S, el /D y que el paquete quedó completo.
+      # ------------------------------------------------------------------
+      - name: Instalar la edición cliente
+        shell: pwsh
+        working-directory: daxlingo/desktop
+        run: |
+          $exe = Get-ChildItem dist-instalador -Filter "MV-DAX-Lab-Setup-*.exe" |
+                 Select-Object -First 1
+          if (-not $exe) { throw "no se generó el instalador de cliente" }
+          Write-Host "Instalando $($exe.Name) en ${{ env.INSTALL_DIR }}"
+          # /S silencioso, /D directorio destino (tiene que ir último y sin comillas)
+          $p = Start-Process $exe.FullName -ArgumentList '/S', '/D=${{ env.INSTALL_DIR }}' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "el instalador salió con $($p.ExitCode)" }
+
+      - name: Comprobar lo que quedó instalado
+        shell: pwsh
+        run: |
+          $raiz = "${{ env.INSTALL_DIR }}"
+          $fallos = @()
+          foreach ($r in @(
+              "MV DAX Lab.exe",
+              "Uninstall MV DAX Lab.exe",
+              "resources\app\dxl\licencia.py",
+              "resources\app\app\app.py",
+              "resources\app\edicion.json",
+              "resources\app\datos\demo\modelo_demo.bim",
+              "resources\runtime\python.exe")) {
+            if (Test-Path (Join-Path $raiz $r)) { Write-Host "  ok   $r" }
+            else { $fallos += $r; Write-Host "  FALTA $r" }
+          }
+          if ($fallos) { throw "faltan en el paquete: $($fallos -join ', ')" }
+
+      - name: Comprobar los accesos directos (escritorio y menú Inicio)
+        shell: pwsh
+        run: |
+          $enEscritorio = Get-ChildItem ([Environment]::GetFolderPath('Desktop')),
+                                        "$env:PUBLIC\Desktop" -Filter "MV DAX Lab.lnk" -ErrorAction SilentlyContinue
+          $enMenu = Get-ChildItem "$env:APPDATA\Microsoft\Windows\Start Menu\Programs" `
+                                  -Recurse -Filter "MV DAX Lab.lnk" -ErrorAction SilentlyContinue
+          Write-Host "escritorio : $(if ($enEscritorio) { $enEscritorio[0].FullName } else { 'NO' })"
+          Write-Host "menú Inicio: $(if ($enMenu) { $enMenu[0].FullName } else { 'NO' })"
+          if (-not $enEscritorio) { throw "no quedó el acceso en el escritorio" }
+          if (-not $enMenu) { throw "no quedó el acceso en el menú Inicio" }
+
+      # ------------------------------------------------------------------
+      # El candado de la edición, sobre la instalación de verdad.
+      # ------------------------------------------------------------------
+      - name: La copia vendida no se convierte en owner con una variable
+        shell: pwsh
+        run: |
+          $raiz = "${{ env.INSTALL_DIR }}"
+          $py = Join-Path $raiz "resources\runtime\python.exe"
+          $app = Join-Path $raiz "resources\app"
+          $env:PYTHONPATH = $app
+          $env:MVDAXLAB_EDICION_ARCHIVO = Join-Path $app "edicion.json"
+          $env:MVDAXLAB_DATOS = "$env:TEMP\mvdax-datos"
+          $env:MVDAX_EDICION = "owner"          # el intento de bypass
+          $ed = & $py -c "from dxl import licencia; print(licencia.edicion_actual())"
+          Write-Host "edición con MVDAX_EDICION=owner puesta en contra: $ed"
+          if ($ed.Trim() -ne "profesional") { throw "el candado no aguantó: $ed" }
+
+      - name: Arrancar la app empaquetada y pedirle una página
+        shell: pwsh
+        run: |
+          $raiz = "${{ env.INSTALL_DIR }}"
+          $py = Join-Path $raiz "resources\runtime\python.exe"
+          $app = Join-Path $raiz "resources\app"
+          $proc = Start-Process $py -PassThru -WindowStyle Hidden -ArgumentList `
+            "-m", "streamlit", "run", "$app\app\app.py",
+            "--server.port", "8765", "--server.headless", "true",
+            "--browser.gatherUsageStats", "false"
+          try {
+            $ok = $false
+            foreach ($i in 1..60) {
+              Start-Sleep -Seconds 2
+              try {
+                $r = Invoke-WebRequest "http://127.0.0.1:8765" -UseBasicParsing -TimeoutSec 5
+                if ($r.StatusCode -eq 200) { $ok = $true; break }
+              } catch { }
+            }
+            if (-not $ok) { throw "la app empaquetada no respondió en 120 s" }
+            Write-Host "la app empaquetada respondió 200"
+          } finally {
+            if ($proc -and -not $proc.HasExited) { Stop-Process -Id $proc.Id -Force }
+          }
+
+      # ------------------------------------------------------------------
+      # Y ahora el .bat de owner, sobre esa misma instalación.
+      # ------------------------------------------------------------------
+      - name: Pasar la instalación a owner con DESBLOQUEAR_OWNER.bat
+        shell: cmd
+        run: |
+          copy "daxlingo\desktop\DESBLOQUEAR_OWNER.bat" "${{ env.INSTALL_DIR }}\" >nul
+          mkdir "${{ env.INSTALL_DIR }}\scripts" 2>nul
+          copy "daxlingo\desktop\scripts\*.py" "${{ env.INSTALL_DIR }}\scripts\" >nul
+          cd /d "${{ env.INSTALL_DIR }}"
+          call DESBLOQUEAR_OWNER.bat < nul
+
+      - name: Comprobar que quedó en owner, sin clave y sin vencimiento
+        shell: pwsh
+        run: |
+          $raiz = "${{ env.INSTALL_DIR }}"
+          $py = Join-Path $raiz "resources\runtime\python.exe"
+          $app = Join-Path $raiz "resources\app"
+          $env:PYTHONPATH = $app
+          $env:MVDAXLAB_EDICION_ARCHIVO = Join-Path $app "edicion.json"
+          $env:MVDAXLAB_DATOS = "$env:TEMP\mvdax-datos2"
+          Remove-Item Env:\MVDAX_EDICION -ErrorAction SilentlyContinue
+          $salida = (& $py "$raiz\scripts\estado_edicion.py").Trim()
+          Write-Host "estado tras el .bat: $salida"
+          $partes = $salida.Split("|")
+          if ($partes[0] -ne "owner") { throw "no quedó en owner: $salida" }
+          if ($partes[1] -ne "True")  { throw "la edición owner no está activa" }
+          if ($partes[2] -ne "None")  { throw "owner no debería vencer: $salida" }
+          if ($partes[3] -ne "")      { throw "quedaron funciones trabadas: $($partes[3])" }
+
+      - name: Revertir y comprobar que vuelve atrás
+        shell: cmd
+        run: |
+          cd /d "${{ env.INSTALL_DIR }}"
+          call DESBLOQUEAR_OWNER.bat /revertir < nul
+
+      - name: Desinstalar y comprobar que no deja nada
+        shell: pwsh
+        run: |
+          $raiz = "${{ env.INSTALL_DIR }}"
+          $des = Join-Path $raiz "Uninstall MV DAX Lab.exe"
+          $p = Start-Process $des -ArgumentList '/S' -Wait -PassThru
+          Start-Sleep -Seconds 10
+          if (Test-Path (Join-Path $raiz "MV DAX Lab.exe")) {
+            throw "el desinstalador dejó el ejecutable"
+          }
+          Write-Host "desinstalación limpia"
+
+      # ------------------------------------------------------------------
+      # Solo cliente y demo. La owner NO se sube: repo público.
+      # ------------------------------------------------------------------
+      - name: Publicar los instaladores de cliente y demo
+        uses: actions/upload-artifact@v4
+        with:
+          name: instaladores-windows
+          retention-days: 30
+          if-no-files-found: error
+          path: |
+            daxlingo/desktop/dist-instalador/MV-DAX-Lab-Setup-*.exe
+            daxlingo/desktop/dist-instalador/MV-DAX-Lab-DEMO-Setup-*.exe
