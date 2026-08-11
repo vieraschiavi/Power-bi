@@ -106,26 +106,64 @@ jobs:
           $exe = Get-ChildItem dist-instalador -Filter "MV-DAX-Lab-Setup-*.exe" |
                  Select-Object -First 1
           if (-not $exe) { throw "no se generó el instalador de cliente" }
-          Write-Host "Instalando $($exe.Name) en ${{ env.INSTALL_DIR }}"
-          # /S silencioso, /D directorio destino (tiene que ir último y sin comillas)
+          $destino = "${{ env.INSTALL_DIR }}"
+          Write-Host "Instalando $($exe.Name) en $destino"
+
+          # Los parámetros van en UN solo string a propósito: así llegan
+          # tal cual, sin que PowerShell les agregue comillas. NSIS exige
+          # que /D vaya último y sin comillar.
+          #
+          #   /S           silencioso
+          #   /NCRC        saltea el chequeo CRC del .exe (son 176 MB)
+          #   /currentuser fija el modo de instalación, que es lo que el
+          #                paquete usa igual (nsis.perMachine: false). Sin
+          #                esto el instalador tiene que deducirlo, y esa es
+          #                la parte que se cayó en el intento anterior.
+          #   /D=          carpeta destino
           #
           # Sin -Wait, y con espera acotada a mano: el paquete tiene
           # `nsis.runAfterFinish: true`, así que al terminar el instalador
           # LANZA la app — y `Start-Process -Wait` se queda esperando a un
-          # proceso que no va a salir nunca. Así colgó el primer intento hasta
-          # el timeout del job. Se le da tiempo al instalador y después se
-          # baja la app, que en un runner sin escritorio no tiene nada que
-          # hacer abierta.
-          $p = Start-Process $exe.FullName -ArgumentList '/S', '/D=${{ env.INSTALL_DIR }}' -PassThru
+          # proceso que no va a salir nunca. Así colgó el primer intento
+          # hasta el timeout del job.
+          $p = Start-Process $exe.FullName -PassThru `
+                 -ArgumentList "/S /NCRC /currentuser /D=$destino"
           if (-not $p.WaitForExit(300000)) {
             $p.Kill()
             throw "el instalador no terminó en 5 minutos"
           }
-          if ($p.ExitCode -ne 0) { throw "el instalador salió con $($p.ExitCode)" }
+          Write-Host "el instalador salió con $($p.ExitCode)"
 
-          Start-Sleep -Seconds 5
+          # El código de salida NO decide: el desinstalador de NSIS y los
+          # instaladores que se relanzan hacen salir al proceso de arriba
+          # antes de que el trabajo real termine. Lo que decide es si la app
+          # quedó en disco.
+          $appExe = Join-Path $destino "MV DAX Lab.exe"
+          foreach ($i in 1..60) {
+            if (Test-Path $appExe) { break }
+            Start-Sleep -Seconds 2
+          }
+
           Get-Process -Name "MV DAX Lab" -ErrorAction SilentlyContinue |
             ForEach-Object { Write-Host "bajando la app que abrió el instalador (PID $($_.Id))"; $_.Kill() }
+
+          if (-not (Test-Path $appExe)) {
+            # Que el próximo run no vuelva a ser adivinanza: dónde se miró,
+            # y qué dice Windows de la caída.
+            Write-Host "--- no apareció $appExe; esto hay en cada candidato ---"
+            foreach ($d in @($destino, "$env:LOCALAPPDATA\Programs", $env:ProgramFiles)) {
+              Write-Host "· $d"
+              Get-ChildItem $d -ErrorAction SilentlyContinue |
+                Select-Object -First 20 |
+                ForEach-Object { Write-Host "    $($_.Name)" }
+            }
+            Write-Host "--- caídas que registró Windows ---"
+            Get-WinEvent -FilterHashtable @{LogName='Application'; Id=1000,1001} `
+                         -MaxEvents 5 -ErrorAction SilentlyContinue |
+              ForEach-Object { Write-Host (($_.Message -split "`n" | Select-Object -First 5) -join ' | ') }
+            throw "el instalador salió con $($p.ExitCode) y no dejó la app instalada"
+          }
+          Write-Host "la app quedó instalada en $destino"
 
       - name: Comprobar lo que quedó instalado
         shell: pwsh
