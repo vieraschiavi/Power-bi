@@ -39,7 +39,13 @@ def _limpiar_pedido(pedido: str) -> str:
              "generá", "genera", "calcular", "calculá", "calcula", "quiero",
              "necesito", "dame", "hacer", "hace", "haz", "que", "por favor",
              "de la", "del", "de los", "de las", "de", "el", "la", "los",
-             "las", "un", "una", "para", "me")
+             "las", "un", "una", "para", "me",
+             # inglés / portugués: sin esto, «the total of sales» entra al
+             # motor con «the» y «of» pegados y ningún patrón encaja.
+             "a", "an", "the", "of", "for", "i", "want", "need", "give",
+             "show", "create", "make", "calculate", "measure", "please",
+             "uma", "um", "os", "as", "do", "da", "dos", "das", "criar",
+             "calcular", "quero", "preciso", "medida", "por favor")
     texto = _norm(pedido)
     palabras = [p for p in texto.split() if p not in ruido]
     return " ".join(palabras)
@@ -128,8 +134,9 @@ def _base_agregada(texto: str, cat: Catalogo) -> tuple[str, str, str] | None:
     Para patrones compuestos: resuelve la parte «de X» como medida existente
     o como SUM(columna numérica). Devuelve (nombre_base, dax_base, objetivo).
     """
-    med = cat.buscar_medida(texto)
-    if med:
+    candidatas = cat.buscar_medidas(texto)
+    if candidatas:
+        med = candidatas[0]
         return (med["nombre"], f"[{med['nombre']}]", med["nombre"])
     col = cat.buscar_columna(texto, solo_numericas=True)
     if col:
@@ -139,18 +146,80 @@ def _base_agregada(texto: str, cat: Catalogo) -> tuple[str, str, str] | None:
     return None
 
 
+def _nota_ambiguedad(texto: str, cat: Catalogo) -> str:
+    """Si el pedido encajaba en varias medidas, decir cuál se usó y qué otras
+    había. Elegir en silencio entre «Ventas Brutas USD» y «Ventas Netas USD»
+    es exactamente cómo se entrega un número que nadie revisa."""
+    candidatas = cat.buscar_medidas(texto)
+    if len(candidatas) < 2:
+        return ""
+    otras = ", ".join(f"[{m['nombre']}]" for m in candidatas[1:4])
+    return (f" Usé [{candidatas[0]['nombre']}] porque el pedido no aclara "
+            f"cuál; en el modelo también están {otras}.")
+
+
+# Columnas numéricas que NO son sumables aunque el tipo diga que sí: años,
+# meses, días, códigos y claves. Sumar la columna Año da un número enorme y
+# perfectamente inútil, y era lo que salía al pedir «% del total» sin decir de
+# qué — la primera columna numérica del modelo suele ser el Año del calendario.
+_NO_SUMABLES = re.compile(
+    r"^(a[nñ]o|anio|year|mes|month|dia|day|trimestre|quarter|semana|week|"
+    r"n?ro|numero|number|codigo|code|key|clave|.*_?id|id_?.*)$", re.I)
+
+
+def _base_por_defecto(cat: Catalogo) -> tuple[str, str, str] | None:
+    """Sobre qué calcular cuando el pedido no lo dice.
+
+    Una medida del modelo primero: alguien la definió a propósito y siempre
+    significa algo. Recién después una columna numérica, y saltando las que no
+    se suman.
+    """
+    medidas = cat.medidas()
+    if medidas:
+        m = medidas[0]
+        return (m["nombre"], f"[{m['nombre']}]", m["nombre"])
+    for tabla, c in cat.columnas(solo_visibles=True):
+        if c["tipo"] in ("int64", "double", "decimal", "currency") \
+                and not _NO_SUMABLES.match(c["nombre"]):
+            return (c["nombre"], f"SUM ( {_col_ref(tabla, c['nombre'])} )",
+                    c["nombre"])
+    return None
+
+
+def _sin_articulo(texto: str) -> str:
+    """Saca el «de» que sobra en «total de ventas».
+
+    No se puede hacer en la normalización general: hay medidas que se llaman
+    «% del total · Importe», y ahí el «del» es parte del nombre — el test de
+    no-secuestro depende de que se conserve.
+    """
+    return re.sub(r"^\s*(?:de|del|de la|de los|of|the|da|do|dos|das)\s+", "",
+                  texto.strip())
+
+
 def _dimension(texto: str, cat: Catalogo) -> tuple[str, dict] | None:
     return cat.buscar_columna(texto)
 
 
 # --- patrones -------------------------------------------------------------
 def _regla_suma(texto: str, cat: Catalogo) -> dict | None:
-    m = re.search(r"(?:total|suma|sumar|sumatoria)\s*(.*)", texto)
+    m = re.search(r"(?:total|suma|sumar|sumatoria|sum|soma|somar)\s*(.*)", texto)
     if not m:
         return None
-    objetivo = m.group(1) or texto
+    objetivo = _sin_articulo(m.group(1) or texto)
     col = cat.buscar_columna(objetivo, solo_numericas=True)
     if not col:
+        # Antes de rendirse: «total de ventas» en un modelo que ya tiene
+        # [Ventas Brutas USD] no es un error, es esa medida. Sumar una medida
+        # no tiene sentido, así que se devuelve la medida tal cual.
+        med = cat.buscar_medida(objetivo)
+        if med:
+            return _exito(
+                med["nombre"], f"[{med['nombre']}]", med.get("formato") or "#,0",
+                f"El modelo ya tiene esa medida: {med['nombre']}. Reutilizarla "
+                "en vez de sumar la columna a mano mantiene un solo lugar "
+                "donde cambiar la definición."
+                + _nota_ambiguedad(objetivo, cat))
         return _error(f"No encontré una columna numérica que se parezca a "
                       f"«{objetivo.strip() or texto}» en el modelo.")
     tabla, c = col
@@ -163,7 +232,7 @@ def _regla_suma(texto: str, cat: Catalogo) -> dict | None:
 
 
 def _regla_promedio(texto: str, cat: Catalogo) -> dict | None:
-    m = re.search(r"(?:promedio|media|average)\s*(.*)", texto)
+    m = re.search(r"(?:promedio|media|average|avg|media de)\s*(.*)", texto)
     if not m or "movil" in texto:
         return None
     col = cat.buscar_columna(m.group(1) or texto, solo_numericas=True)
@@ -177,7 +246,7 @@ def _regla_promedio(texto: str, cat: Catalogo) -> dict | None:
 
 
 def _regla_extremos(texto: str, cat: Catalogo) -> dict | None:
-    m = re.search(r"(maximo|minimo|mayor|menor)\s*(.*)", texto)
+    m = re.search(r"(maximo|minimo|mayor|menor|max|min|maximum|minimum|maior|menor)\s*(.*)", texto)
     if not m:
         return None
     es_max = m.group(1) in ("maximo", "mayor")
@@ -193,7 +262,7 @@ def _regla_extremos(texto: str, cat: Catalogo) -> dict | None:
 
 
 def _regla_conteo_distinto(texto: str, cat: Catalogo) -> dict | None:
-    if not re.search(r"\b(distintos?|unicos?|diferentes)\b", texto):
+    if not re.search(r"\b(distintos?|unicos?|diferentes|distinct|unique|distintas?|unicas?)\b", texto):
         return None
     # El sustantivo puede ir antes o después de la palabra clave —«clientes
     # distintos» y «distintos clientes» son el mismo pedido—, así que en vez
@@ -201,7 +270,8 @@ def _regla_conteo_distinto(texto: str, cat: Catalogo) -> dict | None:
     objetivo = _sin(texto, "distintos", "distintas", "distinto", "distinta",
                     "unicos", "unicas", "unico", "unica", "diferentes",
                     "diferente", "conteo", "cantidad", "numero", "cuantos",
-                    "cuantas", "valores")
+                    "cuantas", "valores", "distinct", "unique", "count",
+                    "quantidade", "quantos", "quantas", "values")
     col = cat.buscar_columna(objetivo or texto)
     if not col:
         return _error(f"No encontré la columna a contar en «{texto}».")
@@ -228,7 +298,7 @@ def _nombre_de_entidad(cat: Catalogo, tabla: str, columna: str) -> str:
 
 
 def _regla_conteo(texto: str, cat: Catalogo) -> dict | None:
-    m = re.search(r"(?:conteo|cantidad|numero|cuantos|cuantas|filas)\s*(.*)",
+    m = re.search(r"(?:conteo|cantidad|numero|cuantos|cuantas|filas|count|rows|quantidade|quantos|quantas|linhas)\s*(.*)",
                   texto)
     if not m:
         return None
@@ -247,25 +317,22 @@ def _regla_conteo(texto: str, cat: Catalogo) -> dict | None:
 
 
 def _regla_pct_total(texto: str, cat: Catalogo) -> dict | None:
-    if not re.search(r"(%|porcentaje|porciento|participacion|peso)\s*"
-                     r"(del|sobre el|del gran)?\s*total", texto) \
+    if not re.search(r"(%|porcentaje|porciento|participacion|peso|percent|percentage|share|percentual|participacao)\s*"
+                     r"(del|sobre el|del gran|of|of the|do|sobre o)?\s*(total|grand total)", texto) \
             and "% del total" not in texto:
         return None
     resto = _sin(texto, "porcentaje del total", "% del total", "porcentaje",
-                 "participacion", "peso", "sobre el total", "del total",
+                 "percentage of total", "percent of total", "grand total",
+                 "participacion", "participacao", "percentual", "share",
+                 "percent", "peso", "sobre el total", "del total", "sobre o",
                  "total", "%", "por")
     base = _base_agregada(resto, cat) if resto else None
     if not base:
-        # sin objetivo explícito: primera columna numérica visible
-        numericas = [p for p in cat.columnas(solo_visibles=True)
-                     if p[1]["tipo"] in ("int64", "double", "decimal",
-                                         "currency")]
-        if not numericas:
-            return _error("No encontré sobre qué columna calcular el % del "
-                          "total.")
-        tabla, c = numericas[0]
-        base = (c["nombre"], f"SUM ( {_col_ref(tabla, c['nombre'])} )",
-                c["nombre"])
+        base = _base_por_defecto(cat)
+        if not base:
+            return _error("No encontré sobre qué calcular el % del total. "
+                          "Decime la medida o la columna: «% del total de "
+                          "<medida>».")
     nombre_base, dax_base, _ = base
     refs = re.findall(r"'?([\w ]+?)'?\[", dax_base)
     quitar = (f"ALLSELECTED ( {_tabla_ref(refs[0].strip())} )" if refs
@@ -280,14 +347,14 @@ def _regla_pct_total(texto: str, cat: Catalogo) -> dict | None:
 
 
 def _regla_ytd(texto: str, cat: Catalogo) -> dict | None:
-    if not re.search(r"\b(ytd|acumulado)\b", texto):
+    if not re.search(r"\b(ytd|acumulado|acumulada|year to date|running total)\b", texto):
         return None
     fecha = cat.columna_fecha()
     if not fecha:
         return _error("Para un acumulado del año necesito una tabla de "
                       "calendario en el modelo, y no encontré ninguna.")
     resto = _sin(texto, "acumulado del ano", "acumulado anual", "acumulado",
-                 "ytd", "ano")
+                 "acumulada", "year to date", "running total", "ytd", "ano")
     base = _base_agregada(resto, cat)
     if not base:
         return _error(f"No encontré qué acumular en «{texto}».")
@@ -301,18 +368,24 @@ def _regla_ytd(texto: str, cat: Catalogo) -> dict | None:
 
 
 def _regla_vs_anio_anterior(texto: str, cat: Catalogo) -> dict | None:
-    if not re.search(r"(vs|versus|contra|variacion|crecimiento|yoy)\s*"
-                     r".*(ano anterior|ano pasado|interanual|yoy)", texto) \
-            and not re.search(r"\b(yoy|interanual)\b", texto):
+    if not re.search(r"(vs|versus|contra|variacion|crecimiento|yoy|growth|change|variacao)\s*"
+                     r".*(ano anterior|ano pasado|interanual|yoy|last year|previous year|prior year|ano passado)", texto) \
+            and not re.search(r"\b(yoy|interanual|year over year|year on year)\b", texto):
         return None
     fecha = cat.columna_fecha()
     if not fecha:
         return _error("Para comparar contra el año anterior necesito una "
                       "tabla de calendario, y no encontré ninguna.")
+    # Las frases largas primero: sacar «vs» antes que «vs last year» dejaría
+    # «last year» suelto pegado al objetivo, y la búsqueda difusa termina
+    # eligiendo cualquier columna que se le parezca —así «Ventas Brutas USD vs
+    # last year» devolvía la variación de «Días a vencer x línea».
     resto = _sin(texto, "vs ano anterior", "contra ano anterior",
-                 "vs ano pasado", "variacion", "crecimiento", "interanual",
-                 "yoy", "vs", "versus", "contra", "ano anterior",
-                 "ano pasado")
+                 "vs ano pasado", "year over year", "year on year",
+                 "previous year", "prior year", "last year", "ano passado",
+                 "variacion", "variacao", "crecimiento", "growth", "change",
+                 "interanual", "yoy", "vs", "versus", "contra",
+                 "ano anterior", "ano pasado")
     base = _base_agregada(resto, cat)
     if not base:
         return _error(f"No encontré qué comparar en «{texto}».")
@@ -327,12 +400,13 @@ def _regla_vs_anio_anterior(texto: str, cat: Catalogo) -> dict | None:
         f"{_titulo(nombre_base)} · var. % vs AA", dax, "+0.0 %;-0.0 %",
         "Calcula el valor actual y el del mismo período del año anterior "
         "(SAMEPERIODLASTYEAR desplaza el calendario), y devuelve la "
-        "variación relativa con división segura.")
+        "variación relativa con división segura."
+        + _nota_ambiguedad(resto, cat))
 
 
 def _regla_media_movil(texto: str, cat: Catalogo) -> dict | None:
-    m = re.search(r"(?:media|promedio)\s*movil\s*(?:de\s*)?(\d+)?\s*"
-                  r"(?:meses|mes)?\s*(.*)", texto)
+    m = re.search(r"(?:media|promedio|moving|rolling)\s*(?:movil|average|movel)\s*(?:de\s*)?(\d+)?\s*"
+                  r"(?:meses|mes|months|month|meses)?\s*(?:de\s+|of\s+)?(.*)", texto)
     if not m:
         return None
     meses = int(m.group(1) or 3)
@@ -356,7 +430,7 @@ def _regla_media_movil(texto: str, cat: Catalogo) -> dict | None:
 
 
 def _regla_ranking(texto: str, cat: Catalogo) -> dict | None:
-    m = re.search(r"(?:ranking|posicion|puesto)\s*(?:de\s*)?(.*?)"
+    m = re.search(r"(?:ranking|posicion|puesto|rank|posicao)\s*(?:de\s*|of\s*)?(.*?)"
                   r"(?:\s+por\s+(.*))?$", texto)
     if not m or not texto.startswith(("ranking", "posicion", "puesto")):
         return None

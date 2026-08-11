@@ -4,7 +4,7 @@ MV DAX Lab · Genera el dataset y el modelo de práctica, 100% sintéticos.
 
 Por qué existe: para probar el ciclo completo —cargar, analizar, generar DAX,
 transformar, exportar— hace falta un modelo del que se conozca de antemano
-cada tabla, cada columna y cada defecto. El modelo Adium sirve como demo
+cada tabla, cada columna y cada defecto. El modelo de ejemplo sirve como demo
 comercial, pero es un modelo real de otro dominio: no se puede afirmar sobre
 él "acá faltan exactamente 3 formatos" sin ir a mirar.
 

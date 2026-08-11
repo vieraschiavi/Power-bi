@@ -35,6 +35,28 @@ def _palabras(texto: str) -> list[str]:
     return [p for p in re.split(r"[^a-z0-9]+", _norm(texto)) if p]
 
 
+# Palabras que delatan que una medida YA es el resultado de un cálculo sobre
+# otra. Una medida así no sirve de base para una derivación nueva: la media
+# móvil de un acumulado anual, o la variación interanual de un ranking, son
+# DAX válido y número sin sentido. Ver `Catalogo.buscar_medidas`.
+MARCAS_DERIVADAS = frozenset({
+    "ytd", "mtd", "qtd", "ytm", "acumulado", "acumulada", "acum",
+    "aa", "anterior", "previo", "var", "variacion", "delta", "dif",
+    "diferencia", "pct", "porcentaje", "participacion", "share",
+    "movil", "moving", "rolling", "ranking", "rank", "puesto",
+    "vs", "contra", "growth", "crecimiento", "yoy", "mom",
+})
+
+# Los sufijos abreviados que los modeladores le ponen a las derivadas:
+# «Ventas Netas USD MA3», «Importe MM12», «Unidades 3M». Mismo criterio que
+# MARCAS_DERIVADAS, pero no se pueden enumerar de a una.
+_MARCA_ABREVIADA = re.compile(r"^(?:m[am]\d*|\d+m|t\d|q\d|acum\d*)$")
+
+
+def _es_derivada(palabra: str) -> bool:
+    return palabra in MARCAS_DERIVADAS or bool(_MARCA_ABREVIADA.match(palabra))
+
+
 class Catalogo:
     """Vista aplanada e indexada de un modelo tabular."""
 
@@ -255,27 +277,57 @@ class Catalogo:
                 mejor, mejor_puntaje = (nombre_t, c), puntaje
         return mejor if mejor_puntaje >= 30 else None
 
-    def buscar_medida(self, texto: str) -> dict | None:
+    def buscar_medidas(self, texto: str) -> list[dict]:
         """
-        Encuentra una medida SOLO si el pedido la nombra: mismas palabras,
-        sin sobras. No hay coincidencia parcial a propósito.
+        Medidas candidatas para un pedido, de la más probable a la menos.
 
-        La versión por subcadena parecía razonable y era una fuente silenciosa
-        de resultados incorrectos: con un «Importe YTD» ya en el modelo, pedir
-        algo sobre «importe» lo agarraba a él, y salía la media móvil de un
-        acumulado anual o el ranking por un YTD. DAX impecable, número sin
-        sentido — el peor error posible, porque nadie lo ve leyendo.
+        Tres reglas, en orden:
 
-        Cuando no hay match exacto, quien llama cae a la búsqueda de columna,
-        que es el comportamiento seguro.
+        1. **Nombre completo** → esa medida y nada más. «% del total ·
+           Importe» pedido entero devuelve exactamente esa.
+        2. **Prefijo** → el nombre de la medida *empieza* con las palabras
+           pedidas: «ventas» encuentra «Ventas Brutas USD». Que sea prefijo y
+           no subcadena es lo que evita que «importe» agarre a «% del total ·
+           Importe», donde la palabra está al final y el sentido es otro.
+        3. **Nunca una medida ya derivada como base de otra derivación.** Con
+           «Importe YTD» en el modelo, pedir «importe vs año anterior» daba la
+           variación interanual de un acumulado: DAX impecable, número sin
+           sentido — el peor error posible, porque nadie lo ve leyendo. Si lo
+           que sobra del nombre es una marca de derivación (YTD, acumulado,
+           vs AA, variación, ranking, media móvil…), la medida no califica
+           como base y se cae a la columna, que es el camino seguro.
+
+        Se devuelven todas las que pasan para que quien llama pueda avisar
+        cuál eligió y qué alternativas había — un modelo con «Ventas Brutas
+        USD» y «Ventas Netas USD» es ambiguo de verdad, y elegir en silencio
+        es lo que hace que el número esté mal sin que nadie se entere.
         """
         objetivo = _palabras(texto)
         if not objetivo:
-            return None
-        for m in self.medidas():
-            if _palabras(m["nombre"]) == objetivo:
-                return m
-        return None
+            return []
+
+        medidas = self.medidas()
+        exactas = [m for m in medidas if _palabras(m["nombre"]) == objetivo]
+        if exactas:
+            return exactas
+
+        candidatas = []
+        for m in medidas:
+            palabras = _palabras(m["nombre"])
+            if palabras[:len(objetivo)] != objetivo:
+                continue
+            sobra = palabras[len(objetivo):]
+            if any(_es_derivada(p) for p in sobra):
+                continue
+            candidatas.append((len(sobra), m))
+        # Menos palabras sobrantes = más cerca de lo pedido. A igualdad, el
+        # orden del modelo, que es el que eligió quien lo armó.
+        return [m for _, m in sorted(candidatas, key=lambda par: par[0])]
+
+    def buscar_medida(self, texto: str) -> dict | None:
+        """La mejor medida candidata, o None. Ver `buscar_medidas`."""
+        candidatas = self.buscar_medidas(texto)
+        return candidatas[0] if candidatas else None
 
     # ------------------------------------------------------------------
     def resumen(self) -> dict:

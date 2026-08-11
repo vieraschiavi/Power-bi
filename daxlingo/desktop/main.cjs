@@ -34,8 +34,20 @@ function carpetaMotor() {
                 : path.join(process.resourcesPath, "app");
 }
 
+// Ruta del sello TAL COMO LA VE EL PROCESO PYTHON: un archivo de verdad en
+// disco, no la copia que viaja dentro de app.asar. El asar es un sistema de
+// archivos virtual que solo Electron sabe abrir; pasarle esa ruta a Python es
+// pasarle algo que no puede leer, y ahí el motor cae al default («demo», sin
+// bloquear) y la edición queda decidida por una variable de entorno que
+// cualquiera puede poner.
+function rutaSelloReal() {
+  return ES_DEV ? path.join(__dirname, "edicion.json")
+                : path.join(process.resourcesPath || "", "app", "edicion.json");
+}
+
 function archivoEdicion() {
   const candidatos = [
+    rutaSelloReal(),
     path.join(__dirname, "edicion.json"),
     path.join(process.resourcesPath || "", "edicion.json"),
   ];
@@ -144,7 +156,11 @@ async function arrancarMotor() {
       MVDAXLAB_DATOS: datos,
       MVDAXLAB_BANDEJA: path.join(datos, "bandeja"),
       MVDAX_EDICION: edicion.edicion || "demo",
-      MVDAX_EDICION_ARCHIVO: path.join(__dirname, "edicion.json"),
+      // El nombre correcto es MVDAXLAB_ (con LAB): así lo lee
+      // dxl/licencia.py. Con `MVDAX_EDICION_ARCHIVO` la variable no la
+      // leía nadie, y el motor terminaba decidiendo la edición por
+      // MVDAX_EDICION —que cualquiera puede poner desde afuera—.
+      MVDAXLAB_EDICION_ARCHIVO: rutaSelloReal(),
       PYTHONIOENCODING: "utf-8",
       PYTHONUNBUFFERED: "1",
     },

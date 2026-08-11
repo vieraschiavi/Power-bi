@@ -20,9 +20,13 @@
 //   node scripts/build-instaladores.js todos
 //   node scripts/build-instaladores.js owner|cliente|demo
 
-const { execFileSync } = require("child_process");
+const { execSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
+
+function ejecutar(comando) {
+  execSync(comando, { cwd: RAIZ, stdio: "inherit" });
+}
 
 const RAIZ = path.join(__dirname, "..");
 const ARCHIVO_EDICION = path.join(RAIZ, "edicion.json");
@@ -104,9 +108,10 @@ function construir(nombre) {
     escribirJson(PAQUETE, paquete);
 
     console.log(`\n▶ Construyendo la edición «${nombre}» (${cfg.producto})…`);
-    execFileSync("npx", ["electron-builder", "--win"], {
-      cwd: RAIZ, stdio: "inherit",
-    });
+    // `shell: true` no es cosmético: en Windows —la única plataforma donde
+    // este script sirve— `npx` es `npx.cmd`, y execFileSync sin shell no
+    // resuelve la extensión y muere con ENOENT.
+    ejecutar("npx electron-builder --win");
     console.log(`✓ Edición «${nombre}» lista en dist-instalador/`);
   } finally {
     // Siempre se restaura el repo: un build a medias no debe dejar el
@@ -118,7 +123,18 @@ function construir(nombre) {
   }
 }
 
+// El front de React se compila UNA vez y sirve para las tres ediciones: lo
+// que cambia entre ellas es el sello, no la interfaz. Sin este paso el
+// instalador se armaba con lo que hubiera en `dist/` —o sin nada— porque
+// `files` incluye `dist/**/*` y nadie lo generaba: el script saltaba directo
+// a electron-builder, a diferencia del npm script `dist`.
+function compilarFront() {
+  console.log("\n▶ Compilando el front (vite)…");
+  ejecutar("npm run build");
+}
+
 const pedido = (process.argv[2] || "cliente").toLowerCase();
+compilarFront();
 if (pedido === "todos") {
   for (const nombre of Object.keys(EDICIONES)) construir(nombre);
 } else {

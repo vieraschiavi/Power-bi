@@ -1,10 +1,37 @@
-# Adium Pharma · Excelencia Comercial Corporativo
+# MV DAX Lab
 
-> **Nuevo — [`daxlingo/`](daxlingo/README.md): MV DAX Lab**, plataforma de
-> DAX/Power BI/Fabric construida sobre la maquinaria de este repo: carga
-> `.pbit`/PBIP/`.bim`, analiza el modelo, genera y explica DAX en español,
-> Academia gamificada, overlay de pantalla (F9), servidores MCP y export a
-> `.pbit`/PBIP/Fabric con tablero. Ver su README para correrla.
+### Tu modelo de Power BI, explicado, corregido y exportado.
+
+Plataforma de **DAX + Power BI + Fabric con IA**: cargá un `.pbit`, un PBIP o
+un `model.bim` y el programa audita el modelo con 15 reglas, genera DAX desde
+tu idioma —validado contra el catálogo real, sin inventar columnas—, lo explica
+paso a paso, aplica transformaciones y lo devuelve como `.pbit`/PBIP con
+tablero armado, o lo publica en Microsoft Fabric. Trilingüe (ES/EN/PT).
+
+**El producto vive en [`daxlingo/`](daxlingo/README.md).** Para correrlo:
+
+| Cómo | Comando |
+|---|---|
+| Windows, sin instalar nada | doble clic en `MV_DAX_Lab.bat` |
+| Windows, instalado (menú Inicio, escritorio, desinstalador) | el `.exe` del [release](https://github.com/vieraschiavi/Power-bi/releases/latest) |
+| Linux / macOS | `./daxlingo/run.sh` |
+| Tests | `python3 -m pytest daxlingo/tests/ -q` |
+
+Sitio y planes: **https://power-bi-mv13.vercel.app**
+
+---
+
+## El proyecto original de este repo
+
+MV DAX Lab nació de la maquinaria de un proyecto de BI end-to-end que sigue
+acá, en `powerbi/`, `src/`, `sql/` y `data/`: tres tableros de Power BI sobre
+un modelo semántico único, con ML y un motor de recomendación explicable. Es
+lo que se usó para probar el motor contra un modelo grande de verdad (20
+tablas, 117 medidas), y de ahí salió el modelo de ejemplo que viene con el
+producto. Se arma con `powerbi/CONSTRUIR_TABLEROS.bat`.
+
+Lo que sigue documenta ese proyecto, no el producto.
+
 ### Tres tableros de Power BI sobre un modelo semántico único, con ML y un motor de recomendación explicable
 
 Proyecto end-to-end que va del dato crudo a la decisión comercial: simula los
@@ -43,7 +70,7 @@ predictivos con validación temporal honesta y termina en un motor que recomiend
 
 ## Correrlo
 
-**En Windows, un doble clic en `construir_tableros.bat`** hace todo: instala
+**En Windows, un doble clic en `powerbi/CONSTRUIR_TABLEROS.bat`** hace todo: instala
 dependencias, corre el pipeline, valida el contrato del modelo, regenera los
 tres archivos con la ruta de datos de tu máquina y abre el primero.
 

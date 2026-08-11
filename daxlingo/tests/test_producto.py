@@ -11,6 +11,7 @@ video existan de verdad en los tres idiomas.
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 import sys
@@ -453,3 +454,185 @@ def test_la_web_no_filtra_secretos():
         if archivo.suffix.lower() in (".html", ".js", ".css", ".json"):
             texto = archivo.read_text(encoding="utf-8", errors="ignore")
             assert not sospechosos.search(texto), f"¡Secreto en {archivo}!"
+
+
+# ==========================================================================
+# Los ejemplos que el producto promete: tienen que andar sobre SU demo
+# ==========================================================================
+# El placeholder de la pestaña «Generar DAX» sugiere cinco pedidos, y la
+# landing muestra uno de ellos resolviéndose en el hero. Dos no funcionaban
+# contra el modelo demo que viene en la caja: el usuario abría el programa,
+# copiaba el ejemplo sugerido y recibía «No encontré qué comparar». Un test
+# que solo prueba el motor con un modelo de juguete no lo agarra — este corre
+# los ejemplos reales contra el modelo real que se distribuye.
+EJEMPLOS_DEL_PLACEHOLDER = [
+    ("total de ventas", "[Ventas Brutas USD]"),
+    ("% del total por país", "[Ventas Brutas USD]"),
+    ("ventas vs año anterior", "SAMEPERIODLASTYEAR"),
+    ("media móvil 3 meses de ventas", "DATESINPERIOD"),
+    ("ranking de país por ventas", "RANKX"),
+]
+
+
+@pytest.fixture(scope="module")
+def cat_demo():
+    from dxl import catalogo, modelo as modmod
+    ruta = RAIZ / "datos" / "demo" / "modelo_demo.bim"
+    assert ruta.exists(), "el modelo demo tiene que viajar con el producto"
+    return catalogo.Catalogo.desde_modelo(modmod.cargar(ruta)["modelo"])
+
+
+@pytest.mark.parametrize("pedido,esperado", EJEMPLOS_DEL_PLACEHOLDER)
+def test_los_ejemplos_sugeridos_funcionan_sobre_el_modelo_demo(
+        cat_demo, pedido, esperado):
+    from dxl import generador
+    r = generador.generar(pedido, cat_demo)
+    assert r["ok"], f"«{pedido}» falló: {r['advertencias']}"
+    assert esperado in r["dax"], f"«{pedido}» → {r['dax']}"
+
+
+def test_el_porcentaje_del_total_no_suma_un_ano_ni_un_id(cat_demo):
+    """Sin objetivo explícito hay que caer en una medida del modelo, no en la
+    primera columna numérica: esa suele ser el Año del calendario, y sumar
+    años da un número enorme y perfectamente inútil."""
+    from dxl import generador
+    r = generador.generar("% del total", cat_demo)
+    assert r["ok"]
+    assert "[Año]" not in r["dax"] and "[Anio]" not in r["dax"], r["dax"]
+
+
+def test_avisa_cuando_el_pedido_encajaba_en_varias_medidas(cat_demo):
+    """«ventas» con Brutas y Netas en el modelo es ambiguo de verdad. Elegir
+    en silencio es cómo se entrega un número que nadie revisa."""
+    from dxl import generador
+    r = generador.generar("ventas vs año anterior", cat_demo)
+    assert r["ok"]
+    assert "Ventas Netas USD" in r["explicacion"], r["explicacion"]
+
+
+@pytest.mark.parametrize("pedido,esperado", [
+    ("Ventas Brutas USD vs last year", "[Ventas Brutas USD]"),
+    ("Unidades year to date", "TOTALYTD"),
+    ("moving average 3 months Unidades", "DATESINPERIOD"),
+    ("Unidades vs ano anterior", "SAMEPERIODLASTYEAR"),
+    ("distinct Cliente", "DISTINCTCOUNT"),
+])
+def test_el_motor_de_reglas_tambien_entiende_ingles_y_portugues(
+        cat_demo, pedido, esperado):
+    """El producto se vende en tres idiomas: un usuario en inglés no puede
+    recibir «no reconocí el patrón» con los ejemplos que la UI le sugiere."""
+    from dxl import generador
+    r = generador.generar(pedido, cat_demo)
+    assert r["ok"], f"«{pedido}» falló: {r['advertencias']}"
+    assert esperado in r["dax"], f"«{pedido}» → {r['dax']}"
+
+
+def test_no_confunde_la_medida_nombrada_con_otra_parecida(cat_demo):
+    """Nombrar la medida entera manda: si el pedido dice «Ventas Netas USD»,
+    la variación tiene que ser de esa y no de la primera que se le parezca."""
+    from dxl import generador
+    r = generador.generar("Ventas Netas USD vs año anterior", cat_demo)
+    assert r["ok"] and "[Ventas Netas USD]" in r["dax"], r["dax"]
+    assert "[Ventas Brutas USD]" not in r["dax"], r["dax"]
+
+
+# ==========================================================================
+# El sello de edición dentro de una copia instalada
+# ==========================================================================
+def _copia_instalada(tmp_path, sello: dict | None):
+    """Reproduce el árbol que deja electron-builder: resources/app/dxl/… y el
+    sello donde el proceso Python pueda abrirlo de verdad."""
+    import shutil
+    res = tmp_path / "resources"
+    destino = res / "app"
+    shutil.copytree(RAIZ / "dxl", destino / "dxl",
+                    ignore=shutil.ignore_patterns("__pycache__"))
+    if sello is not None:
+        (destino / "edicion.json").write_text(json.dumps(sello),
+                                              encoding="utf-8")
+    return destino
+
+
+def _edicion_en(destino, tmp_path, **entorno) -> str:
+    import subprocess
+    guion = (
+        "import os, sys\n"
+        f"sys.path.insert(0, {str(destino)!r})\n"
+        f"os.environ['MVDAXLAB_DATOS'] = {str(tmp_path / 'datos')!r}\n"
+        "from dxl import licencia as lic\n"
+        "print(lic.edicion_actual())\n")
+    r = subprocess.run([sys.executable, "-c", guion], capture_output=True,
+                       text=True, env={**os.environ, **entorno})
+    assert r.returncode == 0, r.stderr
+    return r.stdout.strip()
+
+
+def test_una_copia_vendida_no_se_convierte_en_owner_con_una_variable(tmp_path):
+    """El candado de la edición tiene que sobrevivir a MVDAX_EDICION=owner.
+
+    Estuvo roto y no se notaba: `edicion.json` viajaba SOLO dentro de
+    app.asar, que es un sistema de archivos virtual de Electron y el proceso
+    Python no puede abrir. El motor caía al default («demo», sin bloquear) y
+    entonces la variable de entorno mandaba: cualquiera que comprara la
+    licencia profesional podía ponerse owner y llevarse el producto entero.
+    """
+    destino = _copia_instalada(
+        tmp_path, {"edicion": "profesional", "bloqueada": True, "secreto": "s"})
+    sello = destino / "edicion.json"
+    assert sello.exists(), "el sello tiene que quedar donde Python lo lea"
+    obtenida = _edicion_en(destino, tmp_path,
+                           MVDAXLAB_EDICION_ARCHIVO=str(sello),
+                           MVDAX_EDICION="owner")
+    assert obtenida == "profesional", \
+        f"una variable de entorno convirtió la copia vendida en {obtenida}"
+
+
+def test_el_empaquetado_lleva_el_sello_a_donde_python_lo_busca():
+    """`extraResources` tiene que dejar edicion.json en resources/app/, que es
+    `parents[1]` desde dxl/licencia.py. Si se saca, vuelve el agujero."""
+    paquete = json.loads(
+        (RAIZ / "desktop" / "package.json").read_text(encoding="utf-8"))
+    destinos = [e.get("to") for e in paquete["build"]["extraResources"]
+                if isinstance(e, dict)]
+    assert "app/edicion.json" in destinos, \
+        f"el sello no viaja a resources/app/: {destinos}"
+
+
+def test_el_main_pasa_el_nombre_de_variable_que_el_motor_lee():
+    """main.cjs exportaba MVDAX_EDICION_ARCHIVO y licencia.py lee
+    MVDAXLAB_EDICION_ARCHIVO: la variable no la leía nadie."""
+    main = (RAIZ / "desktop" / "main.cjs").read_text(encoding="utf-8")
+    assert "MVDAXLAB_EDICION_ARCHIVO" in main
+    assert "MVDAX_EDICION_ARCHIVO:" not in main, \
+        "quedó el nombre viejo, que el motor ignora"
+
+
+def test_sellar_una_instalacion_como_owner_y_volver_atras(tmp_path):
+    """`DESBLOQUEAR_OWNER.bat` pasa una instalación a owner reescribiendo el
+    sello. Tiene que dejarla sin clave ni vencimiento, conservar el secreto de
+    licencias y el sitio, y poder revertirse."""
+    import subprocess
+    destino = _copia_instalada(
+        tmp_path, {"edicion": "profesional", "bloqueada": True,
+                   "secreto": "SECRETO-REAL", "sitio": "https://ejemplo"})
+    instalacion = tmp_path            # contiene resources/app/…
+    sello = destino / "edicion.json"
+    sellador = RAIZ / "desktop" / "scripts" / "sellar_edicion.py"
+
+    def correr(*args):
+        r = subprocess.run([sys.executable, str(sellador), str(instalacion),
+                            *args], capture_output=True, text=True)
+        assert r.returncode == 0, r.stderr
+        return json.loads(sello.read_text(encoding="utf-8"))
+
+    sellado = correr("--edicion", "owner")
+    assert sellado["edicion"] == "owner" and sellado["bloqueada"] is True
+    assert sellado["secreto"] == "SECRETO-REAL", "se perdió el secreto"
+    assert sellado["sitio"] == "https://ejemplo", "se perdió el sitio"
+    # Y el motor lo tiene que ver, incluso con la variable en contra.
+    assert _edicion_en(destino, tmp_path,
+                       MVDAXLAB_EDICION_ARCHIVO=str(sello),
+                       MVDAX_EDICION="demo") == "owner"
+
+    restaurado = correr("--revertir")
+    assert restaurado["edicion"] == "profesional"
