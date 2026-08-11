@@ -137,10 +137,14 @@ jobs:
           # Se reintenta para que la caída no tape los otros nueve pasos,
           # pero NO se disimula: cada intento fallido sale como ::warning::
           # y al final se dice cuántos hicieron falta. Si esto empieza a
-          # necesitar 2 y 3 intentos seguido, es un problema del producto
+          # necesitar 4 y 5 intentos seguido, es un problema del producto
           # —el cliente vería el mismo crash— y hay que ir al fondo.
+          #
+          # Cinco intentos y no tres: medido sobre seis instalaciones, la
+          # caída sale una de cada dos. Con tres, el job quedaría rojo una
+          # de cada ocho veces por una falla que no es del paso.
           $appExe = Join-Path $destino "MV DAX Lab.exe"
-          $INTENTOS = 3
+          $INTENTOS = 5
           $codigos = @()
 
           for ($intento = 1; $intento -le $INTENTOS; $intento++) {
@@ -158,10 +162,15 @@ jobs:
             $codigos += $p.ExitCode
             Write-Host "intento ${intento}: el instalador salió con $($p.ExitCode)"
 
-            # El código de salida NO decide: los instaladores de NSIS se
-            # relanzan y el proceso de arriba sale antes de que termine el
-            # trabajo. Lo que decide es si la app quedó en disco.
-            foreach ($i in 1..60) {
+            # El código de salida NO decide si terminó: los instaladores de
+            # NSIS se relanzan y el proceso de arriba sale antes de que el
+            # trabajo termine. Lo que decide es si la app quedó en disco.
+            #
+            # Pero sí sirve para no esperar al pedo: un instalador que se
+            # cayó con 0xC0000005 no va a crear nada nunca, así que ahí se
+            # espera 10 s en vez de 120 y se reintenta enseguida.
+            $espera = if ($p.ExitCode -eq 0) { 60 } else { 5 }
+            foreach ($i in 1..$espera) {
               if (Test-Path $appExe) { break }
               Start-Sleep -Seconds 2
             }
