@@ -108,8 +108,24 @@ jobs:
           if (-not $exe) { throw "no se generó el instalador de cliente" }
           Write-Host "Instalando $($exe.Name) en ${{ env.INSTALL_DIR }}"
           # /S silencioso, /D directorio destino (tiene que ir último y sin comillas)
-          $p = Start-Process $exe.FullName -ArgumentList '/S', '/D=${{ env.INSTALL_DIR }}' -Wait -PassThru
+          #
+          # Sin -Wait, y con espera acotada a mano: el paquete tiene
+          # `nsis.runAfterFinish: true`, así que al terminar el instalador
+          # LANZA la app — y `Start-Process -Wait` se queda esperando a un
+          # proceso que no va a salir nunca. Así colgó el primer intento hasta
+          # el timeout del job. Se le da tiempo al instalador y después se
+          # baja la app, que en un runner sin escritorio no tiene nada que
+          # hacer abierta.
+          $p = Start-Process $exe.FullName -ArgumentList '/S', '/D=${{ env.INSTALL_DIR }}' -PassThru
+          if (-not $p.WaitForExit(300000)) {
+            $p.Kill()
+            throw "el instalador no terminó en 5 minutos"
+          }
           if ($p.ExitCode -ne 0) { throw "el instalador salió con $($p.ExitCode)" }
+
+          Start-Sleep -Seconds 5
+          Get-Process -Name "MV DAX Lab" -ErrorAction SilentlyContinue |
+            ForEach-Object { Write-Host "bajando la app que abrió el instalador (PID $($_.Id))"; $_.Kill() }
 
       - name: Comprobar lo que quedó instalado
         shell: pwsh
@@ -224,8 +240,14 @@ jobs:
         run: |
           $raiz = "${{ env.INSTALL_DIR }}"
           $des = Join-Path $raiz "Uninstall MV DAX Lab.exe"
-          $p = Start-Process $des -ArgumentList '/S' -Wait -PassThru
-          Start-Sleep -Seconds 10
+          # Espera acotada, por lo mismo que en la instalación: nada de
+          # -Wait, que puede quedarse colgado esperando un proceso hijo.
+          # El desinstalador de NSIS además se copia al temporal y se
+          # relanza, así que el proceso original sale antes de terminar: de
+          # ahí la espera de después.
+          $p = Start-Process $des -ArgumentList '/S' -PassThru
+          [void]$p.WaitForExit(180000)
+          Start-Sleep -Seconds 15
           if (Test-Path (Join-Path $raiz "MV DAX Lab.exe")) {
             throw "el desinstalador dejó el ejecutable"
           }
