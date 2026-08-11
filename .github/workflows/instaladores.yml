@@ -204,11 +204,14 @@ jobs:
           $raiz = "${{ env.INSTALL_DIR }}"
           $py = Join-Path $raiz "resources\runtime\python.exe"
           $app = Join-Path $raiz "resources\app"
-          $env:PYTHONPATH = $app
+          # Nada de PYTHONPATH: el runtime embebido trae un `._pth` al lado
+          # del python.exe, y con ese archivo presente CPython ignora la
+          # variable. La carpeta se agrega desde adentro. (La app real no
+          # necesita nada de esto: app.py se pone su propia raíz en sys.path.)
           $env:MVDAXLAB_EDICION_ARCHIVO = Join-Path $app "edicion.json"
           $env:MVDAXLAB_DATOS = "$env:TEMP\mvdax-datos"
           $env:MVDAX_EDICION = "owner"          # el intento de bypass
-          $ed = & $py -c "from dxl import licencia; print(licencia.edicion_actual())"
+          $ed = & $py -c "import sys; sys.path.insert(0, r'$app'); from dxl import licencia; print(licencia.edicion_actual())"
           Write-Host "edición con MVDAX_EDICION=owner puesta en contra: $ed"
           if ($ed.Trim() -ne "profesional") { throw "el candado no aguantó: $ed" }
 
@@ -255,11 +258,12 @@ jobs:
           $raiz = "${{ env.INSTALL_DIR }}"
           $py = Join-Path $raiz "resources\runtime\python.exe"
           $app = Join-Path $raiz "resources\app"
-          $env:PYTHONPATH = $app
           $env:MVDAXLAB_EDICION_ARCHIVO = Join-Path $app "edicion.json"
           $env:MVDAXLAB_DATOS = "$env:TEMP\mvdax-datos2"
           Remove-Item Env:\MVDAX_EDICION -ErrorAction SilentlyContinue
-          $salida = (& $py "$raiz\scripts\estado_edicion.py").Trim()
+          # La carpeta de la app va por argumento, no por PYTHONPATH: ver el
+          # comentario del paso del candado.
+          $salida = (& $py "$raiz\scripts\estado_edicion.py" $app).Trim()
           Write-Host "estado tras el .bat: $salida"
           $partes = $salida.Split("|")
           if ($partes[0] -ne "owner") { throw "no quedó en owner: $salida" }

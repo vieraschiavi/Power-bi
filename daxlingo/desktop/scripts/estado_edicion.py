@@ -13,14 +13,24 @@ Salida (una línea, fácil de comparar desde el runner):
     edicion|activa|dias_restantes|funciones_trabadas
 
 Uso:
-    python estado_edicion.py            # usa el entorno tal como está
+    python estado_edicion.py <carpeta_de_la_app>   # dónde vive el paquete dxl
+    python estado_edicion.py                       # ya importable de por sí
+
+El argumento hace falta con el runtime embebido de Windows: cuando al lado
+del python.exe hay un archivo `._pth` —y el paquete del cliente lo tiene—,
+CPython IGNORA la variable PYTHONPATH. Pasar la carpeta acá es la forma de
+que `dxl` se encuentre.
 """
 from __future__ import annotations
 
 import sys
+from pathlib import Path
 
 
 def main() -> int:
+    if len(sys.argv) > 1:
+        sys.path.insert(0, str(Path(sys.argv[1]).resolve()))
+
     from dxl import licencia as lic
 
     estado = lic.evaluar()
