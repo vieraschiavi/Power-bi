@@ -26,7 +26,7 @@ RAIZ = Path(__file__).resolve().parents[1]
 DESTINO = RAIZ / "sql" / "04_vistas_semanticas.sql"
 
 CABECERA = """/* =========================================================================
-   ADIUM PHARMA — 04 · Vistas semánticas para Power BI
+   FARMA DEMO — 04 · Vistas semánticas para Power BI
 
    ARCHIVO GENERADO. No editar a mano.
    Se produce con:  python powerbi/generar_sql_vistas.py

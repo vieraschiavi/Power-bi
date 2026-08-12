@@ -7,9 +7,9 @@ páginas del reporte.
 
 | Tablero | Template | Proyecto | Páginas |
 |---|---|---|---|
-| VAR — Ventas, Análisis y Rentabilidad | `Adium_VAR.pbit` | `Adium_VAR.pbip` | 4 |
-| Ofertas — política comercial e IA | `Adium_Ofertas.pbit` | `Adium_Ofertas.pbip` | 3 |
-| Logística — servicio, devoluciones y riesgo | `Adium_Logistica.pbit` | `Adium_Logistica.pbip` | 4 |
+| VAR — Ventas, Análisis y Rentabilidad | `FarmaDemo_VAR.pbit` | `FarmaDemo_VAR.pbip` | 4 |
+| Ofertas — política comercial e IA | `FarmaDemo_Ofertas.pbit` | `FarmaDemo_Ofertas.pbip` | 3 |
+| Logística — servicio, devoluciones y riesgo | `FarmaDemo_Logistica.pbit` | `FarmaDemo_Logistica.pbip` | 4 |
 
 ---
 
@@ -42,13 +42,13 @@ completa: es lo único que te va a pedir el archivo al abrirse.
 
 ## Opción 1 — `.pbit` (la más rápida)
 
-1. Doble clic en `Adium_VAR.pbit`.
+1. Doble clic en `FarmaDemo_VAR.pbit`.
 2. Power BI Desktop pide el parámetro **RutaDatos**. Pegá la ruta absoluta de
    tu carpeta `data/star` — por ejemplo `C:\Proyectos\Power-bi\data\star`.
    Sin barra al final.
 3. **Cargar**. Tarda unos segundos: son ~234.000 filas en el hecho principal.
-4. *Ver → Temas → Buscar temas* → `powerbi/tema_adium.json`.
-5. **Archivo → Guardar como → `Adium_VAR.pbix`**.
+4. *Ver → Temas → Buscar temas* → `powerbi/tema_farma_demo.json`.
+5. **Archivo → Guardar como → `FarmaDemo_VAR.pbix`**.
 
 Repetir con los otros dos.
 
@@ -89,7 +89,7 @@ mismo.
 ## Opción 2 — PBIP (para trabajar con control de versiones)
 
 Requiere activar *Archivo → Opciones → Características de vista previa → **Power
-BI Project (.pbip)***, y después *Archivo → Abrir → `Adium_VAR.pbip`*.
+BI Project (.pbip)***, y después *Archivo → Abrir → `FarmaDemo_VAR.pbip`*.
 
 Es el formato que conviene si vas a versionar el trabajo: el modelo queda en
 `model.bim` y el reporte en `report.json`, ambos texto plano y revisables en un
@@ -124,7 +124,7 @@ ninguna consulta ni ninguna medida.
 
 **Si un archivo no abre** → los tres se regeneran con
 `python powerbi/generar_pbit.py`. Y como último recurso, el modelo completo
-está en `Adium_VAR.SemanticModel/model.bim`, que Tabular Editor abre e importa
+está en `FarmaDemo_VAR.SemanticModel/model.bim`, que Tabular Editor abre e importa
 a un `.pbix` en blanco.
 
 ---

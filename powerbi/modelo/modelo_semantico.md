@@ -1,4 +1,4 @@
-# Modelo semántico — Adium Pharma · Excelencia Comercial
+# Modelo semántico — Farma Demo · Excelencia Comercial
 
 Un solo modelo semántico para los tres tableros. No son tres modelos: son tres
 reportes sobre el mismo bus dimensional. Eso es lo que hace que "unidades

@@ -60,7 +60,7 @@ predictivos con validación temporal honesta y termina en un motor que recomiend
 | `powerbi/validar_contrato.py` | Verifica que las 4 capas del modelo no divergieron |
 | `powerbi/dax/` | Biblioteca DAX: medidas base + una por tablero |
 | `powerbi/generar_pbit.py` | Genera los archivos de Power BI desde ese contrato |
-| `powerbi/tema_adium.json` | Tema corporativo importable en Power BI |
+| `powerbi/tema_farma_demo.json` | Tema corporativo importable en Power BI |
 | `powerbi/modelo/` | Modelo semántico: relaciones, RLS, optimización, diccionario de métricas |
 | `powerbi/diseno_tableros.md` | Diseño página por página de los tres tableros |
 | `docs/` | Documentación visual del proceso completo |
@@ -85,7 +85,7 @@ python powerbi/generar_pbit.py           # los tres archivos de Power BI
 ```
 
 Genera todo en `data/`. Después, doble clic en
-`powerbi/archivos/Adium_VAR.pbit`: Power BI Desktop pide la ruta de
+`powerbi/archivos/FarmaDemo_VAR.pbit`: Power BI Desktop pide la ruta de
 `data/star`, carga, y con *Archivo → Guardar como* queda el `.pbix`.
 Instrucciones completas en [`powerbi/archivos/LEEME.md`](powerbi/archivos/LEEME.md).
 

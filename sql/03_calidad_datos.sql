@@ -1,5 +1,5 @@
 /* =========================================================================
-   ADIUM PHARMA — 03 · Controles de calidad de datos (Data Steward)
+   FARMA DEMO — 03 · Controles de calidad de datos (Data Steward)
 
    Las 6 dimensiones canónicas: completitud, exactitud, consistencia,
    unicidad, vigencia, validez.

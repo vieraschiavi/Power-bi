@@ -2,7 +2,7 @@
   "version": "1.0",
   "datasetReference": {
     "byPath": {
-      "path": "../Adium_Logistica.SemanticModel"
+      "path": "../FarmaDemo_Logistica.SemanticModel"
     }
   }
 }

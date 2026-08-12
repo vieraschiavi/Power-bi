@@ -1,5 +1,5 @@
 """
-PASO 1 — Simulación de los sistemas origen de Adium Pharma.
+PASO 1 — Simulación de los sistemas origen de Farma Demo.
 
 Genera datos "crudos" como salen de la realidad, no como nos gustaría que salieran:
 ERP de facturación, panel de auditoría (IQVIA-like), CRM de ofertas comerciales,
@@ -88,7 +88,7 @@ def gen_productos() -> pd.DataFrame:
         {
             "id_producto": np.arange(1, n + 1),
             "sku": [f"ADM-{i:04d}" for i in range(1, n + 1)],
-            "marca": [f"Adium {chr(65 + (i % 26))}{i:03d}" for i in range(1, n + 1)],
+            "marca": [f"Farma Demo {chr(65 + (i % 26))}{i:03d}" for i in range(1, n + 1)],
             "atc1": atc1,
             "atc1_desc": [cfg.ATC1[a] for a in atc1],
             "atc3": [f"{a}{rng.integers(1, 10)}{chr(65 + rng.integers(0, 8))}" for a in atc1],
@@ -210,7 +210,7 @@ TRANSPORTISTAS = [
     (2, "RutaSur Cargas", 0.88, True),
     (3, "Expreso Regional", 0.78, False),
     (4, "LatamPharma Cold", 0.96, True),
-    (5, "Flota Propia Adium", 0.91, True),
+    (5, "Flota Propia Farma Demo", 0.91, True),
     (6, "Courier Local", 0.71, False),
 ]
 
@@ -672,7 +672,7 @@ def ensuciar_sellin(df: pd.DataFrame) -> pd.DataFrame:
 # Main
 # ==========================================================================
 def main() -> None:
-    print("PASO 1 · Generando sistemas origen simulados de Adium Pharma")
+    print("PASO 1 · Generando sistemas origen simulados de Farma Demo")
     filiales = gen_filiales()
     productos = gen_productos()
     clientes = gen_clientes(filiales)

@@ -1,5 +1,5 @@
 {
-  "name": "Adium_Ofertas",
+  "name": "FarmaDemo_Ofertas",
   "compatibilityLevel": 1567,
   "model": {
     "culture": "es-ES",
@@ -30,7 +30,7 @@
         "kind": "m",
         "description": "Solo para OrigenDatos = 'Parquet'. Carpeta con los .parquet del modelo estrella (la que genera `python src/run_all.py`). Ruta absoluta, sin barra final.",
         "expression": [
-          "\"C:\\Adium\\data\\star\"",
+          "\"C:\\FarmaDemo\\data\\star\"",
           "    meta [IsParameterQuery=true, Type=\"Text\", IsParameterQueryRequired=true]"
         ],
         "annotations": [
@@ -60,7 +60,7 @@
         "kind": "m",
         "description": "Solo para OrigenDatos = 'SQL Server'. Base de datos que contiene el esquema star.",
         "expression": [
-          "\"AdiumBI\"",
+          "\"FarmaDemoBI\"",
           "    meta [IsParameterQuery=true, Type=\"Text\", IsParameterQueryRequired=true]"
         ],
         "annotations": [
@@ -3046,7 +3046,7 @@
               ")"
             ],
             "formatString": "#,0",
-            "description": "========================================================================= ADIUM PHARMA — Biblioteca DAX · 00 · MEDIDAS BASE  Estas medidas las comparten los tres tableros (VAR, Ofertas, Logística). Viven en una tabla vacía llamada `_Medidas` para que el panel de campos muestre el modelo separado de los cálculos.  Dos criterios que se aplican en TODA la biblioteca:  1. Ningún ratio se materializa en SQL. Se calcula acá, con DIVIDE, en el contexto de filtro del visual. Un ratio precalculado se promedia mal en cuanto el usuario cambia de nivel de agregación.  2. Toda división usa DIVIDE(), nunca \"/\". DIVIDE devuelve BLANK ante denominador cero en vez de un error que rompe el visual entero.  Nomenclatura: nombre de negocio, sin prefijos técnicos, con la unidad explícita entre paréntesis cuando puede haber ambigüedad. ========================================================================= ------------------------------------------------------------------------- VENTAS ------------------------------------------------------------------------- Ventas brutas: toda la facturación, sin restar notas de crédito.",
+            "description": "========================================================================= FARMA DEMO — Biblioteca DAX · 00 · MEDIDAS BASE  Estas medidas las comparten los tres tableros (VAR, Ofertas, Logística). Viven en una tabla vacía llamada `_Medidas` para que el panel de campos muestre el modelo separado de los cálculos.  Dos criterios que se aplican en TODA la biblioteca:  1. Ningún ratio se materializa en SQL. Se calcula acá, con DIVIDE, en el contexto de filtro del visual. Un ratio precalculado se promedia mal en cuanto el usuario cambia de nivel de agregación.  2. Toda división usa DIVIDE(), nunca \"/\". DIVIDE devuelve BLANK ante denominador cero en vez de un error que rompe el visual entero.  Nomenclatura: nombre de negocio, sin prefijos técnicos, con la unidad explícita entre paréntesis cuando puede haber ambigüedad. ========================================================================= ------------------------------------------------------------------------- VENTAS ------------------------------------------------------------------------- Ventas brutas: toda la facturación, sin restar notas de crédito.",
             "displayFolder": "01 · Ventas y margen"
           },
           {
@@ -3269,7 +3269,7 @@
               "SUM ( v_fact_objetivos[Objetivo USD] )"
             ],
             "formatString": "#,0",
-            "description": "========================================================================= ADIUM PHARMA — Biblioteca DAX · 01 · TABLERO VAR (Ventas · Análisis · Rentabilidad)  Pregunta que responde el tablero: \"¿Cómo venimos contra objetivo, contra el año pasado y contra el mercado, y de dónde viene exactamente la diferencia?\"  La pieza que separa este tablero de un reporte de ventas común es el puente Precio–Volumen–Mix: no alcanza con decir que las ventas cayeron 8%; hay que decir cuánto de esa caída es precio, cuánto volumen y cuánto cambio de mezcla de productos. Son tres problemas distintos con tres dueños distintos. ========================================================================= ------------------------------------------------------------------------- OBJETIVO Y CUMPLIMIENTO -------------------------------------------------------------------------",
+            "description": "========================================================================= FARMA DEMO — Biblioteca DAX · 01 · TABLERO VAR (Ventas · Análisis · Rentabilidad)  Pregunta que responde el tablero: \"¿Cómo venimos contra objetivo, contra el año pasado y contra el mercado, y de dónde viene exactamente la diferencia?\"  La pieza que separa este tablero de un reporte de ventas común es el puente Precio–Volumen–Mix: no alcanza con decir que las ventas cayeron 8%; hay que decir cuánto de esa caída es precio, cuánto volumen y cuánto cambio de mezcla de productos. Son tres problemas distintos con tres dueños distintos. ========================================================================= ------------------------------------------------------------------------- OBJETIVO Y CUMPLIMIENTO -------------------------------------------------------------------------",
             "displayFolder": "04 · Objetivo"
           },
           {
@@ -3572,7 +3572,7 @@
               "SUM ( v_fact_ofertas[Ofertas] )"
             ],
             "formatString": "#,0",
-            "description": "========================================================================= ADIUM PHARMA — Biblioteca DAX · 02 · TABLERO OFERTAS  Pregunta que responde: \"¿Cuánto nos cuesta la política comercial, cuánto trae de vuelta, y dónde conviene poner el próximo peso de descuento?\"  El tablero cruza tres capas: 1. lo que PASÓ        — ofertas emitidas, aceptadas, inversión, retorno 2. lo que VA A PASAR  — proyección de inversión del modelo del paso 4 3. lo que HABRÍA que hacer — recomendación del motor de IA del paso 5  Esa tercera capa es la que convierte el tablero en una herramienta de decisión en vez de un reporte de resultados. ========================================================================= ------------------------------------------------------------------------- ACTIVIDAD DE CAMPAÑA -------------------------------------------------------------------------",
+            "description": "========================================================================= FARMA DEMO — Biblioteca DAX · 02 · TABLERO OFERTAS  Pregunta que responde: \"¿Cuánto nos cuesta la política comercial, cuánto trae de vuelta, y dónde conviene poner el próximo peso de descuento?\"  El tablero cruza tres capas: 1. lo que PASÓ        — ofertas emitidas, aceptadas, inversión, retorno 2. lo que VA A PASAR  — proyección de inversión del modelo del paso 4 3. lo que HABRÍA que hacer — recomendación del motor de IA del paso 5  Esa tercera capa es la que convierte el tablero en una herramienta de decisión en vez de un reporte de resultados. ========================================================================= ------------------------------------------------------------------------- ACTIVIDAD DE CAMPAÑA -------------------------------------------------------------------------",
             "displayFolder": "05 · Ofertas e IA"
           },
           {
@@ -3891,7 +3891,7 @@
               "SUM ( v_fact_ventas[Líneas] )"
             ],
             "formatString": "#,0",
-            "description": "========================================================================= ADIUM PHARMA — Biblioteca DAX · 03 · TABLERO LOGÍSTICA  Pregunta que responde: \"¿Estamos entregando bien, cuánto nos cuesta lo que vuelve, y qué pedidos de los que están por salir van a volver?\"  Es el único de los tres tableros con una capa operativa en tiempo de decisión: el scoring de riesgo se mira ANTES de despachar, no después de que la devolución ya ocurrió. ========================================================================= ------------------------------------------------------------------------- NIVEL DE SERVICIO  Todos los promedios de esta sección son PONDERADOS. El modelo expone el numerador (lead time × línea) y no el promedio ya calculado, justamente para poder ponderar bien en cualquier nivel de agregación. Promediar promedios es el error silencioso más caro de un tablero logístico: da un número plausible y equivocado. -------------------------------------------------------------------------",
+            "description": "========================================================================= FARMA DEMO — Biblioteca DAX · 03 · TABLERO LOGÍSTICA  Pregunta que responde: \"¿Estamos entregando bien, cuánto nos cuesta lo que vuelve, y qué pedidos de los que están por salir van a volver?\"  Es el único de los tres tableros con una capa operativa en tiempo de decisión: el scoring de riesgo se mira ANTES de despachar, no después de que la devolución ya ocurrió. ========================================================================= ------------------------------------------------------------------------- NIVEL DE SERVICIO  Todos los promedios de esta sección son PONDERADOS. El modelo expone el numerador (lead time × línea) y no el promedio ya calculado, justamente para poder ponderar bien en cualquier nivel de agregación. Promediar promedios es el error silencioso más caro de un tablero logístico: da un número plausible y equivocado. -------------------------------------------------------------------------",
             "displayFolder": "01 · Ventas y margen"
           },
           {

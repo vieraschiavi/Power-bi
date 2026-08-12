@@ -1,6 +1,6 @@
 @echo off
 REM ===========================================================================
-REM  ADIUM PHARMA — Armado de los tres tableros, de punta a punta
+REM  FARMA DEMO — Armado de los tres tableros, de punta a punta
 REM
 REM  Doble clic y listo. Hace todo lo que se puede automatizar:
 REM    1. verifica Python
@@ -22,7 +22,7 @@ cd /d "%~dp0.."
 
 echo.
 echo  ============================================================
-echo   ADIUM PHARMA - Excelencia Comercial Corporativo
+echo   FARMA DEMO - Excelencia Comercial Corporativo
 echo   Armado de los tableros VAR, Ofertas y Logistica
 echo  ============================================================
 echo.
@@ -91,15 +91,15 @@ echo.
 echo   En Power BI Desktop:
 echo     1. Confirma el parametro RutaDatos (ya viene con la ruta correcta)
 echo     2. Cargar
-echo     3. Ver -^> Temas -^> Buscar temas -^> powerbi\tema_adium.json
-echo     4. Archivo -^> Guardar como -^> Adium_VAR.pbix
+echo     3. Ver -^> Temas -^> Buscar temas -^> powerbi\tema_farma_demo.json
+echo     4. Archivo -^> Guardar como -^> FarmaDemo_VAR.pbix
 echo.
 echo   Los otros dos estan en powerbi\archivos\
 echo.
 
 choice /c SN /n /m "  Abrir el tablero VAR ahora? (S/N) "
 if errorlevel 2 goto fin
-start "" "%~dp0powerbi\archivos\Adium_VAR.pbit"
+start "" "%~dp0powerbi\archivos\FarmaDemo_VAR.pbit"
 
 :fin
 echo.
