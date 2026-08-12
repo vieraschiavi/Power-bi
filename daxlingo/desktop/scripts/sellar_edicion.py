@@ -25,6 +25,16 @@ import shutil
 import sys
 from pathlib import Path
 
+# Mismo motivo que en empaquetar-portable.py: el runtime embebido de Windows
+# usa cp1252 con stdout redirigido, y este archivo imprime «tildes». Sin esto
+# es cuestión de tiempo hasta que DESBLOQUEAR_OWNER.bat reviente con el mismo
+# UnicodeEncodeError.
+for _flujo in (sys.stdout, sys.stderr):
+    try:
+        _flujo.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass
+
 EDICIONES = ("owner", "profesional", "demo")
 NOMBRE_SELLO = "edicion.json"
 NOMBRE_COPIA = "edicion.original.json"

@@ -29,6 +29,18 @@ import sys
 import zipfile
 from pathlib import Path
 
+# El runtime embebido de Windows, cuando la salida va por pipe (doble clic con
+# stdout redirigido, o un paso de CI), usa cp1252 en vez de UTF-8 — y este
+# archivo imprime tildes y guiones largos. Sin esto, la primera vez que algo
+# no-ASCII llega a print() el script muere con UnicodeEncodeError antes de
+# hacer nada. Pasó de verdad: reventó este mismo archivo en el runner de
+# Windows con el «▶» del primer print.
+for _flujo in (sys.stdout, sys.stderr):
+    try:
+        _flujo.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass
+
 RAIZ = Path(__file__).resolve().parents[2]        # daxlingo/
 DESKTOP = RAIZ / "desktop"
 SALIDA = DESKTOP / "dist-portable"
