@@ -1,0 +1,127 @@
+# Genera la narración del video demo y deja los tres MP4 ya sonorizados.
+#
+# Existe porque los dos motores de voz son servicios y el entorno donde se
+# desarrolla tiene el proxy cerrado: `speech.platform.bing.com` responde 403.
+# Acá hay internet abierta, así que la voz se sintetiza y el video sale con
+# audio sin que nadie tenga que configurar nada en su máquina.
+#
+# Por defecto usa edge-tts: sin clave, sin costo, y con voz neuronal argentina
+# (`es-AR-TomasNeural`). Si alguna vez se carga el secreto ELEVENLABS_API_KEY,
+# se puede pedir ese motor desde el formulario de abajo.
+#
+# Es manual a propósito: sintetizar en cada push gastaría minutos de runner
+# para regenerar un audio que no cambió. Se corre cuando cambia el guion.
+
+name: Voz del video
+
+on:
+  workflow_dispatch:
+    inputs:
+      motor:
+        description: "Motor de voz"
+        type: choice
+        default: edge
+        options: [edge, elevenlabs]
+      voz_es:
+        description: "Voz en español (vacío = es-AR-TomasNeural)"
+        type: string
+        default: ""
+      idiomas:
+        description: "Idiomas a generar, separados por espacio"
+        type: string
+        default: "es en pt"
+
+permissions:
+  contents: read
+
+jobs:
+  narrar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Instalar dependencias
+        run: pip install edge-tts pillow imageio-ffmpeg
+
+      - name: Qué voces hay disponibles
+        run: python daxlingo/media/narracion.py --voces | grep -E "es-AR|en-US-Andrew|pt-BR-Antonio"
+
+      - name: Sintetizar la narración
+        env:
+          MVDAX_TTS: ${{ inputs.motor }}
+          MVDAX_VOZ_ES: ${{ inputs.voz_es }}
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          ELEVENLABS_VOICE_ID: ${{ secrets.ELEVENLABS_VOICE_ID }}
+        run: |
+          for idi in ${{ inputs.idiomas }}; do
+            python daxlingo/media/narracion.py --idioma "$idi"
+          done
+
+      - name: Comprobar que salió audio de verdad
+        run: |
+          set -e
+          faltan=0
+          for idi in ${{ inputs.idiomas }}; do
+            n=$(ls daxlingo/media/audio/"$idi"/*.mp3 2>/dev/null | wc -l)
+            echo "  $idi: $n clips"
+            # 16 placas: intro + 14 pestañas + cierre
+            [ "$n" -eq 16 ] || faltan=1
+          done
+          # Un MP3 de 0 bytes cuenta igual en el `ls`: hay que mirar el tamaño.
+          vacios=$(find daxlingo/media/audio -name '*.mp3' -size -1k | wc -l)
+          echo "  clips sospechosamente chicos: $vacios"
+          [ "$faltan" -eq 0 ] && [ "$vacios" -eq 0 ]
+
+      - name: Armar los videos con la voz pegada
+        run: |
+          for idi in ${{ inputs.idiomas }}; do
+            python daxlingo/media/build_video.py --idioma "$idi"
+          done
+
+      - name: Comprobar que el audio dura lo mismo que el video
+        run: |
+          python - <<'PY'
+          import re, subprocess, sys
+          from pathlib import Path
+          import imageio_ffmpeg
+          ff = imageio_ffmpeg.get_ffmpeg_exe()
+
+          def largo(mp4, stream):
+              out = subprocess.run([ff, "-i", str(mp4), "-map", stream,
+                                    "-f", "null", "-"],
+                                   capture_output=True, text=True).stderr
+              t = re.findall(r"time=(\d+):(\d\d):(\d\d\.\d+)", out)
+              if not t:
+                  return None
+              h, m, s = t[-1]
+              return int(h) * 3600 + int(m) * 60 + float(s)
+
+          malos = []
+          for mp4 in sorted(Path("daxlingo/web/assets/video").glob("demo-*.mp4")):
+              v, a = largo(mp4, "0:v"), largo(mp4, "0:a")
+              if a is None:
+                  malos.append(f"{mp4.name}: quedó MUDO")
+                  continue
+              print(f"  {mp4.name}: video {v:.3f}s · audio {a:.3f}s "
+                    f"· desfasaje {abs(v - a) * 1000:.0f} ms")
+              if abs(v - a) > 0.08:
+                  malos.append(f"{mp4.name}: {abs(v - a) * 1000:.0f} ms")
+          if malos:
+              sys.exit("audio y video no coinciden: " + "; ".join(malos))
+          PY
+
+      - name: Publicar la voz y los videos
+        uses: actions/upload-artifact@v4
+        with:
+          name: video-con-voz
+          retention-days: 30
+          if-no-files-found: error
+          path: |
+            daxlingo/media/audio/**/*.mp3
+            daxlingo/web/assets/video/demo-*.mp4

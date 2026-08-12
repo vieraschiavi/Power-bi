@@ -2,36 +2,43 @@
 """
 MV DAX Lab · La voz del video demo, en los tres idiomas.
 
+Dos motores, y el que no cuesta nada es el default
+--------------------------------------------------
+  edge        Microsoft Edge TTS. SIN clave, sin costo, y con voz neuronal
+              ARGENTINA (`es-AR-TomasNeural`) — que es el punto: una voz
+              «español neutro» le arruina el registro rioplatense al guion.
+  elevenlabs  Solo si hay ELEVENLABS_API_KEY. Es la de Kobra; se elige cuando
+              alguien quiere una voz clonada puntual y acepta pagarla.
+
+Se fuerza uno con `MVDAX_TTS=edge|elevenlabs`. Sin nada configurado usa edge.
+
 Por qué pre-renderizado y no síntesis en vivo
 ---------------------------------------------
-Es la misma decisión que en Kobra (`data/generar_audio_demo_voz.py`): la voz
-del navegador o de un motor local suena robótica y arranca con latencia, y en
-un video de venta eso se nota en el primer segundo. Acá se sintetiza UNA vez
-con ElevenLabs y quedan los MP3 en `media/audio/<idioma>/<slug>.mp3`. El video
-después los pega: no hay síntesis en tiempo de reproducción, así que no hay
-lag ni desfasaje posible.
+Misma decisión que en Kobra (`data/generar_audio_demo_voz.py`): la voz del
+navegador arranca con latencia y suena distinto en cada máquina. Acá se
+sintetiza UNA vez y quedan los MP3 en `media/audio/<idioma>/<slug>.mp3`. El
+video los pega: no hay síntesis en tiempo de reproducción, así que no hay lag.
 
 Cómo se evita el desfasaje
 --------------------------
 `build_video.py` NO usa una duración fija por placa. Mide cada MP3 y le da a
-la placa el largo de su locución más un respiro. La imagen dura lo que dura la
-voz, por definición — no puede correrse aunque se cambie el guion.
+la placa el largo de su locución más un respiro, redondeado al mismo cuadro
+que usa el codificador. La imagen dura lo que dura la voz, por definición.
 
-Sin claves no rompe nada
-------------------------
-Si no están `ELEVENLABS_API_KEY` y `ELEVENLABS_VOICE_ID`, no sintetiza y avisa.
-El video se arma igual, mudo, como hasta ahora.
+Hace falta salida a internet
+----------------------------
+Los dos motores son servicios. En un entorno con proxy cerrado fallan; por eso
+existe `.github/workflows/voz.yml`, que los corre en un runner de GitHub y
+sube los MP3 y los videos ya sonorizados.
 
 Uso:
-    ELEVENLABS_API_KEY=... ELEVENLABS_VOICE_ID=... \\
-        python daxlingo/media/narracion.py            # es, en, pt
+    python daxlingo/media/narracion.py                 # edge, los 3 idiomas
     python daxlingo/media/narracion.py --idioma es
-    python daxlingo/media/narracion.py --listar       # ver el guion, sin sintetizar
+    python daxlingo/media/narracion.py --listar        # ver el guion, sin red
+    python daxlingo/media/narracion.py --voces         # catálogo de voces edge
+    MVDAX_VOZ_ES=es-AR-ElenaNeural python .../narracion.py --idioma es
 
-Para que la voz suene rioplatense hay que elegirla en elevenlabs.io →
-Voice Library (buscar «Argentinian» / «Rioplatense») y poner ese id en
-ELEVENLABS_VOICE_ID. Se puede dar una voz distinta por idioma con
-ELEVENLABS_VOICE_ID_EN y ELEVENLABS_VOICE_ID_PT.
+Voces por defecto en VOCES_EDGE; se pisan con MVDAX_VOZ_ES / _EN / _PT.
 """
 from __future__ import annotations
 
@@ -48,6 +55,18 @@ AUDIO = Path(__file__).resolve().parent / "audio"
 # El modelo multilingüe: la misma voz sirve para los tres idiomas.
 MODELO_TTS = "eleven_multilingual_v2"
 API = "https://api.elevenlabs.io/v1/text-to-speech"
+
+# Voces por defecto de edge-tts (Microsoft). La de español es ARGENTINA, que
+# es el punto: una voz «español neutro» arruina el registro rioplatense del
+# guion. Se pueden pisar con MVDAX_VOZ_ES / _EN / _PT.
+VOCES_EDGE = {
+    "es": "es-AR-TomasNeural",
+    "en": "en-US-AndrewNeural",
+    "pt": "pt-BR-AntonioNeural",
+}
+# Un poco más lento que el default: la locución de producto se entiende mejor
+# y le da tiempo al ojo a leer la captura.
+RITMO_EDGE = "-8%"
 
 # El guion hablado. NO es el texto de la placa: en pantalla va un título corto
 # y acá va la frase que se escucha. Español rioplatense (voseo), como el resto
@@ -170,6 +189,41 @@ def voz_de(idioma: str) -> str:
             or os.environ.get("ELEVENLABS_VOICE_ID", ""))
 
 
+def voz_edge(idioma: str) -> str:
+    return (os.environ.get(f"MVDAX_VOZ_{idioma.upper()}")
+            or VOCES_EDGE.get(idioma, VOCES_EDGE["es"]))
+
+
+def motor() -> str:
+    """Cuál de los dos usar.
+
+    `edge` es el default a propósito: no pide clave, no cuesta y trae voces
+    neuronales argentinas. ElevenLabs entra solo si hay clave configurada, que
+    es cuando alguien la eligió a propósito por la voz clonada.
+    """
+    pedido = os.environ.get("MVDAX_TTS", "").strip().lower()
+    if pedido in ("edge", "elevenlabs"):
+        return pedido
+    return "elevenlabs" if os.environ.get("ELEVENLABS_API_KEY") else "edge"
+
+
+def sintetizar_edge(texto: str, voz: str, destino: Path) -> None:
+    """Sintetiza con edge-tts (Microsoft). Sin clave y sin costo.
+
+    Necesita salida a internet: en un entorno con proxy cerrado falla, y por
+    eso el workflow `voz.yml` la genera en un runner de GitHub.
+    """
+    import asyncio
+
+    import edge_tts
+
+    async def _hablar() -> None:
+        com = edge_tts.Communicate(texto, voz, rate=RITMO_EDGE)
+        await com.save(str(destino))
+
+    asyncio.run(_hablar())
+
+
 def ruta(idioma: str, slug: str) -> Path:
     return AUDIO / idioma / f"{slug}.mp3"
 
@@ -195,12 +249,17 @@ def sintetizar(texto: str, voz: str, clave: str) -> bytes:
 
 def generar(idioma: str, rehacer: bool = False) -> int:
     """Sintetiza lo que falte de un idioma. Devuelve cuántos archivos escribió."""
-    clave = os.environ.get("ELEVENLABS_API_KEY", "").strip()
-    voz = voz_de(idioma).strip()
-    if not clave or not voz:
-        print(f"  ⚠️  {idioma}: falta ELEVENLABS_API_KEY o ELEVENLABS_VOICE_ID; "
-              "no se sintetiza (el video se arma mudo)")
-        return 0
+    cual = motor()
+    if cual == "elevenlabs":
+        clave = os.environ.get("ELEVENLABS_API_KEY", "").strip()
+        voz = voz_de(idioma).strip()
+        if not clave or not voz:
+            print(f"  ⚠️  {idioma}: falta ELEVENLABS_VOICE_ID; "
+                  "no se sintetiza (el video se arma mudo)")
+            return 0
+    else:
+        clave, voz = "", voz_edge(idioma)
+    print(f"  motor: {cual} · voz: {voz}")
 
     (AUDIO / idioma).mkdir(parents=True, exist_ok=True)
     escritos = 0
@@ -210,7 +269,10 @@ def generar(idioma: str, rehacer: bool = False) -> int:
             print(f"  · {idioma}/{slug}.mp3 ya estaba")
             continue
         try:
-            destino.write_bytes(sintetizar(texto, voz, clave))
+            if cual == "edge":
+                sintetizar_edge(texto, voz, destino)
+            else:
+                destino.write_bytes(sintetizar(texto, voz, clave))
             escritos += 1
             print(f"  ✓ {idioma}/{slug}.mp3")
         except urllib.error.HTTPError as e:
@@ -229,6 +291,8 @@ def main() -> int:
                    help="volver a sintetizar aunque el MP3 ya exista")
     p.add_argument("--listar", action="store_true",
                    help="mostrar el guion y salir, sin llamar a la API")
+    p.add_argument("--voces", action="store_true",
+                   help="listar las voces de edge-tts para es/en/pt")
     a = p.parse_args()
 
     idiomas = [a.idioma] if a.idioma else sorted(GUION)
@@ -238,6 +302,15 @@ def main() -> int:
             print(f"\n=== {idi} ===")
             for slug, texto in GUION[idi].items():
                 print(f"  [{slug}] {texto}")
+        return 0
+
+    if a.voces:
+        import asyncio
+
+        import edge_tts
+        for v in asyncio.run(edge_tts.list_voices()):
+            if v["Locale"][:2] in ("es", "en", "pt"):
+                print(f'  {v["ShortName"]:32} {v["Locale"]:6} {v["Gender"]}')
         return 0
 
     total = 0
