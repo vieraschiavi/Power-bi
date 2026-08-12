@@ -630,6 +630,251 @@ T: dict[str, dict[str, str]] = {
     "cfg_historial": {"es": "Historial de cambios de la sesión:",
                       "en": "Session change log:",
                       "pt": "Histórico de mudanças da sessão:"},
+    # ---- reglas del analizador ----------------------------------------
+    # Título, por qué importa y cómo se arregla, de las 16 reglas. Vivían
+    # hardcodeadas en español dentro de `analizador.py`, así que la pestaña
+    # salía en español aunque la app estuviera en inglés o portugués.
+    # {tabla} y {medida} los completa `analizador.describir()`.
+    "regla_R00": {
+        "es": "Catálogo parcial",
+        "en": "Partial catalog",
+        "pt": "Catálogo parcial",
+    },
+    "regla_R00_detalle": {
+        "es": "Este catálogo salió del layout de un .pbix: solo se ve lo que los visuales usan, no el modelo completo.",
+        "en": "This catalog came from a .pbix layout: you only see what the visuals use, not the whole model.",
+        "pt": "Este catálogo veio do layout de um .pbix: só se vê o que os visuais usam, não o modelo completo.",
+    },
+    "regla_R00_arreglo": {
+        "es": "Exportá el archivo como .pbit o PBIP desde Power BI Desktop para el análisis completo.",
+        "en": "Export the file as .pbit or PBIP from Power BI Desktop for the full analysis.",
+        "pt": "Exporte o arquivo como .pbit ou PBIP no Power BI Desktop para a análise completa.",
+    },
+    "regla_R01": {
+        "es": "División con «/»",
+        "en": "Division with “/”",
+        "pt": "Divisão com «/»",
+    },
+    "regla_R01_detalle": {
+        "es": "Una división con «/» revienta con dividendo 0 o BLANK y muestra infinito o error en el visual.",
+        "en": "A “/” division blows up with a 0 or BLANK divisor and shows infinity or an error in the visual.",
+        "pt": "Uma divisão com «/» quebra com divisor 0 ou BLANK e mostra infinito ou erro no visual.",
+    },
+    "regla_R01_arreglo": {
+        "es": "Usar DIVIDE(numerador, denominador): devuelve BLANK ante cero, sin costo extra.",
+        "en": "Use DIVIDE(numerator, denominator): it returns BLANK on zero, at no extra cost.",
+        "pt": "Use DIVIDE(numerador, denominador): devolve BLANK diante de zero, sem custo extra.",
+    },
+    "regla_R02": {
+        "es": "Medida sin formato",
+        "en": "Measure with no format",
+        "pt": "Medida sem formato",
+    },
+    "regla_R02_detalle": {
+        "es": "Sin formatString, cada visual muestra el número como quiere: decimales de más, sin separador de miles, porcentajes crudos.",
+        "en": "Without formatString, every visual renders the number its own way: stray decimals, no thousands separator, raw percentages.",
+        "pt": "Sem formatString, cada visual mostra o número como quer: decimais a mais, sem separador de milhares, percentuais crus.",
+    },
+    "regla_R02_arreglo": {
+        "es": "Asignar un formato explícito (#,0 · #,0.00 · 0.0 %).",
+        "en": "Set an explicit format (#,0 · #,0.00 · 0.0 %).",
+        "pt": "Atribuir um formato explícito (#,0 · #,0.00 · 0.0 %).",
+    },
+    "regla_R03": {
+        "es": "IFERROR en medida",
+        "en": "IFERROR in a measure",
+        "pt": "IFERROR na medida",
+    },
+    "regla_R03_detalle": {
+        "es": "IFERROR fuerza al motor a evaluar fila por fila esperando el error: caro y esconde problemas de datos.",
+        "en": "IFERROR forces the engine to evaluate row by row waiting for the error: expensive, and it hides data problems.",
+        "pt": "IFERROR força o motor a avaliar linha a linha esperando o erro: caro e esconde problemas de dados.",
+    },
+    "regla_R03_arreglo": {
+        "es": "Prevenir el error (DIVIDE, buscar el caso borde) en vez de taparlo.",
+        "en": "Prevent the error (DIVIDE, handle the edge case) instead of masking it.",
+        "pt": "Prevenir o erro (DIVIDE, tratar o caso limite) em vez de tapá-lo.",
+    },
+    "regla_R04": {
+        "es": "FILTER sobre tabla entera",
+        "en": "FILTER over a whole table",
+        "pt": "FILTER sobre tabela inteira",
+    },
+    "regla_R04_detalle": {
+        "es": "FILTER('{tabla}', …) materializa la tabla completa dentro de CALCULATE cuando un filtro de columna alcanza.",
+        "en": "FILTER('{tabla}', …) materialises the entire table inside CALCULATE when a column filter would do.",
+        "pt": "FILTER('{tabla}', …) materializa a tabela inteira dentro de CALCULATE quando um filtro de coluna bastaria.",
+    },
+    "regla_R04_arreglo": {
+        "es": "Filtrar la columna (Tabla[Col] = valor) o usar KEEPFILTERS(VALUES(Tabla[Col])).",
+        "en": "Filter the column (Table[Col] = value) or use KEEPFILTERS(VALUES(Table[Col])).",
+        "pt": "Filtrar a coluna (Tabela[Col] = valor) ou usar KEEPFILTERS(VALUES(Tabela[Col])).",
+    },
+    "regla_R05": {
+        "es": "Medida duplicada",
+        "en": "Duplicate measure",
+        "pt": "Medida duplicada",
+    },
+    "regla_R05_detalle": {
+        "es": "Tiene exactamente la misma expresión que [{medida}].",
+        "en": "It has exactly the same expression as [{medida}].",
+        "pt": "Tem exatamente a mesma expressão que [{medida}].",
+    },
+    "regla_R05_arreglo": {
+        "es": "Dejar una sola y referenciarla desde la otra si hace falta el alias.",
+        "en": "Keep one and reference it from the other if you need the alias.",
+        "pt": "Deixar uma só e referenciá-la a partir da outra se precisar do alias.",
+    },
+    "regla_R06": {
+        "es": "Espacios en el nombre",
+        "en": "Spaces in the name",
+        "pt": "Espaços no nome",
+    },
+    "regla_R06_detalle": {
+        "es": "El nombre empieza o termina con espacios: invisible en el panel y fuente de referencias rotas.",
+        "en": "The name starts or ends with spaces: invisible in the field pane and a source of broken references.",
+        "pt": "O nome começa ou termina com espaços: invisível no painel e fonte de referências quebradas.",
+    },
+    "regla_R06_arreglo": {
+        "es": "Renombrar sin espacios en los bordes.",
+        "en": "Rename it without leading or trailing spaces.",
+        "pt": "Renomear sem espaços nas bordas.",
+    },
+    "regla_R07": {
+        "es": "Columna calculada",
+        "en": "Calculated column",
+        "pt": "Coluna calculada",
+    },
+    "regla_R07_detalle": {
+        "es": "Las columnas calculadas se materializan en el modelo y no se comprimen tan bien como las nativas; casi siempre hay una versión en Power Query o una medida.",
+        "en": "Calculated columns are materialised in the model and compress worse than native ones; there is almost always a Power Query version or a measure.",
+        "pt": "As colunas calculadas são materializadas no modelo e comprimem pior que as nativas; quase sempre há uma versão no Power Query ou uma medida.",
+    },
+    "regla_R07_arreglo": {
+        "es": "Mover el cálculo a Power Query (mejor compresión) o convertirlo en medida si es agregable.",
+        "en": "Move the calculation to Power Query (better compression) or turn it into a measure if it aggregates.",
+        "pt": "Mover o cálculo para o Power Query (melhor compressão) ou convertê-lo em medida se for agregável.",
+    },
+    "regla_R08": {
+        "es": "Clave foránea visible",
+        "en": "Visible foreign key",
+        "pt": "Chave estrangeira visível",
+    },
+    "regla_R08_detalle": {
+        "es": "Las columnas que solo existen para relacionar tablas confunden en el panel de campos y tientan a sumarlas.",
+        "en": "Columns that exist only to relate tables clutter the field pane and tempt people to sum them.",
+        "pt": "As colunas que só existem para relacionar tabelas confundem no painel de campos e tentam a somá-las.",
+    },
+    "regla_R08_arreglo": {
+        "es": "Ocultarla (isHidden). El filtro sigue funcionando igual.",
+        "en": "Hide it (isHidden). The relationship keeps working exactly the same.",
+        "pt": "Ocultá-la (isHidden). O filtro continua funcionando igual.",
+    },
+    "regla_R09": {
+        "es": "Relación bidireccional",
+        "en": "Bidirectional relationship",
+        "pt": "Relação bidirecional",
+    },
+    "regla_R09_detalle": {
+        "es": "El filtro cruzado en ambas direcciones genera ambigüedad de caminos y resultados que cambian según el visual.",
+        "en": "Cross-filtering in both directions creates ambiguous paths and results that change from one visual to another.",
+        "pt": "O filtro cruzado nas duas direções gera ambiguidade de caminhos e resultados que mudam conforme o visual.",
+    },
+    "regla_R09_arreglo": {
+        "es": "Volver a dirección simple y resolver el caso puntual con CROSSFILTER dentro de la medida que lo necesite.",
+        "en": "Go back to single direction and solve the specific case with CROSSFILTER inside the measure that needs it.",
+        "pt": "Voltar à direção simples e resolver o caso pontual com CROSSFILTER dentro da medida que precisar.",
+    },
+    "regla_R10": {
+        "es": "Relación muchos a muchos",
+        "en": "Many-to-many relationship",
+        "pt": "Relação muitos para muitos",
+    },
+    "regla_R10_detalle": {
+        "es": "Las relaciones N:N ocultan duplicados en las claves y degradan el rendimiento del motor.",
+        "en": "N:N relationships hide duplicate keys and degrade engine performance.",
+        "pt": "As relações N:N escondem duplicados nas chaves e degradam o desempenho do motor.",
+    },
+    "regla_R10_arreglo": {
+        "es": "Interponer una tabla puente con la clave única (esquema estrella).",
+        "en": "Put a bridge table with the unique key in between (star schema).",
+        "pt": "Interpor uma tabela ponte com a chave única (esquema estrela).",
+    },
+    "regla_R11": {
+        "es": "Relación inactiva",
+        "en": "Inactive relationship",
+        "pt": "Relação inativa",
+    },
+    "regla_R11_detalle": {
+        "es": "Está definida pero apagada: solo actúa vía USERELATIONSHIP.",
+        "en": "It is defined but switched off: it only applies through USERELATIONSHIP.",
+        "pt": "Está definida mas desligada: só atua via USERELATIONSHIP.",
+    },
+    "regla_R11_arreglo": {
+        "es": "Confirmar que alguna medida la usa; si no, eliminarla.",
+        "en": "Confirm some measure uses it; if not, delete it.",
+        "pt": "Confirmar que alguma medida a usa; se não, eliminá-la.",
+    },
+    "regla_R12": {
+        "es": "Tabla sin relaciones",
+        "en": "Table with no relationships",
+        "pt": "Tabela sem relações",
+    },
+    "regla_R12_detalle": {
+        "es": "No participa de ninguna relación: sus filtros no viajan a ninguna otra tabla.",
+        "en": "It takes part in no relationship: its filters never reach any other table.",
+        "pt": "Não participa de nenhuma relação: seus filtros não chegam a nenhuma outra tabela.",
+    },
+    "regla_R12_arreglo": {
+        "es": "Relacionarla al modelo o, si es tabla auxiliar, ocultarla.",
+        "en": "Relate it to the model or, if it is a helper table, hide it.",
+        "pt": "Relacioná-la ao modelo ou, se for tabela auxiliar, ocultá-la.",
+    },
+    "regla_R13": {
+        "es": "Auto date/time activo",
+        "en": "Auto date/time on",
+        "pt": "Auto date/time ativo",
+    },
+    "regla_R13_detalle": {
+        "es": "Power BI creó tablas de calendario ocultas por cada columna de fecha (LocalDateTable_*): infla el modelo y duplica lógica.",
+        "en": "Power BI created a hidden date table for every date column (LocalDateTable_*): it bloats the model and duplicates logic.",
+        "pt": "O Power BI criou tabelas de calendário ocultas para cada coluna de data (LocalDateTable_*): infla o modelo e duplica lógica.",
+    },
+    "regla_R13_arreglo": {
+        "es": "Desactivar Auto date/time y usar una única tabla de calendario marcada como tabla de fechas.",
+        "en": "Turn Auto date/time off and use a single date table marked as such.",
+        "pt": "Desativar o Auto date/time e usar uma única tabela de calendário marcada como tabela de datas.",
+    },
+    "regla_R14": {
+        "es": "Sin tabla de calendario",
+        "en": "No date table",
+        "pt": "Sem tabela de calendário",
+    },
+    "regla_R14_detalle": {
+        "es": "Hay columnas de fecha pero ninguna tabla de calendario marcada: la inteligencia de tiempo (YTD, año anterior) puede devolver resultados incorrectos sin avisar.",
+        "en": "There are date columns but no marked date table: time intelligence (YTD, previous year) can return wrong results with no warning.",
+        "pt": "Há colunas de data mas nenhuma tabela de calendário marcada: a inteligência de tempo (YTD, ano anterior) pode devolver resultados incorretos sem avisar.",
+    },
+    "regla_R14_arreglo": {
+        "es": "Crear una tabla de calendario continua y marcarla como tabla de fechas.",
+        "en": "Create a continuous date table and mark it as the date table.",
+        "pt": "Criar uma tabela de calendário contínua e marcá-la como tabela de datas.",
+    },
+    "regla_R15": {
+        "es": "Medidas dispersas",
+        "en": "Scattered measures",
+        "pt": "Medidas dispersas",
+    },
+    "regla_R15_detalle": {
+        "es": "Las medidas viven repartidas en tablas de datos; el panel de campos mezcla modelo y cálculos.",
+        "en": "Measures live spread across data tables; the field pane mixes model and calculations.",
+        "pt": "As medidas vivem espalhadas por tabelas de dados; o painel de campos mistura modelo e cálculos.",
+    },
+    "regla_R15_arreglo": {
+        "es": "Concentrarlas en una tabla de medidas dedicada.",
+        "en": "Concentrate them in a dedicated measures table.",
+        "pt": "Concentrá-las numa tabela de medidas dedicada.",
+    },
 }
 
 

@@ -388,9 +388,10 @@ with tab_analisis:
             icono = {"alta": "🔴", "media": "🟡", "baja": "🔵"}[g["severidad"]]
             cuantos = len(g["objetos"])
             sufijo = f" · {cuantos}×" if cuantos > 1 else f" — {g['objetos'][0]}"
-            with st.expander(f"{icono} {g['regla']}{sufijo}"):
-                st.markdown(f"**{_('por_que_importa')}:** {g['detalle']}")
-                st.markdown(f"**{_('como_se_arregla')}:** {g['arreglo']}")
+            txt = analizador.describir(g, IDIOMA)
+            with st.expander(f"{icono} {txt['titulo']}{sufijo}"):
+                st.markdown(f"**{_('por_que_importa')}:** {txt['detalle']}")
+                st.markdown(f"**{_('como_se_arregla')}:** {txt['arreglo']}")
                 if g["auto"]:
                     st.markdown(f"✅ *{_('arreglable_auto')}*")
                 if cuantos > 1:
