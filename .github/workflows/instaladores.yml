@@ -334,6 +334,64 @@ jobs:
           Write-Host "desinstalación limpia"
 
       # ------------------------------------------------------------------
+      # La otra mitad de la distribución: el ZIP portable, que no instala
+      # nada. Se prueba con el runtime embebido, que es como lo recibe quien
+      # no puede instalar Python en su PC de trabajo.
+      # ------------------------------------------------------------------
+      - name: Armar los tres portables
+        shell: pwsh
+        working-directory: daxlingo
+        env:
+          MVDAX_LICENSE_SECRET: ${{ secrets.MVDAX_LICENSE_SECRET }}
+        run: |
+          .\desktop\runtime\python.exe desktop/scripts/empaquetar-portable.py
+          Get-ChildItem desktop/dist-portable -Filter *.zip |
+            Select-Object Name, @{n='MB';e={[math]::Round($_.Length/1MB,2)}}
+
+      - name: El portable arranca y contesta 200
+        shell: pwsh
+        working-directory: daxlingo
+        run: |
+          $zip = "desktop/dist-portable/MV-DAX-Lab-portable.zip"
+          Expand-Archive $zip -DestinationPath "$env:TEMP\port" -Force
+          $carpeta = "$env:TEMP\port\MV-DAX-Lab-portable"
+          # El runtime embebido va adentro del paquete: así el .bat lo
+          # encuentra sin depender del Python del sistema.
+          Copy-Item desktop/runtime "$carpeta\runtime" -Recurse
+
+          $py = "$carpeta\runtime\python.exe"
+          $p = Start-Process $py -PassThru -WindowStyle Hidden `
+                 -ArgumentList "lanzador.py --sin-navegador --puerto 8796 --espera 90" `
+                 -WorkingDirectory $carpeta
+          try {
+            $ok = $false
+            foreach ($i in 1..60) {
+              Start-Sleep -Seconds 2
+              try {
+                if ((Invoke-WebRequest "http://127.0.0.1:8796" -UseBasicParsing `
+                       -TimeoutSec 5).StatusCode -eq 200) { $ok = $true; break }
+              } catch { }
+            }
+            if (-not $ok) { throw "el portable no respondió en 120 s" }
+            Write-Host "el portable respondió 200"
+          } finally {
+            if ($p -and -not $p.HasExited) { Stop-Process -Id $p.Id -Force }
+          }
+
+      - name: El portable tampoco se convierte en owner con una variable
+        shell: pwsh
+        working-directory: daxlingo
+        run: |
+          $carpeta = "$env:TEMP\port\MV-DAX-Lab-portable"
+          $env:MVDAXLAB_EDICION_ARCHIVO = "$carpeta\edicion.json"
+          $env:MVDAXLAB_DATOS = "$env:TEMP\port-datos"
+          $env:MVDAX_EDICION = "owner"          # el intento de bypass
+          $ed = & "$carpeta\runtime\python.exe" -c `
+            "import sys; sys.path.insert(0, r'$carpeta'); from dxl import licencia; print(licencia.edicion_actual())"
+          Write-Host "edición del portable con MVDAX_EDICION=owner: $ed"
+          if ($ed.Trim() -ne "profesional") { throw "el candado del portable no aguantó: $ed" }
+
+      # ------------------------------------------------------------------
       # Solo cliente y demo. La owner NO se sube: repo público.
       # ------------------------------------------------------------------
       - name: Publicar los instaladores de cliente y demo
@@ -345,3 +403,5 @@ jobs:
           path: |
             daxlingo/desktop/dist-instalador/MV-DAX-Lab-Setup-*.exe
             daxlingo/desktop/dist-instalador/MV-DAX-Lab-DEMO-Setup-*.exe
+            daxlingo/desktop/dist-portable/MV-DAX-Lab-portable.zip
+            daxlingo/desktop/dist-portable/MV-DAX-Lab-DEMO-portable.zip

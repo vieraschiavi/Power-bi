@@ -434,8 +434,13 @@ def test_el_dominio_no_esta_clavado_en_el_codigo():
             continue
         # Los tests usan hosts de mentira como dato de entrada: eso no es un
         # dominio clavado en el producto.
+        # `dist*` cubre dist/, dist-instalador/ y dist-portable/: son COPIAS
+        # del código que ya se revisa en su lugar de origen. La comparación
+        # era exacta contra «dist» y por eso dist-portable/ colaba el default
+        # de dxl/__init__.py como si fuera un dominio clavado nuevo.
         if archivo in permitidos or "node_modules" in archivo.parts \
-                or "dist" in archivo.parts or "tests" in archivo.parts \
+                or any(p.startswith("dist") for p in archivo.parts) \
+                or "tests" in archivo.parts \
                 or archivo.name.endswith(".test.js"):
             continue
         if "vercel.app" in archivo.read_text(encoding="utf-8", errors="ignore"):
