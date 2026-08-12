@@ -19,8 +19,11 @@ Uso:
 from __future__ import annotations
 
 import argparse
+import re
+import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
@@ -31,12 +34,17 @@ sys.path.insert(0, str(RAIZ))
 from dxl import dominio  # noqa: E402
 from dxl.i18n import IDIOMAS  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import narracion  # noqa: E402
+
 ANCHO, ALTO = 1920, 1080
 FPS = 25
 SEG_POR_PESTANA = 7.0
 SEG_INTRO = 4.0
 SEG_CIERRE = 4.0
 SEG_FUNDIDO = 0.5
+# Aire después de la locución para que la placa no corte en seco.
+RESPIRO_VOZ = 1.2
 
 NAVY = (8, 21, 39)
 NAVY2 = (12, 33, 55)
@@ -273,6 +281,67 @@ def escribir_video(cuadros: list[tuple[Image.Image, float]],
     return destino
 
 
+def _ffmpeg() -> str:
+    import imageio_ffmpeg
+    return imageio_ffmpeg.get_ffmpeg_exe()
+
+
+def duracion_audio(ruta: Path) -> float | None:
+    """Segundos de un MP3, leídos de la cabecera que imprime ffmpeg.
+
+    Se parsea la salida de `ffmpeg -i` en vez de usar ffprobe porque
+    imageio_ffmpeg trae ffmpeg pero NO ffprobe, y no vale la pena sumar una
+    dependencia para leer un número.
+    """
+    salida = subprocess.run([_ffmpeg(), "-i", str(ruta)],
+                            capture_output=True, text=True).stderr
+    m = re.search(r"Duration:\s*(\d+):(\d\d):(\d\d\.\d+)", salida)
+    if not m:
+        return None
+    h, mi, s = m.groups()
+    return int(h) * 3600 + int(mi) * 60 + float(s)
+
+
+def sonorizar(mudo: Path, pistas: list[tuple[Path | None, float]]) -> None:
+    """Le pega la narración al video, placa por placa, y pisa el archivo.
+
+    Cada placa se convierte en un tramo de audio de EXACTAMENTE su duración:
+    la locución al principio y silencio hasta completar. Así el total del
+    audio es igual al total del video por construcción — la voz no se puede
+    correr de la imagen aunque se cambie el guion o el orden de las placas.
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp = Path(tmp)
+        partes = []
+        for i, (clip, segundos) in enumerate(pistas):
+            parte = tmp / f"{i:03d}.wav"
+            comun = ["-ar", "44100", "-ac", "2", "-t", f"{segundos:.4f}"]
+            if clip is None:      # placa sin locución: silencio del mismo largo
+                cmd = [_ffmpeg(), "-y", "-f", "lavfi", "-i",
+                       "anullsrc=r=44100:cl=stereo", *comun, str(parte)]
+            else:
+                cmd = [_ffmpeg(), "-y", "-i", str(clip),
+                       "-af", f"apad=whole_dur={segundos:.4f}", *comun,
+                       str(parte)]
+            subprocess.run(cmd, capture_output=True, check=True)
+            partes.append(parte)
+
+        lista = tmp / "partes.txt"
+        lista.write_text("".join(f"file '{p}'\n" for p in partes),
+                         encoding="utf-8")
+        pista = tmp / "voz.wav"
+        subprocess.run([_ffmpeg(), "-y", "-f", "concat", "-safe", "0",
+                        "-i", str(lista), "-c", "copy", str(pista)],
+                       capture_output=True, check=True)
+
+        con_voz = tmp / "con-voz.mp4"
+        subprocess.run([_ffmpeg(), "-y", "-i", str(mudo), "-i", str(pista),
+                        "-c:v", "copy", "-c:a", "aac", "-b:a", "160k",
+                        "-movflags", "+faststart", "-shortest", str(con_voz)],
+                       capture_output=True, check=True)
+        shutil.move(str(con_voz), str(mudo))
+
+
 def construir(idioma: str) -> Path:
     textos = VIDEO[idioma]
     carpeta = RAIZ / "web" / "assets" / "img" / idioma
@@ -285,19 +354,51 @@ def construir(idioma: str) -> Path:
     # sitio cambia, se regenera el video y listo.
     cierre = tuple(t.replace("{sitio}", dominio())
                    for t in textos["_cierre"])
-    cuadros: list[tuple[Image.Image, float]] = [
-        (cuadro_titulo(*textos["_intro"]), SEG_INTRO)]
+
+    # Si hay narración, manda ella: la placa dura lo que dura la locución más
+    # un respiro. Si no la hay, se usan los tiempos fijos de siempre y el
+    # video sale mudo, igual que antes.
+    def compas(clave: str, por_defecto: float) -> tuple[Path | None, float]:
+        clip = narracion.ruta(idioma, clave)
+        if not clip.exists():
+            return None, por_defecto
+        dur = duracion_audio(clip)
+        if dur is None:
+            return None, por_defecto
+        return clip, max(por_defecto, dur + RESPIRO_VOZ)
+
+    cuadros: list[tuple[Image.Image, float]] = []
+    pistas: list[tuple[Path | None, float]] = []
+
+    clip, seg = compas("_intro", SEG_INTRO)
+    cuadros.append((cuadro_titulo(*textos["_intro"]), seg))
+    pistas.append((clip, seg))
+
     presentes = [(slug, clave) for slug, clave in GUION
                  if (carpeta / f"{slug}.png").exists()]
     for i, (slug, clave) in enumerate(presentes):
         titulo, bajada = textos[clave]
+        clip, seg = compas(clave, SEG_POR_PESTANA)
         cuadros.append((cuadro_pestana(carpeta / f"{slug}.png", titulo,
-                                       bajada, i, len(presentes)),
-                        SEG_POR_PESTANA))
-    cuadros.append((cuadro_titulo(*cierre), SEG_CIERRE))
+                                       bajada, i, len(presentes)), seg))
+        pistas.append((clip, seg))
+
+    clip, seg = compas("_cierre", SEG_CIERRE)
+    cuadros.append((cuadro_titulo(*cierre), seg))
+    pistas.append((clip, seg))
 
     destino = RAIZ / "web" / "assets" / "video" / f"demo-{idioma}.mp4"
     escribir_video(cuadros, destino)
+
+    if any(clip for clip, _ in pistas):
+        # Los segundos que se le pasan al audio son los que el video usó de
+        # verdad: escribir_video redondea a cuadros enteros, y sin ese mismo
+        # redondeo la pista se iría corriendo unos milisegundos por placa.
+        exactas = [(clip, int(seg * FPS) / FPS) for clip, seg in pistas]
+        sonorizar(destino, exactas)
+        print(f"  ♪ narración pegada ({sum(s for _, s in exactas):.0f} s)")
+    else:
+        print("  · sin narración (corré media/narracion.py); el video sale mudo")
     return destino
 
 
