@@ -188,62 +188,158 @@ def _texto_centrado(dib, y, texto, fnt, color):
 
 
 def cuadro_titulo(titulo: str, bajada: str) -> Image.Image:
-    """Placa de apertura y de cierre."""
+    """Placa de apertura y de cierre.
+
+    Comparte la franja diagonal con las placas de pestaña para que el video se
+    lea como una pieza y no como tres plantillas distintas. El bloque va
+    centrado de verdad —antes quedaba anclado arriba y dejaba medio cuadro
+    vacío— y el título se envuelve solo si el idioma lo alarga.
+    """
     img = Image.new("RGB", (ANCHO, ALTO), NAVY)
     dib = ImageDraw.Draw(img)
-    # Cuadrado ámbar de la marca, centrado sobre el título.
-    lado = 92
-    x0 = (ANCHO - lado) // 2
-    dib.rounded_rectangle([x0, 300, x0 + lado, 300 + lado], radius=20,
-                          fill=AMBAR)
-    _texto_centrado(dib, 430, titulo, fuente("negrita", 86), TINTA)
-    _texto_centrado(dib, 550, bajada, fuente("normal", 36), APAGADO)
-    dib.line([(ANCHO / 2 - 90, 640), (ANCHO / 2 + 90, 640)], fill=AMBAR,
-             width=3)
+    dib.polygon([(ANCHO * 0.52, 0), (ANCHO, 0), (ANCHO, ALTO),
+                 (ANCHO * 0.36, ALTO)], fill=NAVY2)
+
+    f_tit, f_baj = fuente("negrita", 96), fuente("normal", 38)
+    lineas = _envolver(dib, titulo, f_tit, int(ANCHO * 0.74))
+    alto = 128 + len(lineas) * 112 + 96
+    y = (ALTO - alto) // 2
+
+    lado = 104
+    dib.rounded_rectangle([(ANCHO - lado) // 2, y, (ANCHO + lado) // 2,
+                           y + lado], radius=24, fill=AMBAR)
+    y += 128
+    for linea in lineas:
+        _texto_centrado(dib, y, linea, f_tit, TINTA)
+        y += 112
+    y += 12
+    _texto_centrado(dib, y, bajada, f_baj, APAGADO)
+    y += 74
+    dib.line([(ANCHO / 2 - 90, y), (ANCHO / 2 + 90, y)], fill=AMBAR, width=4)
     return img
+
+
+def _sombra(caja: Image.Image, radio: int = 18) -> Image.Image:
+    """Devuelve la captura con esquinas redondeadas y una sombra debajo.
+
+    Una captura pegada a hueso sobre el fondo se lee como un pantallazo; con
+    la esquina redondeada y la sombra se lee como una ventana. Es la misma
+    diferencia entre una captura de soporte técnico y una de una landing.
+    """
+    from PIL import ImageFilter
+
+    w, h = caja.size
+    mascara = Image.new("L", (w, h), 0)
+    ImageDraw.Draw(mascara).rounded_rectangle([0, 0, w - 1, h - 1],
+                                              radius=radio, fill=255)
+    redondeada = Image.new("RGBA", (w, h))
+    redondeada.paste(caja, (0, 0))
+    redondeada.putalpha(mascara)
+
+    margen = 34
+    lienzo = Image.new("RGBA", (w + margen * 2, h + margen * 2), (0, 0, 0, 0))
+    sombra = Image.new("RGBA", (w + margen * 2, h + margen * 2), (0, 0, 0, 0))
+    ImageDraw.Draw(sombra).rounded_rectangle(
+        [margen, margen + 10, margen + w, margen + h + 10],
+        radius=radio, fill=(0, 0, 0, 150))
+    sombra = sombra.filter(ImageFilter.GaussianBlur(18))
+    lienzo.alpha_composite(sombra)
+    lienzo.alpha_composite(redondeada, (margen, margen))
+    return lienzo
+
+
+def _envolver(dib, texto: str, fnt, ancho_max: int) -> list[str]:
+    """Parte la bajada en líneas que entren, sin cortar palabras."""
+    lineas, actual = [], ""
+    for palabra in texto.split():
+        prueba = f"{actual} {palabra}".strip()
+        if dib.textlength(prueba, font=fnt) <= ancho_max:
+            actual = prueba
+        else:
+            if actual:
+                lineas.append(actual)
+            actual = palabra
+    if actual:
+        lineas.append(actual)
+    return lineas
 
 
 def cuadro_pestana(captura: Path, titulo: str, bajada: str,
                    indice: int, total: int) -> Image.Image:
-    """Un cuadro: título, bajada, la captura enmarcada y el avance."""
+    """Una placa: el texto a la izquierda, la pantalla a la derecha.
+
+    El diseño anterior ponía el título arriba y la captura ocupando todo el
+    ancho: prolijo, pero es la disposición de un manual. Acá el texto ocupa
+    una columna propia y la captura entra en diagonal desde la derecha, que
+    es como se muestra un producto. El título entra a 64 px en vez de 52 y la
+    bajada se envuelve sola en vez de cortarse en el borde.
+    """
     img = Image.new("RGB", (ANCHO, ALTO), NAVY)
     dib = ImageDraw.Draw(img)
 
-    dib.text((90, 62), titulo, font=fuente("negrita", 52), fill=TINTA)
-    dib.text((90, 132), bajada, font=fuente("normal", 27), fill=APAGADO)
+    # Franja diagonal apenas más clara: le saca la sensación de fondo plano.
+    dib.polygon([(ANCHO * 0.46, 0), (ANCHO, 0), (ANCHO, ALTO),
+                 (ANCHO * 0.30, ALTO)], fill=NAVY2)
 
-    # Marca discreta arriba a la derecha.
-    dib.rounded_rectangle([ANCHO - 250, 66, ANCHO - 226, 90], radius=6,
-                          fill=AMBAR)
-    dib.text((ANCHO - 214, 64), "MV DAX Lab", font=fuente("negrita", 28),
+    col_x, col_w = 96, int(ANCHO * 0.34)
+
+    # Marca arriba de todo, chica.
+    dib.rounded_rectangle([col_x, 84, col_x + 22, 106], radius=6, fill=AMBAR)
+    dib.text((col_x + 34, 82), "MV DAX Lab", font=fuente("negrita", 26),
              fill=TINTA)
 
-    # La captura, escalada al ancho disponible y recortada si sobra alto.
-    marco_x, marco_y = 90, 200
-    marco_w = ANCHO - 2 * marco_x
-    marco_h = ALTO - marco_y - 120
-    shot = Image.open(captura).convert("RGB")
-    escala = marco_w / shot.width
-    nuevo = shot.resize((marco_w, max(1, int(shot.height * escala))),
-                        Image.LANCZOS)
-    if nuevo.height > marco_h:
-        nuevo = nuevo.crop((0, 0, marco_w, marco_h))
-    caja = Image.new("RGB", (marco_w, marco_h), NAVY2)
-    caja.paste(nuevo, (0, 0))
-    img.paste(caja, (marco_x, marco_y))
-    dib.rectangle([marco_x - 1, marco_y - 1, marco_x + marco_w,
-                   marco_y + marco_h], outline=LINEA, width=2)
+    # El número de capítulo, grande y en ámbar: da ritmo y ubica al que mira.
+    # El «/ NN» se coloca midiendo el ancho real del número; a ojo quedaba
+    # tapado debajo del «03».
+    f_num = fuente("negrita", 130)
+    ancho_num = dib.textlength(f"{indice + 1:02d}", font=f_num)
 
-    # Barra de avance: cuántas pestañas van.
-    barra_y = ALTO - 62
-    ancho_util = ANCHO - 2 * marco_x
-    dib.line([(marco_x, barra_y), (marco_x + ancho_util, barra_y)],
-             fill=LINEA, width=6)
-    dib.line([(marco_x, barra_y),
-              (marco_x + int(ancho_util * (indice + 1) / total), barra_y)],
+    # El bloque de texto se centra vertical como una sola pieza. Antes salía
+    # anclado arriba y dejaba un vacío enorme en el pie de la columna.
+    f_tit, f_baj = fuente("negrita", 64), fuente("normal", 29)
+    lin_tit = _envolver(dib, titulo, f_tit, col_w)
+    lin_baj = _envolver(dib, bajada, f_baj, col_w)
+    alto_bloque = (150 + len(lin_tit) * 76 + 52 + len(lin_baj) * 42)
+    y = max(190, (ALTO - alto_bloque) // 2)
+
+    dib.text((col_x, y), f"{indice + 1:02d}", font=f_num, fill=AMBAR)
+    dib.text((col_x + ancho_num + 18, y + 64), f"/ {total:02d}",
+             font=fuente("mono", 30), fill=APAGADO)
+    y += 150
+
+    for linea in lin_tit:
+        dib.text((col_x, y), linea, font=f_tit, fill=TINTA)
+        y += 76
+    y += 18
+    dib.line([(col_x, y), (col_x + 72, y)], fill=AMBAR, width=5)
+    y += 34
+    for linea in lin_baj:
+        dib.text((col_x, y), linea, font=f_baj, fill=APAGADO)
+        y += 42
+
+    # La captura: a la derecha, redondeada y con sombra.
+    disp_x = int(ANCHO * 0.395)
+    disp_w, disp_h = ANCHO - disp_x - 62, ALTO - 260
+    shot = Image.open(captura).convert("RGB")
+    escala = disp_w / shot.width
+    nuevo = shot.resize((disp_w, max(1, int(shot.height * escala))),
+                        Image.LANCZOS)
+    if nuevo.height > disp_h:
+        nuevo = nuevo.crop((0, 0, disp_w, disp_h))
+    else:
+        disp_h = nuevo.height
+    # Centrada vertical: la captura es más ancha que alta, así que anclada
+    # arriba dejaba la mitad inferior del cuadro vacía.
+    disp_y = (ALTO - nuevo.height) // 2
+    tarjeta = _sombra(nuevo)
+    img.paste(tarjeta, (disp_x - 34, disp_y - 34), tarjeta)
+
+    # Avance, pegado al pie de la columna de texto.
+    barra_y = ALTO - 96
+    dib.line([(col_x, barra_y), (col_x + col_w, barra_y)], fill=LINEA, width=6)
+    dib.line([(col_x, barra_y),
+              (col_x + int(col_w * (indice + 1) / total), barra_y)],
              fill=AMBAR, width=6)
-    dib.text((marco_x, barra_y + 16), f"{indice + 1} / {total}",
-             font=fuente("mono", 22), fill=APAGADO)
     return img
 
 
