@@ -1431,6 +1431,75 @@ T: dict[str, dict[str, str]] = {
         "en": "I did not recognise the request pattern. Try: total / average / max / min / distinct count of <column>, “% of total by <dimension>”, “<column> year to date”, “<column> vs last year”, “3-month moving average of <column>”, “rank <dimension> by <column>”. With an AI key configured, free-form requests work too.",
         "pt": "Não reconheci o padrão do pedido. Tente: total / média / máximo / mínimo / contagem distinta de <coluna>, «% do total por <dimensão>», «<coluna> acumulado do ano», «<coluna> vs ano anterior», «média móvel 3 meses de <coluna>», «ranking de <dimensão> por <coluna>». Com uma chave de IA configurada, o pedido livre também funciona.",
     },
+    # ---- explicaciones del generador de DAX ---------------------------
+    # Lo que se muestra junto a cada medida generada por el motor de reglas.
+    "genx_ya_existe": {
+        "es": "El modelo ya tiene esa medida: {medida}. Reutilizarla en vez de sumar la columna a mano mantiene un solo lugar de verdad.",
+        "en": "The model already has that measure: {medida}. Reusing it instead of summing the column by hand keeps a single source of truth.",
+        "pt": "O modelo já tem essa medida: {medida}. Reutilizá-la em vez de somar a coluna à mão mantém um único lugar de verdade.",
+    },
+    "genx_suma": {
+        "es": "Suma la columna {col} en el contexto del visual: cada celda/fila del reporte filtra qué filas entran en la suma.",
+        "en": "Sums the column {col} in the visual's context: every cell/row of the report filters which rows go into the sum.",
+        "pt": "Soma a coluna {col} no contexto do visual: cada célula/linha do relatório filtra quais linhas entram na soma.",
+    },
+    "genx_promedio": {
+        "es": "Promedia {col} sobre las filas visibles.",
+        "en": "Averages {col} over the visible rows.",
+        "pt": "Faz a média de {col} sobre as linhas visíveis.",
+    },
+    "genx_minmax": {
+        "es": "{fn} devuelve el {extremo} valor visible de {col}.",
+        "en": "{fn} returns the {extremo} visible value of {col}.",
+        "pt": "{fn} devolve o {extremo} valor visível de {col}.",
+    },
+    "genx_distintos": {
+        "es": "Cuenta los valores únicos de {col} en el contexto actual.",
+        "en": "Counts the unique values of {col} in the current context.",
+        "pt": "Conta os valores únicos de {col} no contexto atual.",
+    },
+    "genx_filas": {
+        "es": "Cuenta las filas visibles de la tabla {tabla}.",
+        "en": "Counts the visible rows of the table {tabla}.",
+        "pt": "Conta as linhas visíveis da tabela {tabla}.",
+    },
+    "genx_pct_total": {
+        "es": "Divide el valor del contexto actual por el mismo valor sin los filtros del visual (ALLSELECTED respeta los slicers): eso es la participación sobre el total. DIVIDE evita el error ante total 0.",
+        "en": "Divides the current context's value by the same value without the visual's filters (ALLSELECTED respects the slicers): that is the share of total. DIVIDE avoids the error when the total is 0.",
+        "pt": "Divide o valor do contexto atual pelo mesmo valor sem os filtros do visual (ALLSELECTED respeita os slicers): isso é a participação sobre o total. DIVIDE evita o erro com total 0.",
+    },
+    "genx_ytd": {
+        "es": "TOTALYTD acumula {base} desde el 1 de enero hasta la fecha del contexto, usando el calendario {calendario}.",
+        "en": "TOTALYTD accumulates {base} from 1 January to the context date, using the {calendario} date table.",
+        "pt": "TOTALYTD acumula {base} desde 1º de janeiro até a data do contexto, usando o calendário {calendario}.",
+    },
+    "genx_vs_aa": {
+        "es": "Calcula el valor actual y el del mismo período del año anterior (SAMEPERIODLASTYEAR desplaza el calendario), y devuelve la variación relativa con DIVIDE.",
+        "en": "Computes the current value and the same period last year (SAMEPERIODLASTYEAR shifts the date table), and returns the relative change with DIVIDE.",
+        "pt": "Calcula o valor atual e o do mesmo período do ano anterior (SAMEPERIODLASTYEAR desloca o calendário), e devolve a variação relativa com DIVIDE.",
+    },
+    "genx_media_movil": {
+        "es": "DATESINPERIOD arma la ventana de los últimos {meses} meses y AVERAGEX promedia el valor mensual dentro de ella — suaviza el ruido de los picos.",
+        "en": "DATESINPERIOD builds the window of the last {meses} months and AVERAGEX averages the monthly value inside it — it smooths out spikes.",
+        "pt": "DATESINPERIOD monta a janela dos últimos {meses} meses e AVERAGEX faz a média do valor mensal dentro dela — suaviza o ruído dos picos.",
+    },
+    "genx_ranking": {
+        "es": "RANKX ordena todos los valores visibles de {col} por {base} descendente y devuelve la posición de cada uno.",
+        "en": "RANKX sorts every visible value of {col} by {base} descending and returns each one's position.",
+        "pt": "RANKX ordena todos os valores visíveis de {col} por {base} descendente e devolve a posição de cada um.",
+    },
+    "genx_topn": {
+        "es": "TOPN elige los {n} valores de {col} con mayor {base}; KEEPFILTERS los aplica como filtro sin pisar el contexto del visual.",
+        "en": "TOPN picks the {n} values of {col} with the highest {base}; KEEPFILTERS applies them as a filter without overriding the visual's context.",
+        "pt": "TOPN escolhe os {n} valores de {col} com maior {base}; KEEPFILTERS os aplica como filtro sem sobrepor o contexto do visual.",
+    },
+    "genx_mayor": {"es": "mayor", "en": "highest", "pt": "maior"},
+    "genx_menor": {"es": "menor", "en": "lowest", "pt": "menor"},
+    "genx_ambiguo": {
+        "es": "Usé {elegida} porque el pedido no aclara cuál; en el modelo también están {otras}.",
+        "en": "I used {elegida} because the request does not say which one; the model also has {otras}.",
+        "pt": "Usei {elegida} porque o pedido não esclarece qual; no modelo também estão {otras}.",
+    },
 }
 
 

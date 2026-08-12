@@ -279,6 +279,31 @@ def test_los_datos_de_la_regla_se_interpolan_en_los_tres_idiomas():
             assert "{" not in detalle, f"{rid}/{idi} quedó sin interpolar"
 
 
+def test_el_motor_no_deja_texto_en_espanol_en_otro_idioma(cat):
+    """Guardia contra la fuga que tenían analizador, explicador y generador.
+
+    No alcanza con que la clave exista en los tres idiomas: lo que se escapaba
+    era texto escrito a mano en el módulo, que ninguna tabla de traducción
+    cubre. Acá se compara la salida REAL en español contra la inglesa; si
+    alguien vuelve a hardcodear una frase, las dos salen iguales y esto rompe.
+    """
+    from dxl import explicador
+
+    dax = "CALCULATE ( SUM ( Ventas[Importe] ), ALL ( Ventas ) )"
+    es = explicador.explicar(dax, idioma="es")
+    en = explicador.explicar(dax, idioma="en")
+    assert es["resumen"] != en["resumen"]
+    assert es["pasos"] != en["pasos"]
+    assert es["nivel_txt"] != en["nivel_txt"] or es["nivel"] == "basico"
+    assert es["funciones"][0]["descripcion"] != en["funciones"][0]["descripcion"]
+    assert es["funciones"][0]["categoria"] == en["funciones"][0]["categoria"], \
+        "la categoría es una clave: no se traduce"
+
+    hallazgos = analizador.analizar(cat)
+    assert (analizador.describir(hallazgos[0], "es")["detalle"]
+            != analizador.describir(hallazgos[0], "en")["detalle"])
+
+
 def test_arreglos_automaticos(cat):
     hallazgos = analizador.analizar(cat)
     nuevo, cambios = transformador.aplicar_arreglos(modelo_juguete(),
