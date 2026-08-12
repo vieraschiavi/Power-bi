@@ -1,5 +1,5 @@
 """
-Configuración compartida del proyecto Adium Pharma — Excelencia Comercial.
+Configuración compartida del proyecto Farma Demo — Excelencia Comercial.
 
 Un solo lugar donde viven rutas, semillas y parámetros de negocio.
 Todos los scripts numerados (01..05) importan de acá.

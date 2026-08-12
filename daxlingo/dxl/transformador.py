@@ -12,7 +12,7 @@ import copy
 import re
 
 from .i18n import IDIOMA_DEFECTO, t as traducir
-from .catalogo import Catalogo, _norm
+from .catalogo import _norm
 from .modelo import expr_lineas, expr_texto
 
 
@@ -129,7 +129,7 @@ def crear_tabla_medidas(modelo: dict, nombre: str = "_Medidas",
             "measures": [],
         }
         tablas.append(destino)
-        cambios.append(traducir("tr_tabla_medidas", idioma).format(
+        cambios.append(traducir("tr_tabla_medidas_creada", idioma).format(
             nombre=nombre))
     destino.setdefault("measures", [])
     for t in tablas:
@@ -145,7 +145,8 @@ def crear_tabla_medidas(modelo: dict, nombre: str = "_Medidas",
 
 def agregar_medida(modelo: dict, nombre: str, dax: str, formato: str = "",
                    descripcion: str = "", tabla: str = "",
-                   carpeta: str = "") -> tuple[dict, list[str]]:
+                   carpeta: str = "",
+                   idioma: str = IDIOMA_DEFECTO) -> tuple[dict, list[str]]:
     """
     Agrega una medida al modelo. Si no se indica tabla, usa la tabla de
     medidas (creándola si hace falta) o la primera con medidas.
@@ -153,18 +154,20 @@ def agregar_medida(modelo: dict, nombre: str, dax: str, formato: str = "",
     modelo = copy.deepcopy(modelo)
     tablas = _tablas(modelo)
     if not tablas:
-        raise ValueError("El modelo no tiene tablas.")
+        raise ValueError(traducir("tr_sin_tablas", idioma))
 
     for _, m in _medidas(modelo):
         if _norm(m.get("name", "")) == _norm(nombre):
-            raise ValueError(f"Ya existe una medida llamada [{nombre}].")
+            raise ValueError(
+                traducir("tr_err_medida_existe", idioma).format(nombre=nombre))
 
     destino = None
     if tabla:
         destino = next((t for t in tablas
                         if _norm(t.get("name", "")) == _norm(tabla)), None)
         if destino is None:
-            raise ValueError(f"La tabla «{tabla}» no existe.")
+            raise ValueError(
+                traducir("tr_err_tabla_no_existe", idioma).format(tabla=tabla))
     if destino is None:
         destino = next((t for t in tablas
                         if t.get("name", "").lstrip("_").lower()
@@ -180,7 +183,8 @@ def agregar_medida(modelo: dict, nombre: str, dax: str, formato: str = "",
     if carpeta:
         medida["displayFolder"] = carpeta
     destino.setdefault("measures", []).append(medida)
-    return modelo, [f"Medida [{nombre}] agregada en «{destino['name']}»"]
+    return modelo, [traducir("tr_medida_agregada", idioma).format(
+        nombre=nombre, tabla=destino["name"])]
 
 
 def renombrar_medida(modelo: dict, actual: str, nuevo: str,
@@ -198,7 +202,8 @@ def renombrar_medida(modelo: dict, actual: str, nuevo: str,
                 antes=actual, despues=nuevo))
             break
     if not encontrada:
-        raise ValueError(f"No existe la medida [{actual}].")
+        raise ValueError(
+            traducir("tr_err_medida_no_existe", idioma).format(nombre=actual))
     patron = re.compile(r"\[" + re.escape(actual) + r"\]")
     for t, m in _medidas(modelo):
         expr = expr_texto(m.get("expression"))
@@ -210,7 +215,8 @@ def renombrar_medida(modelo: dict, actual: str, nuevo: str,
     return modelo, cambios
 
 
-def eliminar_medida(modelo: dict, nombre: str) -> tuple[dict, list[str]]:
+def eliminar_medida(modelo: dict, nombre: str,
+                    idioma: str = IDIOMA_DEFECTO) -> tuple[dict, list[str]]:
     """Elimina una medida — se niega si otra medida la referencia."""
     modelo = copy.deepcopy(modelo)
     patron = re.compile(r"\[" + re.escape(nombre) + r"\]")
@@ -218,17 +224,18 @@ def eliminar_medida(modelo: dict, nombre: str) -> tuple[dict, list[str]]:
                  if m.get("name") != nombre
                  and patron.search(expr_texto(m.get("expression")))]
     if usada_por:
-        raise ValueError(
-            f"[{nombre}] está referenciada por: "
-            + ", ".join(f"[{u}]" for u in usada_por)
-            + ". Actualizá esas medidas antes de eliminarla.")
+        raise ValueError(traducir("tr_err_medida_referenciada", idioma).format(
+            nombre=nombre,
+            lista=", ".join(f"[{u}]" for u in usada_por)))
     for t in _tablas(modelo):
         antes = len(t.get("measures", []))
         t["measures"] = [m for m in t.get("measures", [])
                          if m.get("name") != nombre]
         if len(t["measures"]) < antes:
-            return modelo, [f"Medida [{nombre}] eliminada de «{t['name']}»"]
-    raise ValueError(f"No existe la medida [{nombre}].")
+            return modelo, [traducir("tr_medida_eliminada", idioma).format(
+                nombre=nombre, tabla=t["name"])]
+    raise ValueError(
+        traducir("tr_err_medida_no_existe", idioma).format(nombre=nombre))
 
 
 # ==========================================================================
@@ -239,7 +246,7 @@ def aplicar_arreglos(modelo: dict, hallazgos: list[dict],
     (`auto=True`), en orden seguro. Devuelve el modelo nuevo y el log.
     """
     cambios: list[str] = []
-    reglas = {h["regla"].split(" ·")[0] for h in hallazgos if h.get("auto")}
+    reglas = {h["regla"] for h in hallazgos if h.get("auto")}
     if "R01" in reglas:
         modelo, c = aplicar_divide(modelo, idioma)
         cambios += c

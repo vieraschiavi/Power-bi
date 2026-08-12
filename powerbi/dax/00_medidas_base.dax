@@ -1,5 +1,5 @@
 // =========================================================================
-// ADIUM PHARMA — Biblioteca DAX · 00 · MEDIDAS BASE
+// FARMA DEMO — Biblioteca DAX · 00 · MEDIDAS BASE
 //
 // Estas medidas las comparten los tres tableros (VAR, Ofertas, Logística).
 // Viven en una tabla vacía llamada `_Medidas` para que el panel de campos

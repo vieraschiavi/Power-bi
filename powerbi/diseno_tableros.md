@@ -179,7 +179,7 @@ La página que convierte el tablero en herramienta de decisión.
 ├──────────────────────────────┬──────────────────────────────────────┤
 │  Matriz segmento × producto  │  Detalle de la recomendación         │
 │  (Top 5 por segmento)        │                                       │
-│                              │  SKU        ADM-0114 · Adium K114     │
+│                              │  SKU        ADM-0114 Farma Demo K114  │
 │  Filial ▸ Canal ▸ Segmento   │  Descuento  22%   (actual: 14%)       │
 │                              │  Aceptación 80%                       │
 │  color = ganancia estimada   │  Riesgo dev 10% 🟢                    │

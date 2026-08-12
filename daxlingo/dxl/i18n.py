@@ -1371,7 +1371,7 @@ T: dict[str, dict[str, str]] = {
         "en": "{obj}: hidden (relationship key)",
         "pt": "{obj}: oculta (chave de relação)",
     },
-    "tr_tabla_medidas": {
+    "tr_tabla_medidas_creada": {
         "es": "Tabla de medidas «{nombre}» creada",
         "en": "Measures table “{nombre}” created",
         "pt": "Tabela de medidas «{nombre}» criada",
@@ -1395,6 +1395,36 @@ T: dict[str, dict[str, str]] = {
         "es": "El modelo no tiene tablas.",
         "en": "The model has no tables.",
         "pt": "O modelo não tem tabelas.",
+    },
+    "tr_medida_agregada": {
+        "es": "Medida [{nombre}] agregada en «{tabla}»",
+        "en": "Measure [{nombre}] added to “{tabla}”",
+        "pt": "Medida [{nombre}] adicionada em «{tabla}»",
+    },
+    "tr_medida_eliminada": {
+        "es": "Medida [{nombre}] eliminada de «{tabla}»",
+        "en": "Measure [{nombre}] removed from “{tabla}”",
+        "pt": "Medida [{nombre}] removida de «{tabla}»",
+    },
+    "tr_err_medida_existe": {
+        "es": "Ya existe una medida llamada [{nombre}].",
+        "en": "A measure named [{nombre}] already exists.",
+        "pt": "Já existe uma medida chamada [{nombre}].",
+    },
+    "tr_err_tabla_no_existe": {
+        "es": "La tabla «{tabla}» no existe.",
+        "en": "The table “{tabla}” does not exist.",
+        "pt": "A tabela «{tabla}» não existe.",
+    },
+    "tr_err_medida_no_existe": {
+        "es": "No existe la medida [{nombre}].",
+        "en": "Measure [{nombre}] does not exist.",
+        "pt": "Não existe a medida [{nombre}].",
+    },
+    "tr_err_medida_referenciada": {
+        "es": "[{nombre}] está referenciada por: {lista}. Actualizá esas medidas antes de eliminarla.",
+        "en": "[{nombre}] is referenced by: {lista}. Update those measures before removing it.",
+        "pt": "[{nombre}] está referenciada por: {lista}. Atualize essas medidas antes de removê-la.",
     },
     "gen_vacio": {
         "es": "Escribí qué medida querés: p. ej. «total de ventas», «ventas vs año anterior».",
@@ -1499,6 +1529,131 @@ T: dict[str, dict[str, str]] = {
         "es": "Usé {elegida} porque el pedido no aclara cuál; en el modelo también están {otras}.",
         "en": "I used {elegida} because the request does not say which one; the model also has {otras}.",
         "pt": "Usei {elegida} porque o pedido não esclarece qual; no modelo também estão {otras}.",
+    },
+    # ---- errores puntuales de cada regla -------------------------------
+    "genx_sin_columna_suma": {
+        "es": "No encontré una columna numérica que se parezca a «{objetivo}» en el modelo.",
+        "en": "I could not find a numeric column that resembles “{objetivo}” in the model.",
+        "pt": "Não encontrei uma coluna numérica parecida com «{objetivo}» no modelo.",
+    },
+    "genx_sin_columna_promedio": {
+        "es": "No encontré una columna numérica para promediar en «{texto}».",
+        "en": "I could not find a numeric column to average in “{texto}”.",
+        "pt": "Não encontrei uma coluna numérica para fazer a média em «{texto}».",
+    },
+    "genx_sin_columna_conteo": {
+        "es": "No encontré la columna a contar en «{texto}».",
+        "en": "I could not find the column to count in “{texto}”.",
+        "pt": "Não encontrei a coluna para contar em «{texto}».",
+    },
+    "genx_sin_base_pct": {
+        "es": "No encontré sobre qué calcular el % del total. Decime la medida o la columna: «% del total de <medida>».",
+        "en": "I could not find what to calculate the % of total on. Tell me the measure or the column: “% of total of <measure>”.",
+        "pt": "Não encontrei sobre o que calcular o % do total. Diga a medida ou a coluna: «% do total de <medida>».",
+    },
+    "genx_sin_calendario_ytd": {
+        "es": "Para un acumulado del año necesito una tabla de calendario en el modelo, y no encontré ninguna.",
+        "en": "For a year-to-date accumulation I need a date table in the model, and I could not find one.",
+        "pt": "Para um acumulado do ano preciso de uma tabela de calendário no modelo, e não encontrei nenhuma.",
+    },
+    "genx_sin_base_ytd": {
+        "es": "No encontré qué acumular en «{texto}».",
+        "en": "I could not find what to accumulate in “{texto}”.",
+        "pt": "Não encontrei o que acumular em «{texto}».",
+    },
+    "genx_sin_calendario_aa": {
+        "es": "Para comparar contra el año anterior necesito una tabla de calendario, y no encontré ninguna.",
+        "en": "To compare against last year I need a date table, and I could not find one.",
+        "pt": "Para comparar com o ano anterior preciso de uma tabela de calendário, e não encontrei nenhuma.",
+    },
+    "genx_sin_base_aa": {
+        "es": "No encontré qué comparar en «{texto}».",
+        "en": "I could not find what to compare in “{texto}”.",
+        "pt": "Não encontrei o que comparar em «{texto}».",
+    },
+    "genx_sin_calendario_mm": {
+        "es": "Para una media móvil necesito una tabla de calendario en el modelo.",
+        "en": "For a moving average I need a date table in the model.",
+        "pt": "Para uma média móvel preciso de uma tabela de calendário no modelo.",
+    },
+    "genx_sin_base_mm": {
+        "es": "No encontré qué promediar en «{texto}».",
+        "en": "I could not find what to average in “{texto}”.",
+        "pt": "Não encontrei o que fazer a média em «{texto}».",
+    },
+    "genx_sin_ranking": {
+        "es": "Para un ranking necesito la dimensión y la métrica: «ranking de <columna> por <métrica>».",
+        "en": "For a ranking I need the dimension and the metric: “rank <column> by <metric>”.",
+        "pt": "Para um ranking preciso da dimensão e da métrica: «ranking de <coluna> por <métrica>».",
+    },
+    "genx_sin_topn": {
+        "es": "Para un top {n} necesito dimensión y métrica: «top {n} <columna> por <métrica>».",
+        "en": "For a top {n} I need a dimension and a metric: “top {n} <column> by <metric>”.",
+        "pt": "Para um top {n} preciso de dimensão e métrica: «top {n} <coluna> por <métrica>».",
+    },
+    "genx_ia_sin_json": {
+        "es": "la IA no devolvió JSON",
+        "en": "the AI did not return JSON",
+        "pt": "a IA não devolveu JSON",
+    },
+    "genx_ia_error": {
+        "es": "IA: {error}",
+        "en": "AI: {error}",
+        "pt": "IA: {error}",
+    },
+    "genx_ia_referencias_invalidas": {
+        "es": "La IA propuso referencias que no existen en el modelo (descartado): {detalle}",
+        "en": "The AI proposed references that do not exist in the model (discarded): {detalle}",
+        "pt": "A IA propôs referências que não existem no modelo (descartado): {detalle}",
+    },
+    # ---- nombres de las medidas que arma el motor de reglas ------------
+    "genx_nombre_total": {"es": "Total {col}", "en": "Total {col}",
+                          "pt": "Total {col}"},
+    "genx_nombre_promedio": {"es": "Promedio {col}", "en": "Average {col}",
+                             "pt": "Média {col}"},
+    "genx_nombre_maximo": {"es": "Máximo {col}", "en": "Maximum {col}",
+                           "pt": "Máximo {col}"},
+    "genx_nombre_minimo": {"es": "Mínimo {col}", "en": "Minimum {col}",
+                           "pt": "Mínimo {col}"},
+    "genx_nombre_distintos": {"es": "{entidad} distintos",
+                              "en": "Distinct {entidad}",
+                              "pt": "{entidad} distintos"},
+    "genx_nombre_filas": {"es": "Filas de {tabla}", "en": "Rows of {tabla}",
+                          "pt": "Linhas de {tabla}"},
+    "genx_nombre_pct_total": {"es": "% del total · {base}",
+                              "en": "% of total · {base}",
+                              "pt": "% do total · {base}"},
+    "genx_nombre_ytd": {"es": "{base} YTD", "en": "{base} YTD",
+                        "pt": "{base} YTD"},
+    "genx_nombre_vs_aa": {"es": "{base} · var. % vs AA",
+                          "en": "{base} · % change vs LY",
+                          "pt": "{base} · var. % vs AA"},
+    "genx_nombre_media_movil": {
+        "es": "{base} · media móvil {meses}m",
+        "en": "{base} · {meses}m moving average",
+        "pt": "{base} · média móvel {meses}m",
+    },
+    "genx_nombre_ranking": {"es": "Ranking {col} por {base}",
+                            "en": "Ranking {col} by {base}",
+                            "pt": "Ranking {col} por {base}"},
+    "genx_nombre_topn": {"es": "{base} · top {n} {col}",
+                        "en": "{base} · top {n} {col}",
+                        "pt": "{base} · top {n} {col}"},
+    # ---- validación de referencias contra el catálogo -------------------
+    "cat_tabla_inexistente": {
+        "es": "La tabla '{tabla}' no existe en el modelo.",
+        "en": "Table '{tabla}' does not exist in the model.",
+        "pt": "A tabela '{tabla}' não existe no modelo.",
+    },
+    "cat_columna_inexistente": {
+        "es": "La columna {tabla}[{col}] no existe en el modelo.",
+        "en": "Column {tabla}[{col}] does not exist in the model.",
+        "pt": "A coluna {tabla}[{col}] não existe no modelo.",
+    },
+    "cat_medida_inexistente": {
+        "es": "La medida [{medida}] no existe en el modelo.",
+        "en": "Measure [{medida}] does not exist in the model.",
+        "pt": "A medida [{medida}] não existe no modelo.",
     },
 }
 

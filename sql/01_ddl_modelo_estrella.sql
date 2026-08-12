@@ -1,5 +1,5 @@
 /* =========================================================================
-   ADIUM PHARMA — Excelencia Comercial Corporativo
+   FARMA DEMO — Excelencia Comercial Corporativo
    01 · DDL del modelo estrella (SQL Server / T-SQL)
 
    Un solo modelo estrella para los tres tableros (VAR, Ofertas, Logística).

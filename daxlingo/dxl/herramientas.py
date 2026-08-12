@@ -4,15 +4,15 @@ MV DAX Lab · Las herramientas del analista Power BI moderno, operativas.
 Registro de las 10+ herramientas del stack (Desktop, Power Query, Service,
 Bravo, DAX Studio, Tabular Editor, ALM Toolkit, VS Code + PBIP, Fabric y el
 MCP de modelado de Power BI) con acciones concretas desde la plataforma:
-detectar la instalación local, exportar el modelo en el formato que cada una
-abre, y generar la configuración MCP para agentes de IA.
+detectar la instalación local y exportar el modelo en el formato que cada una
+abre. La configuración MCP para agentes de IA vive en `proveedores_ia.py`
+(soporta varios agentes: Claude, ChatGPT/Codex, Copilot, Gemini).
 
 La detección de rutas es de Windows (donde viven estas herramientas); en
 Linux/Mac devuelve None y la app lo muestra como «no detectada acá».
 """
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 HERRAMIENTAS: list[dict] = [
@@ -110,11 +110,6 @@ HERRAMIENTAS: list[dict] = [
     },
 ]
 
-# Endpoint del servidor MCP remoto oficial de Power BI (servicio Fabric).
-# Autenticación: Microsoft Entra ID. Permite inspeccionar modelos, gestionar
-# DAX en lenguaje natural y documentar modelos publicados, sin instalar nada.
-MCP_REMOTO_POWERBI = "https://api.fabric.microsoft.com/v1/mcp/powerbi"
-
 
 def detectar(herramienta: dict) -> str | None:
     """Ruta local si la herramienta está instalada (Windows); si no, None."""
@@ -132,9 +127,8 @@ def detectar(herramienta: dict) -> str | None:
     return None
 
 
-def exportar_medidas_dax(cat, destino: str | Path) -> Path:
-    """Todas las medidas del catálogo en un .dax para DAX Studio / revisión."""
-    destino = Path(destino)
+def texto_medidas_dax(cat) -> str:
+    """Todas las medidas del catálogo como texto .dax, sin tocar el disco."""
     lineas = ["// Medidas exportadas por MV DAX Lab",
               f"// Modelo: {cat.nombre or '(sin nombre)'}", ""]
     for m in cat.medidas():
@@ -147,44 +141,11 @@ def exportar_medidas_dax(cat, destino: str | Path) -> Path:
         if m["formato"]:
             lineas.append(f'// formatString: "{m["formato"]}"')
         lineas.append("")
-    destino.write_text("\n".join(lineas), encoding="utf-8")
+    return "\n".join(lineas)
+
+
+def exportar_medidas_dax(cat, destino: str | Path) -> Path:
+    """Todas las medidas del catálogo en un .dax para DAX Studio / revisión."""
+    destino = Path(destino)
+    destino.write_text(texto_medidas_dax(cat), encoding="utf-8")
     return destino
-
-
-def config_mcp(ruta_repo: str = ".") -> dict:
-    """
-    El .mcp.json para Claude Code / VS Code: el MCP oficial de modelado de
-    Power BI (requiere Windows + Desktop) y el servidor MCP de esta
-    plataforma (multiplataforma, sin dependencias).
-    """
-    return {
-        "mcpServers": {
-            "powerbi-remote": {
-                "type": "http",
-                "url": MCP_REMOTO_POWERBI,
-                "comment": "MCP remoto oficial de Power BI (Fabric): "
-                           "inspección de modelos publicados, gestión de "
-                           "DAX y documentación automática. Requiere "
-                           "autenticación Microsoft Entra ID — ver "
-                           "learn.microsoft.com/power-bi/developer/mcp/"
-                           "remote-mcp-server-get-started.",
-            },
-            "powerbi-modeling": {
-                "command": "dotnet",
-                "args": ["tool", "run", "powerbi-modeling-mcp"],
-                "comment": "MCP local de Microsoft: crea/modifica tablas, "
-                           "medidas y relaciones contra Power BI Desktop "
-                           "(Windows).",
-            },
-            "mv-dax-lab": {
-                "command": "python",
-                "args": [f"{ruta_repo}/daxlingo/mcp/servidor.py"],
-                "comment": "MCP de esta plataforma: cargar_modelo, analizar, "
-                           "generar_dax, explicar_dax, exportar_pbit.",
-            },
-        },
-    }
-
-
-def config_mcp_texto(ruta_repo: str = ".") -> str:
-    return json.dumps(config_mcp(ruta_repo), indent=2, ensure_ascii=False)

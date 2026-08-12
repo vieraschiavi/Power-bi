@@ -51,9 +51,9 @@ SALIDA.mkdir(exist_ok=True)
 # escape (el escape es #(...)), así que la ruta va literal. Duplicarla —el
 # reflejo de JSON o C— produciría una ruta inválida. El escapado a JSON lo
 # hace json.dumps después, y al decodificar vuelve a una sola barra.
-RUTA_DATOS_DEFECTO = r"C:\Adium\data\star"
+RUTA_DATOS_DEFECTO = r"C:\FarmaDemo\data\star"
 SERVIDOR_DEFECTO = "localhost"
-BASE_DEFECTO = "AdiumBI"
+BASE_DEFECTO = "FarmaDemoBI"
 ORIGEN_DEFECTO = "Parquet"
 
 
@@ -1129,7 +1129,7 @@ CONTENT_TYPES = (
 
 
 def escribir_pbit(tablero: str, modelo: dict, layout: dict) -> Path:
-    destino = SALIDA / f"Adium_{tablero}.pbit"
+    destino = SALIDA / f"FarmaDemo_{tablero}.pbit"
     metadata = {
         "Version": 3,
         "AutoCreatedRelationships": [],
@@ -1149,9 +1149,9 @@ def escribir_pbit(tablero: str, modelo: dict, layout: dict) -> Path:
 
 
 def escribir_pbip(tablero: str, modelo: dict, layout: dict) -> Path:
-    base = SALIDA / f"Adium_{tablero}"
-    sm = base.parent / f"Adium_{tablero}.SemanticModel"
-    rp = base.parent / f"Adium_{tablero}.Report"
+    base = SALIDA / f"FarmaDemo_{tablero}"
+    sm = base.parent / f"FarmaDemo_{tablero}.SemanticModel"
+    rp = base.parent / f"FarmaDemo_{tablero}.Report"
     sm.mkdir(exist_ok=True)
     rp.mkdir(exist_ok=True)
 
@@ -1160,7 +1160,7 @@ def escribir_pbip(tablero: str, modelo: dict, layout: dict) -> Path:
 
     esc(sm / ".platform", {
         "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
-        "metadata": {"type": "SemanticModel", "displayName": f"Adium_{tablero}"},
+        "metadata": {"type": "SemanticModel", "displayName": f"FarmaDemo_{tablero}"},
         "config": {"version": "2.0", "logicalId": str(uuid.uuid5(uuid.NAMESPACE_DNS, f"sm{tablero}"))},
     })
     esc(sm / "definition.pbism", {"version": "1.0", "settings": {}})
@@ -1168,19 +1168,19 @@ def escribir_pbip(tablero: str, modelo: dict, layout: dict) -> Path:
 
     esc(rp / ".platform", {
         "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
-        "metadata": {"type": "Report", "displayName": f"Adium_{tablero}"},
+        "metadata": {"type": "Report", "displayName": f"FarmaDemo_{tablero}"},
         "config": {"version": "2.0", "logicalId": str(uuid.uuid5(uuid.NAMESPACE_DNS, f"rp{tablero}"))},
     })
     esc(rp / "definition.pbir", {
         "version": "1.0",
-        "datasetReference": {"byPath": {"path": f"../Adium_{tablero}.SemanticModel"}},
+        "datasetReference": {"byPath": {"path": f"../FarmaDemo_{tablero}.SemanticModel"}},
     })
     esc(rp / "report.json", layout)
 
     pbip = base.with_suffix(".pbip")
     esc(pbip, {
         "version": "1.0",
-        "artifacts": [{"report": {"path": f"Adium_{tablero}.Report"}}],
+        "artifacts": [{"report": {"path": f"FarmaDemo_{tablero}.Report"}}],
         "settings": {"enableAutoRecovery": True},
     })
     return pbip
@@ -1224,7 +1224,7 @@ def main() -> None:
     print()
     for tablero, cfg in esq.TABLEROS.items():
         medidas = cargar_medidas(cfg["dax"])
-        modelo = construir_modelo(f"Adium_{tablero}", medidas)
+        modelo = construir_modelo(f"FarmaDemo_{tablero}", medidas)
         layout = construir_layout(tablero)
 
         pbit = escribir_pbit(tablero, modelo, layout)

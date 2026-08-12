@@ -1,5 +1,5 @@
 /* =========================================================================
-   ADIUM PHARMA — 02 · ETL de staging a modelo estrella
+   FARMA DEMO — 02 · ETL de staging a modelo estrella
 
    Estas son LAS reglas de negocio canónicas. Están acá, en SQL, y no en DAX,
    por una razón concreta: una regla en DAX vive dentro de un reporte; una

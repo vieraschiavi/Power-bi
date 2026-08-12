@@ -1,7 +1,7 @@
 # Deploy de la landing (MV DAX Lab) en Vercel
 
 Lo que se publica es `daxlingo/web` (landing estática trilingüe) más las
-funciones Node de `api/`. El resto del repo —el proyecto Power BI de Adium, el
+funciones Node de `api/`. El resto del repo —el proyecto Power BI de Farma Demo, el
 motor Python, el escritorio— no viaja a la web.
 
 **Producción: https://power-bi-mv13.vercel.app** — es la URL que va en el
@@ -12,7 +12,7 @@ y el instalador traen por defecto (`dxl.SITIO`, `desktop/edicion.json`).
 
 | Ajuste | Valor | Por qué |
 |---|---|---|
-| Framework Preset | **Other** | Este repo tiene `requirements.txt` en la raíz (del proyecto Adium). Con eso alcanza para que Vercel lo autodetecte como app Python y falle con «No python entrypoint found»: busca un entrypoint que no existe, porque lo que hay que publicar es HTML. |
+| Framework Preset | **Other** | Este repo tiene `requirements.txt` en la raíz (del proyecto Farma Demo). Con eso alcanza para que Vercel lo autodetecte como app Python y falle con «No python entrypoint found»: busca un entrypoint que no existe, porque lo que hay que publicar es HTML. |
 | Root Directory | *(vacío, la raíz)* | Las funciones serverless viven en `/api` de la raíz; el `outputDirectory` del `vercel.json` ya apunta a `daxlingo/web`. |
 | Build Command | *(lo pone `vercel.json`)* | No hay nada que compilar: la landing es HTML/CSS/JS vanilla. |
 

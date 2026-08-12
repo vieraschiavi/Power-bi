@@ -527,10 +527,10 @@ BIBLIOTECA_DAX = [
 ]
 
 TABLEROS = {
-    "VAR": {"titulo": "Adium · VAR — Ventas, Análisis y Rentabilidad",
+    "VAR": {"titulo": "Farma Demo · VAR — Ventas, Análisis y Rentabilidad",
             "dax": BIBLIOTECA_DAX},
-    "Ofertas": {"titulo": "Adium · Ofertas — Política comercial y recomendación de IA",
+    "Ofertas": {"titulo": "Farma Demo · Ofertas — Política comercial y recomendación de IA",
                 "dax": BIBLIOTECA_DAX},
-    "Logistica": {"titulo": "Adium · Logística — Nivel de servicio, devoluciones y riesgo",
+    "Logistica": {"titulo": "Farma Demo · Logística — Nivel de servicio, devoluciones y riesgo",
                   "dax": BIBLIOTECA_DAX},
 }

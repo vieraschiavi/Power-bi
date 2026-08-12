@@ -22,6 +22,7 @@ sys.path.insert(0, str(RAIZ / "mcp"))
 from dxl import analizador, asistente, catalogo, ejercicios  # noqa: E402
 from dxl import explicador, fabric, generador, herramientas  # noqa: E402
 from dxl import modelo as modmod  # noqa: E402
+from dxl import proveedores_ia  # noqa: E402
 from dxl import tablero, transformador  # noqa: E402
 
 
@@ -171,6 +172,24 @@ def test_pbix_sin_modelo_avisa(tmp_path, cat):
     assert parcial.tablas  # extrajo entidades de los prototypeQuery
 
 
+def test_archivos_corruptos_avisan_en_vez_de_reventar(tmp_path):
+    """Un .pbit/.bim corrupto o a medio escribir cae en `advertencias`, no
+    en un traceback crudo (BadZipFile/JSONDecodeError sin traducir)."""
+    roto_pbit = tmp_path / "roto.pbit"
+    roto_pbit.write_bytes(b"esto no es un zip")
+    cargado = modmod.cargar(roto_pbit)
+    assert cargado["modelo"] is None and cargado["layout"] is None
+    assert cargado["advertencias"]
+    assert cargado["formato"] == "pbit"
+
+    roto_bim = tmp_path / "roto.bim"
+    roto_bim.write_text("{esto no es json valido", encoding="utf-8")
+    cargado = modmod.cargar(roto_bim)
+    assert cargado["modelo"] is None
+    assert cargado["advertencias"]
+    assert cargado["formato"] == "bim"
+
+
 def test_modelo_demo_viaja_con_el_producto():
     """
     El demo tiene que estar DENTRO del paquete: la landing lo promete y el
@@ -302,6 +321,30 @@ def test_el_motor_no_deja_texto_en_espanol_en_otro_idioma(cat):
     hallazgos = analizador.analizar(cat)
     assert (analizador.describir(hallazgos[0], "es")["detalle"]
             != analizador.describir(hallazgos[0], "en")["detalle"])
+
+    from dxl import generador
+    r_es = generador.generar("promedio de costo", cat, idioma="es")
+    r_en = generador.generar("promedio de costo", cat, idioma="en")
+    assert r_es["ok"] and r_en["ok"]
+    assert r_es["nombre"] != r_en["nombre"], \
+        f"el nombre de la medida no varía con el idioma: {r_es['nombre']!r}"
+    assert r_es["explicacion"] != r_en["explicacion"]
+
+    r_es_error = generador.generar("promedio de columnainexistente", cat,
+                                   idioma="es")
+    r_en_error = generador.generar("promedio de columnainexistente", cat,
+                                   idioma="en")
+    assert not r_es_error["ok"] and not r_en_error["ok"]
+    assert r_es_error["advertencias"] != r_en_error["advertencias"], \
+        f"el error del generador no se tradujo: {r_es_error['advertencias']!r}"
+
+    errores_es = catalogo.validar_referencias(
+        "SUM ( Fantasma[NoExiste] )", cat, idioma="es")
+    errores_en = catalogo.validar_referencias(
+        "SUM ( Fantasma[NoExiste] )", cat, idioma="en")
+    assert errores_es and errores_en
+    assert errores_es != errores_en, \
+        f"validar_referencias no tradujo: {errores_es!r}"
 
 
 def test_arreglos_automaticos(cat):
@@ -619,9 +662,12 @@ def test_herramientas_registro():
     claves = {h["clave"] for h in herramientas.HERRAMIENTAS}
     assert {"desktop", "bravo", "daxstudio", "tabulareditor", "almtoolkit",
             "vscode", "fabric", "mcp"} <= claves
-    cfg = herramientas.config_mcp(".")
+    # La config MCP en sí vive en proveedores_ia.py (soporta varios agentes:
+    # Claude, ChatGPT/Codex, Copilot, Gemini) — herramientas.py tenía una
+    # copia vieja, de un solo agente, que nada en producción usaba.
+    cfg = proveedores_ia.config_mcp("claude", ".")
     assert cfg["mcpServers"]["powerbi-remote"]["url"] == \
-        herramientas.MCP_REMOTO_POWERBI
+        proveedores_ia.MCP_REMOTO_POWERBI
     assert "mv-dax-lab" in cfg["mcpServers"]
 
 
@@ -669,3 +715,60 @@ def test_mcp_flujo(tmp_path):
     # notificación: no responde
     assert srv.atender({"jsonrpc": "2.0",
                         "method": "notifications/initialized"}) is None
+
+
+def test_mcp_respeta_la_licencia_y_no_pisa_archivos(tmp_path, monkeypatch):
+    """El server MCP tiene el mismo candado que la app: sin licencia vigente,
+    generar_dax y exportar quedan cerrados (estuvieron abiertos del todo,
+    sin chequear licencia.evaluar() en ningún lado). Y exportar no pisa un
+    archivo que ya existe salvo que se lo pidan a propósito."""
+    import time as _time
+    from dxl import licencia
+    import servidor as srv
+
+    monkeypatch.setenv("MVDAXLAB_DATOS", str(tmp_path))
+    monkeypatch.delenv("MVDAX_EDICION", raising=False)
+    monkeypatch.setenv("MVDAXLAB_EDICION_ARCHIVO", str(tmp_path / "no-hay"))
+    licencia.guardar_estado({"demo_inicio": _time.time() - 8 * 86400})
+    assert not licencia.evaluar().activa, "la demo tiene que estar vencida"
+
+    bim = tmp_path / "j2.bim"
+    bim.write_text(json.dumps(modelo_juguete()), encoding="utf-8")
+    r = srv.atender({"jsonrpc": "2.0", "id": 10, "method": "tools/call",
+                     "params": {"name": "cargar_modelo",
+                                "arguments": {"ruta": str(bim)}}})
+    assert not r["result"].get("isError"), "cargar_modelo queda siempre abierto"
+
+    r = srv.atender({"jsonrpc": "2.0", "id": 11, "method": "tools/call",
+                     "params": {"name": "generar_dax",
+                                "arguments": {"pedido": "total de importe",
+                                              "aplicar": True}}})
+    assert r["result"].get("isError"), \
+        "generar_dax se ejecutó sin licencia vigente"
+
+    r = srv.atender({"jsonrpc": "2.0", "id": 12, "method": "tools/call",
+                     "params": {"name": "exportar",
+                                "arguments": {"destino":
+                                              str(tmp_path / "no.pbit")}}})
+    assert r["result"].get("isError"), \
+        "exportar se ejecutó sin licencia vigente"
+    assert not (tmp_path / "no.pbit").exists()
+
+    # Con licencia vigente, exportar sí funciona — pero no pisa un archivo
+    # que ya existe salvo que se lo digan explícitamente.
+    licencia.guardar_estado({"demo_inicio": _time.time()})
+    destino = tmp_path / "salida2.pbit"
+    destino.write_bytes(b"lo que sea, ya existe")
+    r = srv.atender({"jsonrpc": "2.0", "id": 13, "method": "tools/call",
+                     "params": {"name": "exportar",
+                                "arguments": {"destino": str(destino)}}})
+    assert r["result"].get("isError"), \
+        "exportar pisó un archivo existente sin que se lo pidieran"
+    assert destino.read_bytes() == b"lo que sea, ya existe"
+
+    r = srv.atender({"jsonrpc": "2.0", "id": 14, "method": "tools/call",
+                     "params": {"name": "exportar",
+                                "arguments": {"destino": str(destino),
+                                              "sobrescribir": True}}})
+    assert not r["result"].get("isError")
+    assert destino.read_bytes() != b"lo que sea, ya existe"

@@ -166,19 +166,45 @@ def _reglas_modelo(cat: Catalogo) -> list[dict]:
     return out
 
 
+_MAX_DATOS_POR_CLAVE = 5
+
+
 def agrupar(hallazgos: list[dict]) -> list[dict]:
     """
     Agrupa los hallazgos por regla. Cuarenta medidas sin formato son UN
     problema con cuarenta ocurrencias, no cuarenta problemas: mostrarlos
     sueltos entierra los hallazgos graves debajo del ruido.
+
+    `datos` se junta de TODOS los hallazgos del grupo, no solo del primero:
+    si R04 agrupa filtros sobre cinco tablas distintas, el detalle tiene que
+    nombrarlas a las cinco (`{tabla}` → "Ventas, Clientes, Pedidos…"), no
+    solo la primera con las otras cuatro calladas debajo del «· 5×».
     """
     grupos: dict[str, dict] = {}
+    valores: dict[str, dict[str, list[str]]] = {}
     for h in hallazgos:
         g = grupos.setdefault(h["regla"], {
             "regla": h["regla"], "severidad": h["severidad"],
-            "datos": h.get("datos") or {}, "auto": h["auto"], "objetos": [],
+            "datos": {}, "auto": h["auto"], "objetos": [],
         })
         g["objetos"].append(h["objeto"])
+        vistos = valores.setdefault(h["regla"], {})
+        for clave, valor in (h.get("datos") or {}).items():
+            lista = vistos.setdefault(clave, [])
+            if valor not in lista:
+                lista.append(valor)
+    for regla, por_clave in valores.items():
+        datos = {}
+        for clave, lista in por_clave.items():
+            if len(lista) <= 1:
+                datos[clave] = lista[0] if lista else ""
+                continue
+            recorte = lista[:_MAX_DATOS_POR_CLAVE]
+            texto = ", ".join(recorte)
+            if len(lista) > _MAX_DATOS_POR_CLAVE:
+                texto += "…"
+            datos[clave] = texto
+        grupos[regla]["datos"] = datos
     orden = {s: i for i, s in enumerate(SEVERIDADES)}
     return sorted(grupos.values(),
                   key=lambda g: (orden.get(g["severidad"], 9), g["regla"]))

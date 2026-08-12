@@ -106,11 +106,24 @@ def entorno() -> dict[str, str]:
            "PYTHONIOENCODING": "utf-8",
            "PYTHONUNBUFFERED": "1"}
     marca = sello()
+    edicion = "demo"
     if marca:
         # El mismo nombre que lee dxl/licencia.py. Con el sello puesto, la
         # edición NO la decide la variable de entorno: una copia vendida no se
         # convierte en owner poniendo MVDAX_EDICION desde afuera.
         env["MVDAXLAB_EDICION_ARCHIVO"] = str(marca)
+        try:
+            edicion = json.loads(
+                marca.read_text(encoding="utf-8")).get("edicion", "demo")
+        except (ValueError, OSError):
+            pass
+    # Fijar MVDAX_EDICION a propósito —igual que desktop/main.cjs— en vez de
+    # dejar pasar lo que traiga `{**os.environ, ...}` sin tocar. Si el sello
+    # faltara (una carpeta portable incompleta), sin esto un MVDAX_EDICION
+    # puesto en la terminal del cliente —a propósito o no— no encontraría
+    # ningún candado del lado de `licencia.py`, porque recién se activa
+    # cuando `bloqueada` viene en `edicion.json`.
+    env["MVDAX_EDICION"] = edicion
     return env
 
 
@@ -134,16 +147,41 @@ def esperar(puerto: int, proceso: subprocess.Popen,
     return False
 
 
+def archivo_log() -> Path:
+    """Dónde queda la salida de Streamlit para diagnosticar un arranque
+    fallido. Junto a la licencia/preferencias: ya es una carpeta con permiso
+    de escritura garantizado (`carpeta_datos()` se cae a `%APPDATA%` si
+    hiciera falta)."""
+    return carpeta_datos() / "ultimo-arranque.log"
+
+
+def cola_log(limite: int = 1200) -> str:
+    """Las últimas líneas del log, para mostrar cuando algo falla.
+
+    `MV_DAX_Lab.bat` prometía «el detalle está arriba» y no había ningún
+    detalle: `arrancar()` tiraba stdout/stderr a DEVNULL. El instalador
+    Electron sí guarda y muestra la cola de la salida (`desktop/main.cjs`);
+    el portable es el canal SIN consola de desarrollador, así que es el que
+    más lo necesita, no menos.
+    """
+    try:
+        return archivo_log().read_text(encoding="utf-8", errors="replace")[-limite:]
+    except OSError:
+        return ""
+
+
 def arrancar(puerto: int) -> subprocess.Popen:
-    return subprocess.Popen(
-        [sys.executable, "-m", "streamlit", "run", str(RAIZ / "app" / "app.py"),
-         "--server.port", str(puerto),
-         "--server.address", "127.0.0.1",
-         "--server.headless", "true",
-         "--browser.gatherUsageStats", "false",
-         "--global.developmentMode", "false"],
-        cwd=str(RAIZ), env=entorno(),
-        stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+    with archivo_log().open("w", encoding="utf-8", errors="replace") as log:
+        return subprocess.Popen(
+            [sys.executable, "-m", "streamlit", "run",
+             str(RAIZ / "app" / "app.py"),
+             "--server.port", str(puerto),
+             "--server.address", "127.0.0.1",
+             "--server.headless", "true",
+             "--browser.gatherUsageStats", "false",
+             "--global.developmentMode", "false"],
+            cwd=str(RAIZ), env=entorno(),
+            stdout=log, stderr=subprocess.STDOUT)
 
 
 def main() -> int:
@@ -172,6 +210,14 @@ def main() -> int:
         else:
             print(f"  [X] No respondió en {a.espera} s.")
             proceso.terminate()
+        detalle = cola_log()
+        if detalle.strip():
+            print("\n  --- Lo último que dijo Streamlit " + "-" * 30)
+            print(detalle)
+            print("  " + "-" * 64)
+        else:
+            print(f"  (sin salida capturada; el log completo queda en "
+                  f"{archivo_log()})")
         return 1
 
     print(f"  Listo. Abrí {url} si el navegador no se abrió solo.")

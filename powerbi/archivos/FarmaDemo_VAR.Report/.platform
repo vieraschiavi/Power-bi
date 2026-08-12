@@ -1,11 +1,11 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
   "metadata": {
-    "type": "SemanticModel",
-    "displayName": "Adium_Logistica"
+    "type": "Report",
+    "displayName": "FarmaDemo_VAR"
   },
   "config": {
     "version": "2.0",
-    "logicalId": "4043757a-9c4c-5d37-9269-0798f36c528e"
+    "logicalId": "b96eb971-cd0d-5234-9dec-5f7b5eb95d55"
   }
 }

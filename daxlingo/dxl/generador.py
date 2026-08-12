@@ -84,7 +84,7 @@ def generar(pedido: str, cat: Catalogo, api_key: str | None = None,
     if hay_clave(proveedor, api_key):
         try:
             return _con_ia(pedido, cat, api_key, proveedor, modelo_ia,
-                           endpoint)
+                           endpoint, idioma)
         except Exception as exc:  # red caída, clave inválida, etc.
             return _error(
                 traducir("gen_sin_patron", idioma).format(motivo=exc))
@@ -212,10 +212,11 @@ def _regla_suma(texto: str, cat: Catalogo,
             return _exito(
                 med["nombre"], f"[{med['nombre']}]", med.get("formato") or "#,0",
         traducir("genx_ya_existe", idioma).format(medida=med["nombre"]))
-        return _error(f"No encontré una columna numérica que se parezca a "
-                      f"«{objetivo.strip() or texto}» en el modelo.")
+        return _error(traducir("genx_sin_columna_suma", idioma).format(
+            objetivo=objetivo.strip() or texto))
     tabla, c = col
-    nombre = f"Total {_titulo(c['nombre'])}"
+    nombre = traducir("genx_nombre_total", idioma).format(
+        col=_titulo(c["nombre"]))
     dax = f"SUM ( {_col_ref(tabla, c['nombre'])} )"
     return _exito(nombre, dax, "#,0",
         traducir("genx_suma", idioma).format(col=f"{tabla}[{c['nombre']}]")
@@ -229,10 +230,11 @@ def _regla_promedio(texto: str, cat: Catalogo,
         return None
     col = cat.buscar_columna(m.group(1) or texto, solo_numericas=True)
     if not col:
-        return _error(f"No encontré una columna numérica para promediar en "
-                      f"«{texto}».")
+        return _error(
+            traducir("genx_sin_columna_promedio", idioma).format(texto=texto))
     tabla, c = col
-    return _exito(f"Promedio {_titulo(c['nombre'])}",
+    return _exito(traducir("genx_nombre_promedio", idioma).format(
+                      col=_titulo(c["nombre"])),
                   f"AVERAGE ( {_col_ref(tabla, c['nombre'])} )", "#,0.00",
                   traducir("genx_promedio", idioma).format(
                           col=f"{tabla}[{c['nombre']}]"))
@@ -249,7 +251,9 @@ def _regla_extremos(texto: str, cat: Catalogo,
         return None
     tabla, c = col
     fn = "MAX" if es_max else "MIN"
-    return _exito(f"{'Máximo' if es_max else 'Mínimo'} {_titulo(c['nombre'])}",
+    clave_nombre = "genx_nombre_maximo" if es_max else "genx_nombre_minimo"
+    return _exito(traducir(clave_nombre, idioma).format(
+                      col=_titulo(c["nombre"])),
                   f"{fn} ( {_col_ref(tabla, c['nombre'])} )", "#,0",
                   traducir("genx_minmax", idioma).format(
                       fn=fn,
@@ -272,10 +276,13 @@ def _regla_conteo_distinto(texto: str, cat: Catalogo,
                     "quantidade", "quantos", "quantas", "values")
     col = cat.buscar_columna(objetivo or texto)
     if not col:
-        return _error(f"No encontré la columna a contar en «{texto}».")
+        return _error(
+            traducir("genx_sin_columna_conteo", idioma).format(texto=texto))
     tabla, c = col
-    return _exito(f"{_nombre_de_entidad(cat, tabla, c['nombre'])} distintos",
-                  f"DISTINCTCOUNT ( {_col_ref(tabla, c['nombre'])} )", "#,0",
+    return _exito(
+        traducir("genx_nombre_distintos", idioma).format(
+            entidad=_nombre_de_entidad(cat, tabla, c["nombre"])),
+        f"DISTINCTCOUNT ( {_col_ref(tabla, c['nombre'])} )", "#,0",
         traducir("genx_distintos", idioma).format(col=f"{tabla}[{c['nombre']}]"))
 
 
@@ -310,8 +317,10 @@ def _regla_conteo(texto: str, cat: Catalogo,
         return None
     ref = f"'{t['nombre']}'" if re.search(r"[^A-Za-z0-9_]", t["nombre"]) \
         else t["nombre"]
-    return _exito(f"Filas de {t['nombre']}", f"COUNTROWS ( {ref} )", "#,0",
-        traducir("genx_filas", idioma).format(tabla=t["name"]))
+    return _exito(
+        traducir("genx_nombre_filas", idioma).format(tabla=t["nombre"]),
+        f"COUNTROWS ( {ref} )", "#,0",
+        traducir("genx_filas", idioma).format(tabla=t["nombre"]))
 
 
 def _regla_pct_total(texto: str, cat: Catalogo,
@@ -329,9 +338,7 @@ def _regla_pct_total(texto: str, cat: Catalogo,
     if not base:
         base = _base_por_defecto(cat)
         if not base:
-            return _error("No encontré sobre qué calcular el % del total. "
-                          "Decime la medida o la columna: «% del total de "
-                          "<medida>».")
+            return _error(traducir("genx_sin_base_pct", idioma))
     nombre_base, dax_base, _ = base
     refs = re.findall(r"'?([\w ]+?)'?\[", dax_base)
     quitar = (f"ALLSELECTED ( {_tabla_ref(refs[0].strip())} )" if refs
@@ -339,7 +346,9 @@ def _regla_pct_total(texto: str, cat: Catalogo,
     dax = (f"DIVIDE (\n    {dax_base},\n"
            f"    CALCULATE ( {dax_base}, {quitar} )\n)")
     return _exito(
-        f"% del total · {_titulo(nombre_base)}", dax, "0.0 %",
+        traducir("genx_nombre_pct_total", idioma).format(
+            base=_titulo(nombre_base)),
+        dax, "0.0 %",
         traducir("genx_pct_total", idioma))
 
 
@@ -349,18 +358,18 @@ def _regla_ytd(texto: str, cat: Catalogo,
         return None
     fecha = cat.columna_fecha()
     if not fecha:
-        return _error("Para un acumulado del año necesito una tabla de "
-                      "calendario en el modelo, y no encontré ninguna.")
+        return _error(traducir("genx_sin_calendario_ytd", idioma))
     resto = _sin(texto, "acumulado del ano", "acumulado anual", "acumulado",
                  "acumulada", "year to date", "running total", "ytd", "ano")
     base = _base_agregada(resto, cat)
     if not base:
-        return _error(f"No encontré qué acumular en «{texto}».")
+        return _error(traducir("genx_sin_base_ytd", idioma).format(texto=texto))
     nombre_base, dax_base, _ = base
     dax = (f"TOTALYTD (\n    {dax_base},\n"
            f"    {_col_ref(fecha[0], fecha[1])}\n)")
     return _exito(
-        f"{_titulo(nombre_base)} YTD", dax, "#,0",
+        traducir("genx_nombre_ytd", idioma).format(base=_titulo(nombre_base)),
+        dax, "#,0",
         traducir("genx_ytd", idioma).format(base=nombre_base, calendario=f"{fecha[0]}[{fecha[1]}]"))
 
 
@@ -372,8 +381,7 @@ def _regla_vs_anio_anterior(texto: str, cat: Catalogo,
         return None
     fecha = cat.columna_fecha()
     if not fecha:
-        return _error("Para comparar contra el año anterior necesito una "
-                      "tabla de calendario, y no encontré ninguna.")
+        return _error(traducir("genx_sin_calendario_aa", idioma))
     # Las frases largas primero: sacar «vs» antes que «vs last year» dejaría
     # «last year» suelto pegado al objetivo, y la búsqueda difusa termina
     # eligiendo cualquier columna que se le parezca —así «Ventas Brutas USD vs
@@ -386,7 +394,7 @@ def _regla_vs_anio_anterior(texto: str, cat: Catalogo,
                  "ano anterior", "ano pasado")
     base = _base_agregada(resto, cat)
     if not base:
-        return _error(f"No encontré qué comparar en «{texto}».")
+        return _error(traducir("genx_sin_base_aa", idioma).format(texto=texto))
     nombre_base, dax_base, _ = base
     fref = _col_ref(fecha[0], fecha[1])
     dax = (f"VAR Actual = {dax_base}\n"
@@ -395,7 +403,8 @@ def _regla_vs_anio_anterior(texto: str, cat: Catalogo,
            f"RETURN\n"
            f"    DIVIDE ( Actual - Anterior, Anterior )")
     return _exito(
-        f"{_titulo(nombre_base)} · var. % vs AA", dax, "+0.0 %;-0.0 %",
+        traducir("genx_nombre_vs_aa", idioma).format(base=_titulo(nombre_base)),
+        dax, "+0.0 %;-0.0 %",
         traducir("genx_vs_aa", idioma) + _nota_ambiguedad(resto, cat, idioma))
 
 
@@ -408,52 +417,55 @@ def _regla_media_movil(texto: str, cat: Catalogo,
     meses = int(m.group(1) or 3)
     fecha = cat.columna_fecha()
     if not fecha:
-        return _error("Para una media móvil necesito una tabla de calendario "
-                      "en el modelo.")
+        return _error(traducir("genx_sin_calendario_mm", idioma))
     base = _base_agregada(m.group(2) or texto, cat)
     if not base:
-        return _error(f"No encontré qué promediar en «{texto}».")
+        return _error(traducir("genx_sin_base_mm", idioma).format(texto=texto))
     nombre_base, dax_base, _ = base
     fref = _col_ref(fecha[0], fecha[1])
     dax = (f"AVERAGEX (\n"
            f"    DATESINPERIOD ( {fref}, LASTDATE ( {fref} ), -{meses}, MONTH ),\n"
            f"    CALCULATE ( {dax_base} )\n)")
     return _exito(
-        f"{_titulo(nombre_base)} · media móvil {meses}m", dax, "#,0",
+        traducir("genx_nombre_media_movil", idioma).format(
+            base=_titulo(nombre_base), meses=meses),
+        dax, "#,0",
         traducir("genx_media_movil", idioma).format(meses=meses))
 
 
 def _regla_ranking(texto: str, cat: Catalogo,
                    idioma: str = IDIOMA_DEFECTO) -> dict | None:
     m = re.search(r"(?:ranking|posicion|puesto|rank|posicao)\s*(?:de\s*|of\s*)?(.*?)"
-                  r"(?:\s+por\s+(.*))?$", texto)
-    if not m or not texto.startswith(("ranking", "posicion", "puesto")):
+                  r"(?:\s+(?:por|by)\s+(.*))?$", texto)
+    if not m or not texto.startswith(
+            ("ranking", "posicion", "puesto", "rank", "posicao")):
         return None
     dim = _dimension(m.group(1) or "", cat)
     base = _base_agregada(m.group(2) or m.group(1) or texto, cat)
     if not dim or not base:
-        return _error("Para un ranking necesito la dimensión y la métrica: "
-                      "«ranking de <columna> por <métrica>».")
+        return _error(traducir("genx_sin_ranking", idioma))
     (tabla_d, col_d), (nombre_base, dax_base, _) = dim, base
     dref = _col_ref(tabla_d, col_d["nombre"])
     dax = (f"RANKX (\n    ALLSELECTED ( {dref} ),\n"
            f"    CALCULATE ( {dax_base} ),\n    ,\n    DESC,\n    DENSE\n)")
     return _exito(
-        f"Ranking {_titulo(col_d['nombre'])} por {nombre_base}", dax, "#,0",
+        traducir("genx_nombre_ranking", idioma).format(
+            col=_titulo(col_d["nombre"]), base=nombre_base),
+        dax, "#,0",
         traducir("genx_ranking", idioma).format(col=f"{tabla_d}[{col_d['nombre']}]", base=nombre_base))
 
 
 def _regla_top_n(texto: str, cat: Catalogo,
                  idioma: str = IDIOMA_DEFECTO) -> dict | None:
-    m = re.search(r"top\s*(\d+)\s*(?:de\s*)?(.*?)(?:\s+por\s+(.*))?$", texto)
+    m = re.search(r"top\s*(\d+)\s*(?:de\s*)?(.*?)(?:\s+(?:por|by)\s+(.*))?$",
+                 texto)
     if not m:
         return None
     n = int(m.group(1))
     dim = _dimension(m.group(2) or "", cat)
     base = _base_agregada(m.group(3) or m.group(2) or texto, cat)
     if not dim or not base:
-        return _error(f"Para un top {n} necesito dimensión y métrica: "
-                      f"«top {n} <columna> por <métrica>».")
+        return _error(traducir("genx_sin_topn", idioma).format(n=n))
     (tabla_d, col_d), (nombre_base, dax_base, _) = dim, base
     dref = _col_ref(tabla_d, col_d["nombre"])
     dax = (f"CALCULATE (\n    {dax_base},\n"
@@ -461,7 +473,9 @@ def _regla_top_n(texto: str, cat: Catalogo,
            f"        TOPN ( {n}, ALLSELECTED ( {dref} ), "
            f"CALCULATE ( {dax_base} ), DESC )\n    )\n)")
     return _exito(
-        f"{_titulo(nombre_base)} · top {n} {col_d['nombre']}", dax, "#,0",
+        traducir("genx_nombre_topn", idioma).format(
+            base=_titulo(nombre_base), n=n, col=col_d["nombre"]),
+        dax, "#,0",
         traducir("genx_topn", idioma).format(n=n, col=f"{tabla_d}[{col_d['nombre']}]", base=nombre_base))
 
 
@@ -482,19 +496,24 @@ def _catalogo_para_prompt(cat: Catalogo, maximo: int = 4000) -> str:
     return texto[:maximo]
 
 
+_IDIOMA_NOMBRE = {"es": "español", "en": "English", "pt": "português"}
+
+
 def _con_ia(pedido: str, cat: Catalogo, api_key: str | None, proveedor: str,
-            modelo_ia: str, endpoint: str = "") -> dict:
+            modelo_ia: str, endpoint: str = "",
+            idioma: str = IDIOMA_DEFECTO) -> dict:
     """
     Pide la medida al proveedor de IA elegido y valida la respuesta contra el
     catálogo: una referencia inexistente descarta la medida entera.
     """
+    nombre_idioma = _IDIOMA_NOMBRE.get(idioma, _IDIOMA_NOMBRE[IDIOMA_DEFECTO])
     prompt = (
         "Sos un experto en DAX. Este es el catálogo REAL del modelo:\n\n"
         f"{_catalogo_para_prompt(cat)}\n\n"
         f"Pedido del usuario: {pedido}\n\n"
         "Respondé SOLO un JSON con las claves: nombre (nombre de la medida), "
         "dax (la expresión, sin «Medida =» adelante), formato (formatString "
-        "de Power BI) y explicacion (1-3 frases, en el idioma del pedido). "
+        f"de Power BI) y explicacion (1-3 frases, en {nombre_idioma}). "
         "Usá únicamente tablas, columnas y medidas del catálogo; si el pedido "
         "nombra algo que no existe, devolvé {\"error\": \"...\"} explicando "
         "qué falta."
@@ -504,15 +523,16 @@ def _con_ia(pedido: str, cat: Catalogo, api_key: str | None, proveedor: str,
                       max_tokens=1024, endpoint=endpoint)
     m = re.search(r"\{.*\}", texto, re.DOTALL)
     if not m:
-        raise ValueError("la IA no devolvió JSON")
+        raise ValueError(traducir("genx_ia_sin_json", idioma))
     salida = json.loads(m.group(0))
     if "error" in salida:
-        return _error(f"IA: {salida['error']}")
+        return _error(traducir("genx_ia_error", idioma).format(
+            error=salida["error"]))
 
-    errores = validar_referencias(salida.get("dax", ""), cat)
+    errores = validar_referencias(salida.get("dax", ""), cat, idioma)
     if errores:
-        return _error("La IA propuso referencias que no existen en el modelo "
-                      "(descartado): " + "; ".join(errores))
+        return _error(traducir("genx_ia_referencias_invalidas", idioma).format(
+            detalle="; ".join(errores)))
     return _exito(salida.get("nombre", "Medida IA"), salida.get("dax", ""),
                   salida.get("formato", "#,0"),
                   salida.get("explicacion", ""), metodo="ia")
