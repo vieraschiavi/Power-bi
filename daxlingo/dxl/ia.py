@@ -31,8 +31,12 @@ def analizar_modelo_ia(resumen_catalogo: str, hallazgos: list[dict],
                        proveedor: str = PROVEEDOR_DEFECTO, modelo: str = "",
                        api_key: str | None = None, endpoint: str = "") -> str:
     """Opinión de consultor sobre el modelo: prioriza hallazgos y sugiere."""
+    # El texto se arma acá y no viene en el hallazgo: el analizador emite
+    # ids de regla y `describir()` los traduce (ver dxl/analizador.py).
+    from .analizador import describir
     texto_hallazgos = "\n".join(
-        f"- [{h['severidad']}] {h['regla']}: {h['objeto']} — {h['detalle']}"
+        f"- [{h['severidad']}] {describir(h)['titulo']}: {h['objeto']} — "
+        f"{describir(h)['detalle']}"
         for h in hallazgos[:30]) or "(sin hallazgos)"
     pregunta = (
         "Catálogo del modelo:\n" + resumen_catalogo +

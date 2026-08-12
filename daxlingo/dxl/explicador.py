@@ -12,71 +12,80 @@ from __future__ import annotations
 import re
 
 from .catalogo import Catalogo, referencias_dax
+from .i18n import IDIOMA_DEFECTO, t as traducir
 
-# Base de conocimiento: función → (qué hace, categoría)
-FUNCIONES: dict[str, tuple[str, str]] = {
-    "SUM": ("suma los valores de una columna", "agregación"),
-    "SUMX": ("recorre la tabla fila por fila, evalúa la expresión y suma los resultados", "iterador"),
-    "AVERAGE": ("promedia los valores de una columna", "agregación"),
-    "AVERAGEX": ("recorre la tabla fila por fila y promedia la expresión evaluada", "iterador"),
-    "MIN": ("devuelve el mínimo de una columna", "agregación"),
-    "MAX": ("devuelve el máximo de una columna", "agregación"),
-    "MINX": ("mínimo de una expresión evaluada fila por fila", "iterador"),
-    "MAXX": ("máximo de una expresión evaluada fila por fila", "iterador"),
-    "COUNT": ("cuenta los valores no vacíos de una columna", "agregación"),
-    "COUNTROWS": ("cuenta las filas de una tabla", "agregación"),
-    "COUNTX": ("cuenta evaluando una expresión fila por fila", "iterador"),
-    "DISTINCTCOUNT": ("cuenta los valores distintos de una columna", "agregación"),
-    "CALCULATE": ("evalúa la expresión CAMBIANDO el contexto de filtro con los filtros que se le pasan", "contexto"),
-    "CALCULATETABLE": ("como CALCULATE pero devuelve una tabla", "contexto"),
-    "FILTER": ("devuelve las filas de la tabla que cumplen la condición", "tabla"),
-    "ALL": ("quita los filtros de la tabla o columna indicada", "contexto"),
-    "ALLEXCEPT": ("quita todos los filtros salvo los de las columnas indicadas", "contexto"),
-    "ALLSELECTED": ("quita los filtros internos del visual pero respeta los slicers", "contexto"),
-    "REMOVEFILTERS": ("quita filtros — versión moderna y legible de ALL", "contexto"),
-    "KEEPFILTERS": ("agrega el filtro sin pisar los existentes (intersección)", "contexto"),
-    "VALUES": ("devuelve los valores visibles (distintos) de una columna en el contexto actual", "tabla"),
-    "DISTINCT": ("devuelve los valores distintos de una columna", "tabla"),
-    "SELECTEDVALUE": ("devuelve el valor si hay UNO solo visible; si no, el alternativo", "contexto"),
-    "HASONEVALUE": ("verdadero si la columna tiene un único valor visible", "contexto"),
-    "ISFILTERED": ("verdadero si la columna está siendo filtrada", "contexto"),
-    "DIVIDE": ("divide de forma segura: ante denominador 0 o BLANK devuelve BLANK (o el alternativo)", "matemática"),
-    "IF": ("evalúa una condición y devuelve una de dos ramas", "lógica"),
-    "SWITCH": ("compara contra varios casos y devuelve la rama que coincide", "lógica"),
-    "AND": ("verdadero si ambas condiciones lo son", "lógica"),
-    "OR": ("verdadero si alguna condición lo es", "lógica"),
-    "NOT": ("invierte la condición", "lógica"),
-    "COALESCE": ("devuelve el primer valor no BLANK de la lista", "lógica"),
-    "ISBLANK": ("verdadero si el valor es BLANK", "lógica"),
-    "BLANK": ("devuelve el valor vacío BLANK", "lógica"),
-    "TOTALYTD": ("acumula la expresión desde el inicio del año hasta la fecha del contexto", "tiempo"),
-    "TOTALQTD": ("acumula desde el inicio del trimestre", "tiempo"),
-    "TOTALMTD": ("acumula desde el inicio del mes", "tiempo"),
-    "SAMEPERIODLASTYEAR": ("desplaza las fechas del contexto un año hacia atrás", "tiempo"),
-    "DATEADD": ("desplaza las fechas del contexto el intervalo indicado", "tiempo"),
-    "DATESINPERIOD": ("devuelve las fechas de un período móvil que termina en la fecha dada", "tiempo"),
-    "DATESYTD": ("las fechas desde el inicio del año hasta la actual", "tiempo"),
-    "PREVIOUSMONTH": ("las fechas del mes anterior completo", "tiempo"),
-    "LASTDATE": ("la última fecha visible en el contexto", "tiempo"),
-    "FIRSTDATE": ("la primera fecha visible en el contexto", "tiempo"),
-    "EOMONTH": ("el fin de mes de una fecha, con corrimiento opcional", "tiempo"),
-    "TODAY": ("la fecha de hoy", "tiempo"),
-    "RANKX": ("posición de cada elemento al ordenar la tabla por la expresión", "ranking"),
-    "TOPN": ("las N filas con mayor valor de la expresión", "ranking"),
-    "RELATED": ("trae el valor desde el lado «uno» de la relación", "relación"),
-    "RELATEDTABLE": ("las filas relacionadas desde el lado «muchos»", "relación"),
-    "USERELATIONSHIP": ("activa una relación inactiva solo dentro de este cálculo", "relación"),
-    "CROSSFILTER": ("cambia la dirección del filtro de una relación solo en este cálculo", "relación"),
-    "TREATAS": ("aplica los valores de una tabla como filtro sobre otras columnas", "relación"),
-    "LOOKUPVALUE": ("busca un valor en otra tabla por igualdad de claves", "relación"),
-    "SUMMARIZE": ("agrupa una tabla por columnas", "tabla"),
-    "ADDCOLUMNS": ("agrega columnas calculadas a una tabla en memoria", "tabla"),
-    "SELECTCOLUMNS": ("proyecta columnas de una tabla", "tabla"),
-    "UNION": ("apila dos tablas", "tabla"),
-    "CONCATENATEX": ("concatena textos evaluados fila por fila", "texto"),
-    "FORMAT": ("convierte un valor a texto con formato", "texto"),
-    "VAR": ("define una variable: se evalúa una vez y se reutiliza", "estructura"),
-    "RETURN": ("devuelve el resultado final usando las variables definidas", "estructura"),
+# Base de conocimiento: función DAX → categoría.
+#
+# La DESCRIPCIÓN no vive acá: está en i18n como `fn_<FUNCION>`, y la
+# categoría como `catfn_<categoria>`. Antes las descripciones eran
+# cadenas en español en este archivo, así que la pestaña Explicador
+# contestaba en español aunque la app estuviera en inglés o portugués.
+#
+# La categoría es una CLAVE, no un texto: `_nivel()` y `_narrar()`
+# comparan contra ella, así que va sin acentos y no se traduce acá.
+FUNCIONES: dict[str, str] = {
+    "SUM": "agregacion",
+    "SUMX": "iterador",
+    "AVERAGE": "agregacion",
+    "AVERAGEX": "iterador",
+    "MIN": "agregacion",
+    "MAX": "agregacion",
+    "MINX": "iterador",
+    "MAXX": "iterador",
+    "COUNT": "agregacion",
+    "COUNTROWS": "agregacion",
+    "COUNTX": "iterador",
+    "DISTINCTCOUNT": "agregacion",
+    "CALCULATE": "contexto",
+    "CALCULATETABLE": "contexto",
+    "FILTER": "tabla",
+    "ALL": "contexto",
+    "ALLEXCEPT": "contexto",
+    "ALLSELECTED": "contexto",
+    "REMOVEFILTERS": "contexto",
+    "KEEPFILTERS": "contexto",
+    "VALUES": "tabla",
+    "DISTINCT": "tabla",
+    "SELECTEDVALUE": "contexto",
+    "HASONEVALUE": "contexto",
+    "ISFILTERED": "contexto",
+    "DIVIDE": "matematica",
+    "IF": "logica",
+    "SWITCH": "logica",
+    "AND": "logica",
+    "OR": "logica",
+    "NOT": "logica",
+    "COALESCE": "logica",
+    "ISBLANK": "logica",
+    "BLANK": "logica",
+    "TOTALYTD": "tiempo",
+    "TOTALQTD": "tiempo",
+    "TOTALMTD": "tiempo",
+    "SAMEPERIODLASTYEAR": "tiempo",
+    "DATEADD": "tiempo",
+    "DATESINPERIOD": "tiempo",
+    "DATESYTD": "tiempo",
+    "PREVIOUSMONTH": "tiempo",
+    "LASTDATE": "tiempo",
+    "FIRSTDATE": "tiempo",
+    "EOMONTH": "tiempo",
+    "TODAY": "tiempo",
+    "RANKX": "ranking",
+    "TOPN": "ranking",
+    "RELATED": "relacion",
+    "RELATEDTABLE": "relacion",
+    "USERELATIONSHIP": "relacion",
+    "CROSSFILTER": "relacion",
+    "TREATAS": "relacion",
+    "LOOKUPVALUE": "relacion",
+    "SUMMARIZE": "tabla",
+    "ADDCOLUMNS": "tabla",
+    "SELECTCOLUMNS": "tabla",
+    "UNION": "tabla",
+    "CONCATENATEX": "texto",
+    "FORMAT": "texto",
+    "VAR": "estructura",
+    "RETURN": "estructura",
 }
 
 RE_FUNCION = re.compile(r"\b([A-Z][A-Z0-9\.]{1,30})\s*\(")
@@ -108,25 +117,33 @@ def _profundidad(expr: str) -> int:
 
 
 def explicar(expresion: str, cat: Catalogo | None = None,
-             nombre: str = "") -> dict:
+             nombre: str = "", idioma: str = IDIOMA_DEFECTO) -> dict:
     """
     Explica una expresión DAX. Devuelve:
       resumen      una frase con lo que la medida calcula
       pasos        lectura guiada (variables, contexto, agregación)
       funciones    [{nombre, descripcion, categoria}]
       referencias  {columnas, medidas} + faltantes si hay catálogo
-      nivel        'básico' | 'intermedio' | 'avanzado'
+      nivel        'basico' | 'intermedio' | 'avanzado' (CLAVE, no texto)
+      nivel_txt    el nivel ya traducido, que es lo que se muestra
     """
     expr = (expresion or "").strip()
     if not expr:
-        return {"resumen": "Expresión vacía.", "pasos": [], "funciones": [],
+        return {"resumen": traducir("exp_vacia", idioma), "pasos": [],
+                "funciones": [],
                 "referencias": {"columnas": [], "medidas": []},
-                "nivel": "básico", "faltantes": []}
+                "nivel": "basico",
+                "nivel_txt": traducir("nivel_basico", idioma),
+                "faltantes": []}
 
     usadas = _funciones_usadas(expr)
     detalle = [{"nombre": f,
-                "descripcion": FUNCIONES.get(f, ("función DAX", ""))[0],
-                "categoria": FUNCIONES.get(f, ("", "otra"))[1]}
+                "descripcion": (traducir(f"fn_{f}", idioma)
+                                if f in FUNCIONES
+                                else traducir("exp_fn_desconocida", idioma)),
+                "categoria": FUNCIONES.get(f, "otra"),
+                "categoria_txt": traducir(
+                    f"catfn_{FUNCIONES.get(f, 'otra')}", idioma)}
                for f in usadas]
     refs = referencias_dax(expr)
     faltantes = []
@@ -134,78 +151,71 @@ def explicar(expresion: str, cat: Catalogo | None = None,
         from .catalogo import validar_referencias
         faltantes = validar_referencias(expr, cat)
 
-    pasos = _narrar(expr, usadas, refs)
+    pasos = _narrar(expr, usadas, refs, idioma)
     nivel = _nivel(usadas, expr)
-    resumen = _resumen(expr, usadas, refs, nombre)
+    resumen = _resumen(expr, usadas, refs, nombre, idioma)
     return {"resumen": resumen, "pasos": pasos, "funciones": detalle,
-            "referencias": refs, "nivel": nivel, "faltantes": faltantes}
+            "referencias": refs, "nivel": nivel,
+            "nivel_txt": traducir(f"nivel_{nivel}", idioma),
+            "faltantes": faltantes}
 
 
-def _resumen(expr: str, usadas: list[str], refs: dict, nombre: str) -> str:
-    quien = f"La medida [{nombre}]" if nombre else "La expresión"
-    cats = {FUNCIONES.get(f, ("", ""))[1] for f in usadas}
+def _resumen(expr: str, usadas: list[str], refs: dict, nombre: str,
+             idioma: str) -> str:
+    quien = (traducir("exp_quien_medida", idioma).format(nombre=nombre)
+             if nombre else traducir("exp_quien_expresion", idioma))
+    cats = {FUNCIONES.get(f, "") for f in usadas}
     col = f"{refs['columnas'][0][0]}[{refs['columnas'][0][1]}]" \
         if refs["columnas"] else ""
 
     if "tiempo" in cats and "CALCULATE" in usadas:
-        return (f"{quien} calcula un valor con inteligencia de tiempo: "
-                "desplaza o acumula el período del contexto antes de agregar.")
+        return traducir("exp_res_tiempo", idioma).format(quien=quien)
     if "TOTALYTD" in usadas:
-        return f"{quien} acumula el valor desde el inicio del año."
+        return traducir("exp_res_ytd", idioma).format(quien=quien)
     if "RANKX" in usadas:
-        return f"{quien} calcula una posición en un ranking."
+        return traducir("exp_res_rank", idioma).format(quien=quien)
     if "DIVIDE" in usadas:
-        return f"{quien} calcula un cociente con división segura."
+        return traducir("exp_res_divide", idioma).format(quien=quien)
     if "CALCULATE" in usadas:
-        return (f"{quien} agrega un valor modificando antes el contexto de "
-                "filtro (eso es CALCULATE: cambia sobre qué filas se calcula).")
+        return traducir("exp_res_calculate", idioma).format(quien=quien)
     if usadas and usadas[0] in FUNCIONES:
-        base = FUNCIONES[usadas[0]][0]
-        return f"{quien} {base}{f' sobre {col}' if col else ''}."
-    return f"{quien} evalúa una expresión aritmética simple."
+        sobre = (traducir("exp_sobre", idioma).format(col=col) if col else "")
+        return traducir("exp_res_base", idioma).format(
+            quien=quien, base=traducir(f"fn_{usadas[0]}", idioma), sobre=sobre)
+    return traducir("exp_res_simple", idioma).format(quien=quien)
 
 
-def _narrar(expr: str, usadas: list[str], refs: dict) -> list[str]:
+def _narrar(expr: str, usadas: list[str], refs: dict,
+            idioma: str) -> list[str]:
     pasos = []
     variables = RE_VAR.findall(expr)
     if variables:
-        pasos.append(
-            f"Define {len(variables)} variable(s) ({', '.join(variables[:4])}"
-            f"{'…' if len(variables) > 4 else ''}): cada una se evalúa una "
-            "sola vez y congela su valor — más rápido y más legible.")
+        pasos.append(traducir("exp_paso_var", idioma).format(
+            n=len(variables), lista=", ".join(variables[:4]),
+            mas="…" if len(variables) > 4 else ""))
     if "CALCULATE" in usadas:
-        pasos.append(
-            "CALCULATE cambia el contexto de filtro: los filtros que recibe "
-            "reemplazan (o intersecan, con KEEPFILTERS) a los del visual "
-            "antes de evaluar la expresión.")
-    iteradores = [f for f in usadas
-                  if FUNCIONES.get(f, ("", ""))[1] == "iterador"]
+        pasos.append(traducir("exp_paso_calculate", idioma))
+    iteradores = [f for f in usadas if FUNCIONES.get(f) == "iterador"]
     if iteradores:
-        pasos.append(
-            f"{', '.join(iteradores)} recorre(n) la tabla fila por fila: el "
-            "costo crece con la cantidad de filas visibles.")
-    tiempo = [f for f in usadas if FUNCIONES.get(f, ("", ""))[1] == "tiempo"]
+        pasos.append(traducir("exp_paso_iterador", idioma).format(
+            lista=", ".join(iteradores)))
+    tiempo = [f for f in usadas if FUNCIONES.get(f) == "tiempo"]
     if tiempo:
-        pasos.append(
-            f"Inteligencia de tiempo ({', '.join(tiempo)}): necesita una "
-            "tabla de calendario continua y marcada como tabla de fechas "
-            "para dar resultados correctos.")
+        pasos.append(traducir("exp_paso_tiempo", idioma).format(
+            lista=", ".join(tiempo)))
     if refs["medidas"]:
-        pasos.append(
-            "Reutiliza medidas existentes ("
-            + ", ".join(f"[{m}]" for m in refs["medidas"][:4])
-            + "): el cambio en la medida base se propaga solo.")
+        pasos.append(traducir("exp_paso_medidas", idioma).format(
+            lista=", ".join(f"[{m}]" for m in refs["medidas"][:4])))
     if not pasos:
-        pasos.append("Agregación directa sobre el contexto del visual, sin "
-                     "modificar filtros.")
+        pasos.append(traducir("exp_paso_directo", idioma))
     return pasos
 
 
 def _nivel(usadas: list[str], expr: str) -> str:
-    cats = {FUNCIONES.get(f, ("", ""))[1] for f in usadas}
-    avanzadas = {"contexto", "tiempo", "ranking", "relación"} & cats
+    cats = {FUNCIONES.get(f, "") for f in usadas}
+    avanzadas = {"contexto", "tiempo", "ranking", "relacion"} & cats
     if _profundidad(expr) >= 4 or len(avanzadas) >= 2 or "VAR" in usadas:
         return "avanzado"
     if avanzadas or len(usadas) >= 3:
         return "intermedio"
-    return "básico"
+    return "basico"

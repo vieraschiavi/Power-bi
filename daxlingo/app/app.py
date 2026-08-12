@@ -212,7 +212,8 @@ with st.sidebar:
 
     icono = {"owner": "👑", "licencia": "✅", "demo": "🕒",
              "vencida": "🔒"}[ESTADO_LIC.motivo]
-    st.markdown(f"**{_('lic_edicion')}:** {icono} `{ESTADO_LIC.edicion}`")
+    st.markdown(f"**{_('lic_edicion')}:** {icono} "
+                f"`{_('edicion_' + ESTADO_LIC.edicion)}`")
     if ESTADO_LIC.motivo == "demo":
         st.caption(f"{_('lic_dias')}: **{ESTADO_LIC.dias_restantes}**")
     elif ESTADO_LIC.motivo == "vencida":
@@ -388,9 +389,10 @@ with tab_analisis:
             icono = {"alta": "🔴", "media": "🟡", "baja": "🔵"}[g["severidad"]]
             cuantos = len(g["objetos"])
             sufijo = f" · {cuantos}×" if cuantos > 1 else f" — {g['objetos'][0]}"
-            with st.expander(f"{icono} {g['regla']}{sufijo}"):
-                st.markdown(f"**{_('por_que_importa')}:** {g['detalle']}")
-                st.markdown(f"**{_('como_se_arregla')}:** {g['arreglo']}")
+            txt = analizador.describir(g, IDIOMA)
+            with st.expander(f"{icono} {txt['titulo']}{sufijo}"):
+                st.markdown(f"**{_('por_que_importa')}:** {txt['detalle']}")
+                st.markdown(f"**{_('como_se_arregla')}:** {txt['arreglo']}")
                 if g["auto"]:
                     st.markdown(f"✅ *{_('arreglable_auto')}*")
                 if cuantos > 1:
@@ -401,7 +403,7 @@ with tab_analisis:
             if st.button(_("btn_arreglar"), type="primary") and \
                     gate("transformar"):
                 nuevo, cambios = transformador.aplicar_arreglos(
-                    st.session_state.cargado["modelo"], hallazgos)
+                    st.session_state.cargado["modelo"], hallazgos, IDIOMA)
                 aplicar_modelo(nuevo, cambios)
                 st.success(f"{len(cambios)} {_('cambios_aplicados')}")
                 st.rerun()
@@ -435,6 +437,7 @@ with tab_generar:
         if pedido:
             r = generador.generar(
                 pedido, cat, api_key=st.session_state.api_key or None,
+                idioma=IDIOMA,
                 proveedor=st.session_state.proveedor,
                 modelo_ia=st.session_state.modelo_ia,
                 endpoint=st.session_state.endpoint)
@@ -482,16 +485,16 @@ with tab_explicar:
         expresion = st.text_area(_("exp_expresion"), height=140,
                                  placeholder="CALCULATE ( SUM ( … ) )")
     if expresion.strip():
-        e = explicador.explicar(expresion, cat, nombre)
+        e = explicador.explicar(expresion, cat, nombre, IDIOMA)
         st.markdown(f"<div class='dxl-caja'><b>{e['resumen']}</b> · "
-                    f"{_('exp_nivel')} {e['nivel']}</div>",
+                    f"{_('exp_nivel')} {e['nivel_txt']}</div>",
                     unsafe_allow_html=True)
         for paso in e["pasos"]:
             st.markdown(f"- {paso}")
         if e["funciones"]:
             st.dataframe([{_("exp_funcion"): f["nombre"],
                            _("exp_que_hace"): f["descripcion"],
-                           _("exp_categoria"): f["categoria"]}
+                           _("exp_categoria"): f["categoria_txt"]}
                           for f in e["funciones"]],
                          use_container_width=True, hide_index=True)
         for falta in e["faltantes"]:
@@ -840,7 +843,7 @@ with tab_tools:
 with tab_lic:
     st.subheader(_("lic_titulo"))
     c1, c2, c3 = st.columns(3)
-    c1.metric(_("lic_edicion"), ESTADO_LIC.edicion)
+    c1.metric(_("lic_edicion"), _("edicion_" + ESTADO_LIC.edicion))
     c2.metric(_("lic_estado"),
               _("lic_activa") if ESTADO_LIC.activa else _("lic_vencida"))
     c3.metric(_("lic_dias"),

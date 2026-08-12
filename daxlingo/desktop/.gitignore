@@ -3,3 +3,6 @@ dist/
 dist-instalador/
 runtime/*
 !runtime/LEEME.md
+.cache-build/
+dist-portable/
+datos-usuario/

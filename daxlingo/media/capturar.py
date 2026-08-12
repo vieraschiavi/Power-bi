@@ -29,7 +29,7 @@ from pathlib import Path
 RAIZ = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(RAIZ))
 
-from dxl import tema_streamlit  # noqa: E402
+from dxl import licencia, tema_streamlit  # noqa: E402
 from dxl.i18n import IDIOMAS, t  # noqa: E402
 
 SALIDA = RAIZ / "web" / "assets" / "img"
@@ -79,15 +79,26 @@ def puerto_libre() -> int:
 def arrancar_app(idioma: str, datos: Path) -> tuple[subprocess.Popen, int]:
     """Levanta la app con el idioma ya elegido en el estado persistido."""
     datos.mkdir(parents=True, exist_ok=True)
+
+    # Las capturas se toman sobre una instalación LICENCIADA, no sobre la
+    # edición owner. Antes iban con `MVDAX_EDICION=owner` para que ninguna
+    # función quedara tapada por el cartel de licencia — el efecto secundario
+    # era que la web y el video mostraban «Edición: 👑 owner», que es la copia
+    # del dueño y no la que compra nadie. Se firma una licencia perpetua con
+    # un secreto de usar y tirar: el estado que sale en pantalla es
+    # exactamente el de un cliente que pagó — `profesional`, sin vencimiento
+    # y con todo abierto.
+    secreto = "capturas-" + os.urandom(8).hex()
     (datos / "estado.json").write_text(
-        json.dumps({"prefs": {"idioma": idioma}}), encoding="utf-8")
+        json.dumps({"prefs": {"idioma": idioma},
+                    "licencia": licencia.firmar({"plan": "perpetua"}, secreto)}),
+        encoding="utf-8")
+
     puerto = puerto_libre()
     entorno = {**os.environ,
                "MVDAXLAB_DATOS": str(datos),
                "MVDAXLAB_BANDEJA": str(datos / "bandeja"),
-               # Edición owner: las capturas muestran la app completa, sin el
-               # cartel de licencia tapando las funciones.
-               "MVDAX_EDICION": "owner",
+               "MVDAX_LICENSE_SECRET": secreto,
                # El tema por variable de entorno, no por config.toml:
                # Streamlit solo lee `.streamlit/config.toml` del directorio
                # actual, y acá se arranca desde donde sea. Sin esto el marco

@@ -19,8 +19,11 @@ Uso:
 from __future__ import annotations
 
 import argparse
+import re
+import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
@@ -31,12 +34,17 @@ sys.path.insert(0, str(RAIZ))
 from dxl import dominio  # noqa: E402
 from dxl.i18n import IDIOMAS  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import narracion  # noqa: E402
+
 ANCHO, ALTO = 1920, 1080
 FPS = 25
 SEG_POR_PESTANA = 7.0
 SEG_INTRO = 4.0
 SEG_CIERRE = 4.0
 SEG_FUNDIDO = 0.5
+# Aire después de la locución para que la placa no corte en seco.
+RESPIRO_VOZ = 1.2
 
 NAVY = (8, 21, 39)
 NAVY2 = (12, 33, 55)
@@ -180,62 +188,158 @@ def _texto_centrado(dib, y, texto, fnt, color):
 
 
 def cuadro_titulo(titulo: str, bajada: str) -> Image.Image:
-    """Placa de apertura y de cierre."""
+    """Placa de apertura y de cierre.
+
+    Comparte la franja diagonal con las placas de pestaña para que el video se
+    lea como una pieza y no como tres plantillas distintas. El bloque va
+    centrado de verdad —antes quedaba anclado arriba y dejaba medio cuadro
+    vacío— y el título se envuelve solo si el idioma lo alarga.
+    """
     img = Image.new("RGB", (ANCHO, ALTO), NAVY)
     dib = ImageDraw.Draw(img)
-    # Cuadrado ámbar de la marca, centrado sobre el título.
-    lado = 92
-    x0 = (ANCHO - lado) // 2
-    dib.rounded_rectangle([x0, 300, x0 + lado, 300 + lado], radius=20,
-                          fill=AMBAR)
-    _texto_centrado(dib, 430, titulo, fuente("negrita", 86), TINTA)
-    _texto_centrado(dib, 550, bajada, fuente("normal", 36), APAGADO)
-    dib.line([(ANCHO / 2 - 90, 640), (ANCHO / 2 + 90, 640)], fill=AMBAR,
-             width=3)
+    dib.polygon([(ANCHO * 0.52, 0), (ANCHO, 0), (ANCHO, ALTO),
+                 (ANCHO * 0.36, ALTO)], fill=NAVY2)
+
+    f_tit, f_baj = fuente("negrita", 96), fuente("normal", 38)
+    lineas = _envolver(dib, titulo, f_tit, int(ANCHO * 0.74))
+    alto = 128 + len(lineas) * 112 + 96
+    y = (ALTO - alto) // 2
+
+    lado = 104
+    dib.rounded_rectangle([(ANCHO - lado) // 2, y, (ANCHO + lado) // 2,
+                           y + lado], radius=24, fill=AMBAR)
+    y += 128
+    for linea in lineas:
+        _texto_centrado(dib, y, linea, f_tit, TINTA)
+        y += 112
+    y += 12
+    _texto_centrado(dib, y, bajada, f_baj, APAGADO)
+    y += 74
+    dib.line([(ANCHO / 2 - 90, y), (ANCHO / 2 + 90, y)], fill=AMBAR, width=4)
     return img
+
+
+def _sombra(caja: Image.Image, radio: int = 18) -> Image.Image:
+    """Devuelve la captura con esquinas redondeadas y una sombra debajo.
+
+    Una captura pegada a hueso sobre el fondo se lee como un pantallazo; con
+    la esquina redondeada y la sombra se lee como una ventana. Es la misma
+    diferencia entre una captura de soporte técnico y una de una landing.
+    """
+    from PIL import ImageFilter
+
+    w, h = caja.size
+    mascara = Image.new("L", (w, h), 0)
+    ImageDraw.Draw(mascara).rounded_rectangle([0, 0, w - 1, h - 1],
+                                              radius=radio, fill=255)
+    redondeada = Image.new("RGBA", (w, h))
+    redondeada.paste(caja, (0, 0))
+    redondeada.putalpha(mascara)
+
+    margen = 34
+    lienzo = Image.new("RGBA", (w + margen * 2, h + margen * 2), (0, 0, 0, 0))
+    sombra = Image.new("RGBA", (w + margen * 2, h + margen * 2), (0, 0, 0, 0))
+    ImageDraw.Draw(sombra).rounded_rectangle(
+        [margen, margen + 10, margen + w, margen + h + 10],
+        radius=radio, fill=(0, 0, 0, 150))
+    sombra = sombra.filter(ImageFilter.GaussianBlur(18))
+    lienzo.alpha_composite(sombra)
+    lienzo.alpha_composite(redondeada, (margen, margen))
+    return lienzo
+
+
+def _envolver(dib, texto: str, fnt, ancho_max: int) -> list[str]:
+    """Parte la bajada en líneas que entren, sin cortar palabras."""
+    lineas, actual = [], ""
+    for palabra in texto.split():
+        prueba = f"{actual} {palabra}".strip()
+        if dib.textlength(prueba, font=fnt) <= ancho_max:
+            actual = prueba
+        else:
+            if actual:
+                lineas.append(actual)
+            actual = palabra
+    if actual:
+        lineas.append(actual)
+    return lineas
 
 
 def cuadro_pestana(captura: Path, titulo: str, bajada: str,
                    indice: int, total: int) -> Image.Image:
-    """Un cuadro: título, bajada, la captura enmarcada y el avance."""
+    """Una placa: el texto a la izquierda, la pantalla a la derecha.
+
+    El diseño anterior ponía el título arriba y la captura ocupando todo el
+    ancho: prolijo, pero es la disposición de un manual. Acá el texto ocupa
+    una columna propia y la captura entra en diagonal desde la derecha, que
+    es como se muestra un producto. El título entra a 64 px en vez de 52 y la
+    bajada se envuelve sola en vez de cortarse en el borde.
+    """
     img = Image.new("RGB", (ANCHO, ALTO), NAVY)
     dib = ImageDraw.Draw(img)
 
-    dib.text((90, 62), titulo, font=fuente("negrita", 52), fill=TINTA)
-    dib.text((90, 132), bajada, font=fuente("normal", 27), fill=APAGADO)
+    # Franja diagonal apenas más clara: le saca la sensación de fondo plano.
+    dib.polygon([(ANCHO * 0.46, 0), (ANCHO, 0), (ANCHO, ALTO),
+                 (ANCHO * 0.30, ALTO)], fill=NAVY2)
 
-    # Marca discreta arriba a la derecha.
-    dib.rounded_rectangle([ANCHO - 250, 66, ANCHO - 226, 90], radius=6,
-                          fill=AMBAR)
-    dib.text((ANCHO - 214, 64), "MV DAX Lab", font=fuente("negrita", 28),
+    col_x, col_w = 96, int(ANCHO * 0.34)
+
+    # Marca arriba de todo, chica.
+    dib.rounded_rectangle([col_x, 84, col_x + 22, 106], radius=6, fill=AMBAR)
+    dib.text((col_x + 34, 82), "MV DAX Lab", font=fuente("negrita", 26),
              fill=TINTA)
 
-    # La captura, escalada al ancho disponible y recortada si sobra alto.
-    marco_x, marco_y = 90, 200
-    marco_w = ANCHO - 2 * marco_x
-    marco_h = ALTO - marco_y - 120
-    shot = Image.open(captura).convert("RGB")
-    escala = marco_w / shot.width
-    nuevo = shot.resize((marco_w, max(1, int(shot.height * escala))),
-                        Image.LANCZOS)
-    if nuevo.height > marco_h:
-        nuevo = nuevo.crop((0, 0, marco_w, marco_h))
-    caja = Image.new("RGB", (marco_w, marco_h), NAVY2)
-    caja.paste(nuevo, (0, 0))
-    img.paste(caja, (marco_x, marco_y))
-    dib.rectangle([marco_x - 1, marco_y - 1, marco_x + marco_w,
-                   marco_y + marco_h], outline=LINEA, width=2)
+    # El número de capítulo, grande y en ámbar: da ritmo y ubica al que mira.
+    # El «/ NN» se coloca midiendo el ancho real del número; a ojo quedaba
+    # tapado debajo del «03».
+    f_num = fuente("negrita", 130)
+    ancho_num = dib.textlength(f"{indice + 1:02d}", font=f_num)
 
-    # Barra de avance: cuántas pestañas van.
-    barra_y = ALTO - 62
-    ancho_util = ANCHO - 2 * marco_x
-    dib.line([(marco_x, barra_y), (marco_x + ancho_util, barra_y)],
-             fill=LINEA, width=6)
-    dib.line([(marco_x, barra_y),
-              (marco_x + int(ancho_util * (indice + 1) / total), barra_y)],
+    # El bloque de texto se centra vertical como una sola pieza. Antes salía
+    # anclado arriba y dejaba un vacío enorme en el pie de la columna.
+    f_tit, f_baj = fuente("negrita", 64), fuente("normal", 29)
+    lin_tit = _envolver(dib, titulo, f_tit, col_w)
+    lin_baj = _envolver(dib, bajada, f_baj, col_w)
+    alto_bloque = (150 + len(lin_tit) * 76 + 52 + len(lin_baj) * 42)
+    y = max(190, (ALTO - alto_bloque) // 2)
+
+    dib.text((col_x, y), f"{indice + 1:02d}", font=f_num, fill=AMBAR)
+    dib.text((col_x + ancho_num + 18, y + 64), f"/ {total:02d}",
+             font=fuente("mono", 30), fill=APAGADO)
+    y += 150
+
+    for linea in lin_tit:
+        dib.text((col_x, y), linea, font=f_tit, fill=TINTA)
+        y += 76
+    y += 18
+    dib.line([(col_x, y), (col_x + 72, y)], fill=AMBAR, width=5)
+    y += 34
+    for linea in lin_baj:
+        dib.text((col_x, y), linea, font=f_baj, fill=APAGADO)
+        y += 42
+
+    # La captura: a la derecha, redondeada y con sombra.
+    disp_x = int(ANCHO * 0.395)
+    disp_w, disp_h = ANCHO - disp_x - 62, ALTO - 260
+    shot = Image.open(captura).convert("RGB")
+    escala = disp_w / shot.width
+    nuevo = shot.resize((disp_w, max(1, int(shot.height * escala))),
+                        Image.LANCZOS)
+    if nuevo.height > disp_h:
+        nuevo = nuevo.crop((0, 0, disp_w, disp_h))
+    else:
+        disp_h = nuevo.height
+    # Centrada vertical: la captura es más ancha que alta, así que anclada
+    # arriba dejaba la mitad inferior del cuadro vacía.
+    disp_y = (ALTO - nuevo.height) // 2
+    tarjeta = _sombra(nuevo)
+    img.paste(tarjeta, (disp_x - 34, disp_y - 34), tarjeta)
+
+    # Avance, pegado al pie de la columna de texto.
+    barra_y = ALTO - 96
+    dib.line([(col_x, barra_y), (col_x + col_w, barra_y)], fill=LINEA, width=6)
+    dib.line([(col_x, barra_y),
+              (col_x + int(col_w * (indice + 1) / total), barra_y)],
              fill=AMBAR, width=6)
-    dib.text((marco_x, barra_y + 16), f"{indice + 1} / {total}",
-             font=fuente("mono", 22), fill=APAGADO)
     return img
 
 
@@ -273,6 +377,67 @@ def escribir_video(cuadros: list[tuple[Image.Image, float]],
     return destino
 
 
+def _ffmpeg() -> str:
+    import imageio_ffmpeg
+    return imageio_ffmpeg.get_ffmpeg_exe()
+
+
+def duracion_audio(ruta: Path) -> float | None:
+    """Segundos de un MP3, leídos de la cabecera que imprime ffmpeg.
+
+    Se parsea la salida de `ffmpeg -i` en vez de usar ffprobe porque
+    imageio_ffmpeg trae ffmpeg pero NO ffprobe, y no vale la pena sumar una
+    dependencia para leer un número.
+    """
+    salida = subprocess.run([_ffmpeg(), "-i", str(ruta)],
+                            capture_output=True, text=True).stderr
+    m = re.search(r"Duration:\s*(\d+):(\d\d):(\d\d\.\d+)", salida)
+    if not m:
+        return None
+    h, mi, s = m.groups()
+    return int(h) * 3600 + int(mi) * 60 + float(s)
+
+
+def sonorizar(mudo: Path, pistas: list[tuple[Path | None, float]]) -> None:
+    """Le pega la narración al video, placa por placa, y pisa el archivo.
+
+    Cada placa se convierte en un tramo de audio de EXACTAMENTE su duración:
+    la locución al principio y silencio hasta completar. Así el total del
+    audio es igual al total del video por construcción — la voz no se puede
+    correr de la imagen aunque se cambie el guion o el orden de las placas.
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp = Path(tmp)
+        partes = []
+        for i, (clip, segundos) in enumerate(pistas):
+            parte = tmp / f"{i:03d}.wav"
+            comun = ["-ar", "44100", "-ac", "2", "-t", f"{segundos:.4f}"]
+            if clip is None:      # placa sin locución: silencio del mismo largo
+                cmd = [_ffmpeg(), "-y", "-f", "lavfi", "-i",
+                       "anullsrc=r=44100:cl=stereo", *comun, str(parte)]
+            else:
+                cmd = [_ffmpeg(), "-y", "-i", str(clip),
+                       "-af", f"apad=whole_dur={segundos:.4f}", *comun,
+                       str(parte)]
+            subprocess.run(cmd, capture_output=True, check=True)
+            partes.append(parte)
+
+        lista = tmp / "partes.txt"
+        lista.write_text("".join(f"file '{p}'\n" for p in partes),
+                         encoding="utf-8")
+        pista = tmp / "voz.wav"
+        subprocess.run([_ffmpeg(), "-y", "-f", "concat", "-safe", "0",
+                        "-i", str(lista), "-c", "copy", str(pista)],
+                       capture_output=True, check=True)
+
+        con_voz = tmp / "con-voz.mp4"
+        subprocess.run([_ffmpeg(), "-y", "-i", str(mudo), "-i", str(pista),
+                        "-c:v", "copy", "-c:a", "aac", "-b:a", "160k",
+                        "-movflags", "+faststart", "-shortest", str(con_voz)],
+                       capture_output=True, check=True)
+        shutil.move(str(con_voz), str(mudo))
+
+
 def construir(idioma: str) -> Path:
     textos = VIDEO[idioma]
     carpeta = RAIZ / "web" / "assets" / "img" / idioma
@@ -285,19 +450,51 @@ def construir(idioma: str) -> Path:
     # sitio cambia, se regenera el video y listo.
     cierre = tuple(t.replace("{sitio}", dominio())
                    for t in textos["_cierre"])
-    cuadros: list[tuple[Image.Image, float]] = [
-        (cuadro_titulo(*textos["_intro"]), SEG_INTRO)]
+
+    # Si hay narración, manda ella: la placa dura lo que dura la locución más
+    # un respiro. Si no la hay, se usan los tiempos fijos de siempre y el
+    # video sale mudo, igual que antes.
+    def compas(clave: str, por_defecto: float) -> tuple[Path | None, float]:
+        clip = narracion.ruta(idioma, clave)
+        if not clip.exists():
+            return None, por_defecto
+        dur = duracion_audio(clip)
+        if dur is None:
+            return None, por_defecto
+        return clip, max(por_defecto, dur + RESPIRO_VOZ)
+
+    cuadros: list[tuple[Image.Image, float]] = []
+    pistas: list[tuple[Path | None, float]] = []
+
+    clip, seg = compas("_intro", SEG_INTRO)
+    cuadros.append((cuadro_titulo(*textos["_intro"]), seg))
+    pistas.append((clip, seg))
+
     presentes = [(slug, clave) for slug, clave in GUION
                  if (carpeta / f"{slug}.png").exists()]
     for i, (slug, clave) in enumerate(presentes):
         titulo, bajada = textos[clave]
+        clip, seg = compas(clave, SEG_POR_PESTANA)
         cuadros.append((cuadro_pestana(carpeta / f"{slug}.png", titulo,
-                                       bajada, i, len(presentes)),
-                        SEG_POR_PESTANA))
-    cuadros.append((cuadro_titulo(*cierre), SEG_CIERRE))
+                                       bajada, i, len(presentes)), seg))
+        pistas.append((clip, seg))
+
+    clip, seg = compas("_cierre", SEG_CIERRE)
+    cuadros.append((cuadro_titulo(*cierre), seg))
+    pistas.append((clip, seg))
 
     destino = RAIZ / "web" / "assets" / "video" / f"demo-{idioma}.mp4"
     escribir_video(cuadros, destino)
+
+    if any(clip for clip, _ in pistas):
+        # Los segundos que se le pasan al audio son los que el video usó de
+        # verdad: escribir_video redondea a cuadros enteros, y sin ese mismo
+        # redondeo la pista se iría corriendo unos milisegundos por placa.
+        exactas = [(clip, int(seg * FPS) / FPS) for clip, seg in pistas]
+        sonorizar(destino, exactas)
+        print(f"  ♪ narración pegada ({sum(s for _, s in exactas):.0f} s)")
+    else:
+        print("  · sin narración (corré media/narracion.py); el video sale mudo")
     return destino
 
 

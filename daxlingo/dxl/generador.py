@@ -21,6 +21,7 @@ from __future__ import annotations
 import json
 import re
 
+from .i18n import IDIOMA_DEFECTO, t as traducir
 from .catalogo import Catalogo, _norm, validar_referencias
 from .proveedores_ia import PROVEEDOR_DEFECTO, consultar, hay_clave
 
@@ -62,6 +63,7 @@ def _sin(texto: str, *frases: str) -> str:
 # Motor de reglas
 # ==========================================================================
 def generar(pedido: str, cat: Catalogo, api_key: str | None = None,
+            idioma: str = IDIOMA_DEFECTO,
             proveedor: str = PROVEEDOR_DEFECTO, modelo_ia: str = "",
             endpoint: str = "") -> dict:
     """
@@ -71,13 +73,11 @@ def generar(pedido: str, cat: Catalogo, api_key: str | None = None,
     """
     pedido = (pedido or "").strip()
     if not pedido:
-        return _error("Escribí qué medida querés: p. ej. «total de ventas», "
-                      "«% del total por país», «ventas vs año anterior».")
+        return _error(traducir("gen_vacio", idioma))
     if not cat.tablas:
-        return _error("Primero cargá un modelo: el generador solo escribe DAX "
-                      "sobre columnas que existen.")
+        return _error(traducir("gen_sin_modelo", idioma))
 
-    resultado = _con_reglas(pedido, cat)
+    resultado = _con_reglas(pedido, cat, idioma)
     if resultado is not None:
         return resultado
 
@@ -87,16 +87,8 @@ def generar(pedido: str, cat: Catalogo, api_key: str | None = None,
                            endpoint)
         except Exception as exc:  # red caída, clave inválida, etc.
             return _error(
-                f"El motor de reglas no reconoció el patrón y la IA falló: "
-                f"{exc}. Reformulá el pedido (p. ej. «total de <columna>»).")
-    return _error(
-        "No reconocí el patrón del pedido. Probá con: total / promedio / "
-        "máximo / mínimo / conteo distinto de <columna>, «% del total por "
-        "<dimensión>», «<columna> acumulado del año», «<columna> vs año "
-        "anterior», «media móvil 3 meses de <columna>», «ranking de "
-        "<dimensión> por <columna>». Con una ANTHROPIC_API_KEY configurada, "
-        "también entiendo pedidos libres con la IA que elijas (Claude, "
-        "ChatGPT, Gemini, Copilot…).")
+                traducir("gen_sin_patron", idioma).format(motivo=exc))
+    return _error(traducir("gen_sin_reconocer", idioma))
 
 
 def _error(msg: str) -> dict:
@@ -116,14 +108,15 @@ def _titulo(texto: str) -> str:
     return texto[:1].upper() + texto[1:] if texto else texto
 
 
-def _con_reglas(pedido: str, cat: Catalogo) -> dict | None:
+def _con_reglas(pedido: str, cat: Catalogo,
+                idioma: str = IDIOMA_DEFECTO) -> dict | None:
     texto = _limpiar_pedido(pedido)
 
     for detector in (_regla_ranking, _regla_top_n, _regla_pct_total,
                      _regla_ytd, _regla_vs_anio_anterior, _regla_media_movil,
                      _regla_conteo_distinto, _regla_conteo, _regla_promedio,
                      _regla_extremos, _regla_suma):
-        r = detector(texto, cat)
+        r = detector(texto, cat, idioma)
         if r is not None:
             return r
     return None
@@ -146,7 +139,8 @@ def _base_agregada(texto: str, cat: Catalogo) -> tuple[str, str, str] | None:
     return None
 
 
-def _nota_ambiguedad(texto: str, cat: Catalogo) -> str:
+def _nota_ambiguedad(texto: str, cat: Catalogo,
+                     idioma: str = IDIOMA_DEFECTO) -> str:
     """Si el pedido encajaba en varias medidas, decir cuál se usó y qué otras
     había. Elegir en silencio entre «Ventas Brutas USD» y «Ventas Netas USD»
     es exactamente cómo se entrega un número que nadie revisa."""
@@ -154,8 +148,8 @@ def _nota_ambiguedad(texto: str, cat: Catalogo) -> str:
     if len(candidatas) < 2:
         return ""
     otras = ", ".join(f"[{m['nombre']}]" for m in candidatas[1:4])
-    return (f" Usé [{candidatas[0]['nombre']}] porque el pedido no aclara "
-            f"cuál; en el modelo también están {otras}.")
+    return " " + traducir("genx_ambiguo", idioma).format(
+        elegida=f"[{candidatas[0]['nombre']}]", otras=otras)
 
 
 # Columnas numéricas que NO son sumables aunque el tipo diga que sí: años,
@@ -202,7 +196,8 @@ def _dimension(texto: str, cat: Catalogo) -> tuple[str, dict] | None:
 
 
 # --- patrones -------------------------------------------------------------
-def _regla_suma(texto: str, cat: Catalogo) -> dict | None:
+def _regla_suma(texto: str, cat: Catalogo,
+                idioma: str = IDIOMA_DEFECTO) -> dict | None:
     m = re.search(r"(?:total|suma|sumar|sumatoria|sum|soma|somar)\s*(.*)", texto)
     if not m:
         return None
@@ -216,22 +211,19 @@ def _regla_suma(texto: str, cat: Catalogo) -> dict | None:
         if med:
             return _exito(
                 med["nombre"], f"[{med['nombre']}]", med.get("formato") or "#,0",
-                f"El modelo ya tiene esa medida: {med['nombre']}. Reutilizarla "
-                "en vez de sumar la columna a mano mantiene un solo lugar "
-                "donde cambiar la definición."
-                + _nota_ambiguedad(objetivo, cat))
+        traducir("genx_ya_existe", idioma).format(medida=med["nombre"]))
         return _error(f"No encontré una columna numérica que se parezca a "
                       f"«{objetivo.strip() or texto}» en el modelo.")
     tabla, c = col
     nombre = f"Total {_titulo(c['nombre'])}"
     dax = f"SUM ( {_col_ref(tabla, c['nombre'])} )"
     return _exito(nombre, dax, "#,0",
-                  f"Suma la columna {tabla}[{c['nombre']}] en el contexto "
-                  "del visual: cada celda/fila del reporte filtra qué filas "
-                  "entran en la suma.")
+        traducir("genx_suma", idioma).format(col=f"{tabla}[{c['nombre']}]")
+        + _nota_ambiguedad(objetivo, cat, idioma))
 
 
-def _regla_promedio(texto: str, cat: Catalogo) -> dict | None:
+def _regla_promedio(texto: str, cat: Catalogo,
+                    idioma: str = IDIOMA_DEFECTO) -> dict | None:
     m = re.search(r"(?:promedio|media|average|avg|media de)\s*(.*)", texto)
     if not m or "movil" in texto:
         return None
@@ -242,10 +234,12 @@ def _regla_promedio(texto: str, cat: Catalogo) -> dict | None:
     tabla, c = col
     return _exito(f"Promedio {_titulo(c['nombre'])}",
                   f"AVERAGE ( {_col_ref(tabla, c['nombre'])} )", "#,0.00",
-                  f"Promedia {tabla}[{c['nombre']}] sobre las filas visibles.")
+                  traducir("genx_promedio", idioma).format(
+                          col=f"{tabla}[{c['nombre']}]"))
 
 
-def _regla_extremos(texto: str, cat: Catalogo) -> dict | None:
+def _regla_extremos(texto: str, cat: Catalogo,
+                    idioma: str = IDIOMA_DEFECTO) -> dict | None:
     m = re.search(r"(maximo|minimo|mayor|menor|max|min|maximum|minimum|maior|menor)\s*(.*)", texto)
     if not m:
         return None
@@ -257,11 +251,15 @@ def _regla_extremos(texto: str, cat: Catalogo) -> dict | None:
     fn = "MAX" if es_max else "MIN"
     return _exito(f"{'Máximo' if es_max else 'Mínimo'} {_titulo(c['nombre'])}",
                   f"{fn} ( {_col_ref(tabla, c['nombre'])} )", "#,0",
-                  f"{fn} devuelve el {'mayor' if es_max else 'menor'} valor "
-                  f"visible de {tabla}[{c['nombre']}].")
+                  traducir("genx_minmax", idioma).format(
+                      fn=fn,
+                      extremo=traducir("genx_mayor" if es_max else "genx_menor",
+                                       idioma),
+                      col=f"{tabla}[{c['nombre']}]"))
 
 
-def _regla_conteo_distinto(texto: str, cat: Catalogo) -> dict | None:
+def _regla_conteo_distinto(texto: str, cat: Catalogo,
+                           idioma: str = IDIOMA_DEFECTO) -> dict | None:
     if not re.search(r"\b(distintos?|unicos?|diferentes|distinct|unique|distintas?|unicas?)\b", texto):
         return None
     # El sustantivo puede ir antes o después de la palabra clave —«clientes
@@ -278,8 +276,7 @@ def _regla_conteo_distinto(texto: str, cat: Catalogo) -> dict | None:
     tabla, c = col
     return _exito(f"{_nombre_de_entidad(cat, tabla, c['nombre'])} distintos",
                   f"DISTINCTCOUNT ( {_col_ref(tabla, c['nombre'])} )", "#,0",
-                  f"Cuenta los valores únicos de {tabla}[{c['nombre']}] en el "
-                  "contexto del visual — el mismo cliente diez veces cuenta 1.")
+        traducir("genx_distintos", idioma).format(col=f"{tabla}[{c['nombre']}]"))
 
 
 def _nombre_de_entidad(cat: Catalogo, tabla: str, columna: str) -> str:
@@ -297,7 +294,8 @@ def _nombre_de_entidad(cat: Catalogo, tabla: str, columna: str) -> str:
     return _titulo(limpio or columna)
 
 
-def _regla_conteo(texto: str, cat: Catalogo) -> dict | None:
+def _regla_conteo(texto: str, cat: Catalogo,
+                  idioma: str = IDIOMA_DEFECTO) -> dict | None:
     m = re.search(r"(?:conteo|cantidad|numero|cuantos|cuantas|filas|count|rows|quantidade|quantos|quantas|linhas)\s*(.*)",
                   texto)
     if not m:
@@ -313,10 +311,11 @@ def _regla_conteo(texto: str, cat: Catalogo) -> dict | None:
     ref = f"'{t['nombre']}'" if re.search(r"[^A-Za-z0-9_]", t["nombre"]) \
         else t["nombre"]
     return _exito(f"Filas de {t['nombre']}", f"COUNTROWS ( {ref} )", "#,0",
-                  f"Cuenta las filas visibles de la tabla {t['nombre']}.")
+        traducir("genx_filas", idioma).format(tabla=t["name"]))
 
 
-def _regla_pct_total(texto: str, cat: Catalogo) -> dict | None:
+def _regla_pct_total(texto: str, cat: Catalogo,
+                     idioma: str = IDIOMA_DEFECTO) -> dict | None:
     if not re.search(r"(%|porcentaje|porciento|participacion|peso|percent|percentage|share|percentual|participacao)\s*"
                      r"(del|sobre el|del gran|of|of the|do|sobre o)?\s*(total|grand total)", texto) \
             and "% del total" not in texto:
@@ -341,12 +340,11 @@ def _regla_pct_total(texto: str, cat: Catalogo) -> dict | None:
            f"    CALCULATE ( {dax_base}, {quitar} )\n)")
     return _exito(
         f"% del total · {_titulo(nombre_base)}", dax, "0.0 %",
-        "Divide el valor del contexto actual por el mismo valor sin los "
-        "filtros del visual (ALLSELECTED respeta los slicers): eso es la "
-        "participación sobre el total. DIVIDE evita el error ante total 0.")
+        traducir("genx_pct_total", idioma))
 
 
-def _regla_ytd(texto: str, cat: Catalogo) -> dict | None:
+def _regla_ytd(texto: str, cat: Catalogo,
+               idioma: str = IDIOMA_DEFECTO) -> dict | None:
     if not re.search(r"\b(ytd|acumulado|acumulada|year to date|running total)\b", texto):
         return None
     fecha = cat.columna_fecha()
@@ -363,11 +361,11 @@ def _regla_ytd(texto: str, cat: Catalogo) -> dict | None:
            f"    {_col_ref(fecha[0], fecha[1])}\n)")
     return _exito(
         f"{_titulo(nombre_base)} YTD", dax, "#,0",
-        f"TOTALYTD acumula {nombre_base} desde el 1 de enero hasta la fecha "
-        f"del contexto, usando el calendario {fecha[0]}[{fecha[1]}].")
+        traducir("genx_ytd", idioma).format(base=nombre_base, calendario=f"{fecha[0]}[{fecha[1]}]"))
 
 
-def _regla_vs_anio_anterior(texto: str, cat: Catalogo) -> dict | None:
+def _regla_vs_anio_anterior(texto: str, cat: Catalogo,
+                            idioma: str = IDIOMA_DEFECTO) -> dict | None:
     if not re.search(r"(vs|versus|contra|variacion|crecimiento|yoy|growth|change|variacao)\s*"
                      r".*(ano anterior|ano pasado|interanual|yoy|last year|previous year|prior year|ano passado)", texto) \
             and not re.search(r"\b(yoy|interanual|year over year|year on year)\b", texto):
@@ -398,13 +396,11 @@ def _regla_vs_anio_anterior(texto: str, cat: Catalogo) -> dict | None:
            f"    DIVIDE ( Actual - Anterior, Anterior )")
     return _exito(
         f"{_titulo(nombre_base)} · var. % vs AA", dax, "+0.0 %;-0.0 %",
-        "Calcula el valor actual y el del mismo período del año anterior "
-        "(SAMEPERIODLASTYEAR desplaza el calendario), y devuelve la "
-        "variación relativa con división segura."
-        + _nota_ambiguedad(resto, cat))
+        traducir("genx_vs_aa", idioma) + _nota_ambiguedad(resto, cat, idioma))
 
 
-def _regla_media_movil(texto: str, cat: Catalogo) -> dict | None:
+def _regla_media_movil(texto: str, cat: Catalogo,
+                       idioma: str = IDIOMA_DEFECTO) -> dict | None:
     m = re.search(r"(?:media|promedio|moving|rolling)\s*(?:movil|average|movel)\s*(?:de\s*)?(\d+)?\s*"
                   r"(?:meses|mes|months|month|meses)?\s*(?:de\s+|of\s+)?(.*)", texto)
     if not m:
@@ -424,12 +420,11 @@ def _regla_media_movil(texto: str, cat: Catalogo) -> dict | None:
            f"    CALCULATE ( {dax_base} )\n)")
     return _exito(
         f"{_titulo(nombre_base)} · media móvil {meses}m", dax, "#,0",
-        f"DATESINPERIOD arma la ventana de los últimos {meses} meses y "
-        "AVERAGEX promedia el valor mensual dentro de ella — suaviza la "
-        "serie sin perder la punta.")
+        traducir("genx_media_movil", idioma).format(meses=meses))
 
 
-def _regla_ranking(texto: str, cat: Catalogo) -> dict | None:
+def _regla_ranking(texto: str, cat: Catalogo,
+                   idioma: str = IDIOMA_DEFECTO) -> dict | None:
     m = re.search(r"(?:ranking|posicion|puesto|rank|posicao)\s*(?:de\s*|of\s*)?(.*?)"
                   r"(?:\s+por\s+(.*))?$", texto)
     if not m or not texto.startswith(("ranking", "posicion", "puesto")):
@@ -445,12 +440,11 @@ def _regla_ranking(texto: str, cat: Catalogo) -> dict | None:
            f"    CALCULATE ( {dax_base} ),\n    ,\n    DESC,\n    DENSE\n)")
     return _exito(
         f"Ranking {_titulo(col_d['nombre'])} por {nombre_base}", dax, "#,0",
-        f"RANKX ordena todos los valores visibles de {tabla_d}"
-        f"[{col_d['nombre']}] por {nombre_base} descendente y devuelve la "
-        "posición del valor del contexto actual.")
+        traducir("genx_ranking", idioma).format(col=f"{tabla_d}[{col_d['nombre']}]", base=nombre_base))
 
 
-def _regla_top_n(texto: str, cat: Catalogo) -> dict | None:
+def _regla_top_n(texto: str, cat: Catalogo,
+                 idioma: str = IDIOMA_DEFECTO) -> dict | None:
     m = re.search(r"top\s*(\d+)\s*(?:de\s*)?(.*?)(?:\s+por\s+(.*))?$", texto)
     if not m:
         return None
@@ -468,9 +462,7 @@ def _regla_top_n(texto: str, cat: Catalogo) -> dict | None:
            f"CALCULATE ( {dax_base} ), DESC )\n    )\n)")
     return _exito(
         f"{_titulo(nombre_base)} · top {n} {col_d['nombre']}", dax, "#,0",
-        f"TOPN elige los {n} valores de {tabla_d}[{col_d['nombre']}] con "
-        f"mayor {nombre_base}; KEEPFILTERS los aplica como filtro sin pisar "
-        "los del visual.")
+        traducir("genx_topn", idioma).format(n=n, col=f"{tabla_d}[{col_d['nombre']}]", base=nombre_base))
 
 
 # ==========================================================================

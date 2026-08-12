@@ -227,6 +227,83 @@ def test_analizador_detecta_defectos(cat):
     assert 0 <= analizador.puntaje(hallazgos) < 100
 
 
+def test_toda_regla_del_analizador_habla_los_tres_idiomas(cat):
+    """Ninguna regla puede quedar en español cuando la app está en otro idioma.
+
+    Es exactamente el defecto que tenía la pestaña Analizador: los títulos y
+    las explicaciones eran cadenas en español dentro de `analizador.py`, así
+    que en inglés y en portugués se veían los menús traducidos y los hallazgos
+    no. Este test recorre TODAS las reglas —no las que dispara el modelo de
+    prueba— para que agregar una regla sin sus tres idiomas rompa acá.
+    """
+    import re as _re
+    from dxl.i18n import IDIOMAS, T
+
+    fuente = (Path(__file__).resolve().parents[1] / "dxl" / "analizador.py"
+              ).read_text(encoding="utf-8")
+    reglas = sorted(set(_re.findall(r'_h\("(R\d\d)"', fuente)))
+    assert len(reglas) >= 15, f"esperaba las 16 reglas, encontré {reglas}"
+
+    for rid in reglas:
+        for sufijo in ("", "_detalle", "_arreglo"):
+            clave = f"regla_{rid}{sufijo}"
+            assert clave in T, f"falta la clave {clave} en i18n"
+            for idi in IDIOMAS:
+                assert T[clave].get(idi), f"{clave} no tiene {idi}"
+
+    # Y que salga distinto en cada idioma: una clave copiada del español a los
+    # tres campos pasaría el chequeo de arriba sin traducir nada.
+    hallazgos = analizador.analizar(cat)
+    titulos = {idi: analizador.describir(hallazgos[0], idi)["titulo"]
+               for idi in IDIOMAS}
+    assert titulos["es"] != titulos["en"], titulos
+
+
+def test_los_datos_de_la_regla_se_interpolan_en_los_tres_idiomas():
+    """R04 y R05 nombran la tabla o la medida culpable DENTRO del texto.
+
+    Se arma el hallazgo a mano en vez de buscarlo en un modelo: lo que se
+    prueba es la plantilla, y atarlo a que tal modelo dispare tal regla hace
+    que el test se caiga por un motivo que no tiene nada que ver.
+    """
+    from dxl.i18n import IDIOMAS
+
+    casos = [("R04", {"tabla": "v_fact_ventas"}, "v_fact_ventas"),
+             ("R05", {"medida": "Ventas netas"}, "Ventas netas")]
+    for rid, datos, esperado in casos:
+        h = {"regla": rid, "severidad": "media", "objeto": "[x]",
+             "auto": False, "datos": datos}
+        for idi in IDIOMAS:
+            detalle = analizador.describir(h, idi)["detalle"]
+            assert esperado in detalle, f"{rid}/{idi}: {detalle}"
+            assert "{" not in detalle, f"{rid}/{idi} quedó sin interpolar"
+
+
+def test_el_motor_no_deja_texto_en_espanol_en_otro_idioma(cat):
+    """Guardia contra la fuga que tenían analizador, explicador y generador.
+
+    No alcanza con que la clave exista en los tres idiomas: lo que se escapaba
+    era texto escrito a mano en el módulo, que ninguna tabla de traducción
+    cubre. Acá se compara la salida REAL en español contra la inglesa; si
+    alguien vuelve a hardcodear una frase, las dos salen iguales y esto rompe.
+    """
+    from dxl import explicador
+
+    dax = "CALCULATE ( SUM ( Ventas[Importe] ), ALL ( Ventas ) )"
+    es = explicador.explicar(dax, idioma="es")
+    en = explicador.explicar(dax, idioma="en")
+    assert es["resumen"] != en["resumen"]
+    assert es["pasos"] != en["pasos"]
+    assert es["nivel_txt"] != en["nivel_txt"] or es["nivel"] == "basico"
+    assert es["funciones"][0]["descripcion"] != en["funciones"][0]["descripcion"]
+    assert es["funciones"][0]["categoria"] == en["funciones"][0]["categoria"], \
+        "la categoría es una clave: no se traduce"
+
+    hallazgos = analizador.analizar(cat)
+    assert (analizador.describir(hallazgos[0], "es")["detalle"]
+            != analizador.describir(hallazgos[0], "en")["detalle"])
+
+
 def test_arreglos_automaticos(cat):
     hallazgos = analizador.analizar(cat)
     nuevo, cambios = transformador.aplicar_arreglos(modelo_juguete(),

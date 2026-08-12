@@ -11,14 +11,39 @@ from __future__ import annotations
 import re
 
 from .catalogo import Catalogo, _norm
+from .i18n import IDIOMA_DEFECTO, t as traducir
 
 SEVERIDADES = ("alta", "media", "baja")
 
 
-def _h(regla: str, severidad: str, objeto: str, detalle: str,
-       arreglo: str, auto: bool = False) -> dict:
-    return {"regla": regla, "severidad": severidad, "objeto": objeto,
-            "detalle": detalle, "arreglo": arreglo, "auto": auto}
+def _h(rid: str, severidad: str, objeto: str, auto: bool = False,
+       **datos: str) -> dict:
+    """Un hallazgo.
+
+    El TEXTO no vive acá: `rid` («R04») es la clave de i18n y `datos` completa
+    los huecos de la plantilla. Antes el título y la explicación eran cadenas
+    en español metidas en este archivo, así que la pestaña Analizador salía en
+    español aunque la app estuviera en inglés o portugués. Para leerlo en un
+    idioma, `describir(h, idioma)`.
+    """
+    return {"regla": rid, "severidad": severidad, "objeto": objeto,
+            "auto": auto, "datos": datos}
+
+
+def describir(h: dict, idioma: str = IDIOMA_DEFECTO) -> dict:
+    """Título, por qué importa y cómo se arregla, en el idioma pedido."""
+    rid = h["regla"]
+    datos = h.get("datos") or {}
+
+    def _t(sufijo: str) -> str:
+        txt = traducir(f"regla_{rid}{sufijo}", idioma)
+        try:
+            return txt.format(**datos)
+        except (KeyError, IndexError):
+            return txt          # plantilla sin hueco, o dato ausente
+
+    return {"titulo": f"{rid} · {_t('')}",
+            "detalle": _t("_detalle"), "arreglo": _t("_arreglo")}
 
 
 # --------------------------------------------------------------------------
@@ -33,12 +58,7 @@ def analizar(cat: Catalogo) -> list[dict]:
     """Corre todas las reglas y devuelve los hallazgos ordenados por severidad."""
     hallazgos: list[dict] = []
     if cat.parcial:
-        hallazgos.append(_h(
-            "R00 · Catálogo parcial", "media", "(modelo)",
-            "Este catálogo salió del layout de un .pbix: solo se ve lo que los "
-            "visuales usan, no el modelo completo.",
-            "Exportá el archivo como .pbit o PBIP desde Power BI Desktop para "
-            "el análisis completo."))
+        hallazgos.append(_h("R00", "media", "(modelo)"))
         return hallazgos
 
     hallazgos += _reglas_medidas(cat)
@@ -60,54 +80,26 @@ def _reglas_medidas(cat: Catalogo) -> list[dict]:
         objeto = f"[{nombre}]"
 
         if RE_DIVISION.search(expr):
-            out.append(_h(
-                "R01 · División con «/»", "alta", objeto,
-                "Una división con «/» revienta con dividendo 0 o BLANK y "
-                "muestra infinito o error en el visual.",
-                "Usar DIVIDE(numerador, denominador): devuelve BLANK ante "
-                "cero, sin costo extra.", auto=True))
+            out.append(_h("R01", "alta", objeto, auto=True))
 
         if not m["formato"]:
-            out.append(_h(
-                "R02 · Medida sin formato", "media", objeto,
-                "Sin formatString, cada visual muestra el número como quiere: "
-                "decimales de más, sin separador de miles, porcentajes crudos.",
-                "Asignar un formato explícito (#,0 · #,0.00 · 0.0 %).",
-                auto=True))
+            out.append(_h("R02", "media", objeto, auto=True))
 
         if RE_IFERROR.search(expr):
-            out.append(_h(
-                "R03 · IFERROR en medida", "media", objeto,
-                "IFERROR fuerza al motor a evaluar fila por fila esperando el "
-                "error: caro y esconde problemas de datos.",
-                "Prevenir el error (DIVIDE, buscar el caso borde) en vez de "
-                "taparlo."))
+            out.append(_h("R03", "media", objeto))
 
         mfil = RE_FILTER_TABLA.search(expr)
         if mfil and cat.tabla(mfil.group(1)):
-            out.append(_h(
-                "R04 · FILTER sobre tabla entera", "media", objeto,
-                f"FILTER('{mfil.group(1)}', …) materializa la tabla completa "
-                "dentro de CALCULATE cuando un filtro de columna alcanza.",
-                "Filtrar la columna (Tabla[Col] = valor) o usar "
-                "KEEPFILTERS(VALUES(Tabla[Col]))."))
+            out.append(_h("R04", "media", objeto, tabla=mfil.group(1)))
 
         clave = re.sub(r"\s+", " ", expr).strip().lower()
         if clave and clave in vistas:
-            out.append(_h(
-                "R05 · Medida duplicada", "baja", objeto,
-                f"Tiene exactamente la misma expresión que [{vistas[clave]}].",
-                "Dejar una sola y referenciarla desde la otra si hace falta "
-                "el alias."))
+            out.append(_h("R05", "baja", objeto, medida=vistas[clave]))
         elif clave:
             vistas[clave] = nombre
 
         if nombre != nombre.strip():
-            out.append(_h(
-                "R06 · Espacios en el nombre", "baja", objeto,
-                "El nombre empieza o termina con espacios: invisible en el "
-                "panel y fuente de referencias rotas.",
-                "Renombrar sin espacios en los bordes."))
+            out.append(_h("R06", "baja", objeto))
     return out
 
 
@@ -121,24 +113,13 @@ def _reglas_columnas(cat: Catalogo) -> list[dict]:
         for c in t["columnas"]:
             objeto = f"{t['nombre']}[{c['nombre']}]"
             if c["calculada"]:
-                out.append(_h(
-                    "R07 · Columna calculada", "media", objeto,
-                    "Las columnas calculadas se materializan en el modelo y "
-                    "no se comprimen tan bien como las nativas; casi siempre "
-                    "hay una versión en Power Query o una medida.",
-                    "Mover el cálculo a Power Query (mejor compresión) o "
-                    "convertirlo en medida si es agregable."))
+                out.append(_h("R07", "media", objeto))
             es_clave = ((_norm(t["nombre"]), _norm(c["nombre"])) in lados_muchos
                         or re.search(r"(^id[_ ]|[_ ]id$|^id$)",
                                      _norm(c["nombre"])))
             if es_clave and not c["oculta"] and (
                     (_norm(t["nombre"]), _norm(c["nombre"])) in lados_muchos):
-                out.append(_h(
-                    "R08 · Clave foránea visible", "baja", objeto,
-                    "Las columnas que solo existen para relacionar tablas "
-                    "confunden en el panel de campos y tientan a sumarlas.",
-                    "Ocultarla (isHidden). El filtro sigue funcionando igual.",
-                    auto=True))
+                out.append(_h("R08", "baja", objeto, auto=True))
     return out
 
 
@@ -148,24 +129,11 @@ def _reglas_relaciones(cat: Catalogo) -> list[dict]:
         objeto = (f"{r['desde_tabla']}[{r['desde_col']}] → "
                   f"{r['hacia_tabla']}[{r['hacia_col']}]")
         if r["bidireccional"]:
-            out.append(_h(
-                "R09 · Relación bidireccional", "alta", objeto,
-                "El filtro cruzado en ambas direcciones genera ambigüedad de "
-                "caminos y resultados que cambian según el visual.",
-                "Volver a dirección simple y resolver el caso puntual con "
-                "CROSSFILTER dentro de la medida que lo necesite."))
+            out.append(_h("R09", "alta", objeto))
         if r["muchos_a_muchos"]:
-            out.append(_h(
-                "R10 · Relación muchos a muchos", "alta", objeto,
-                "Las relaciones N:N ocultan duplicados en las claves y "
-                "degradan el rendimiento del motor.",
-                "Interponer una tabla puente con la clave única (esquema "
-                "estrella)."))
+            out.append(_h("R10", "alta", objeto))
         if not r["activa"]:
-            out.append(_h(
-                "R11 · Relación inactiva", "baja", objeto,
-                "Está definida pero apagada: solo actúa vía USERELATIONSHIP.",
-                "Confirmar que alguna medida la usa; si no, eliminarla."))
+            out.append(_h("R11", "baja", objeto))
     return out
 
 
@@ -182,38 +150,19 @@ def _reglas_modelo(cat: Catalogo) -> list[dict]:
             c["oculta"] for c in t["columnas"]) or not t["columnas"]
         if len(visibles) > 1 and _norm(t["nombre"]) not in conectadas \
                 and not solo_medidas:
-            out.append(_h(
-                "R12 · Tabla sin relaciones", "media", t["nombre"],
-                "No participa de ninguna relación: sus filtros no viajan a "
-                "ninguna otra tabla.",
-                "Relacionarla al modelo o, si es tabla auxiliar, ocultarla."))
+            out.append(_h("R12", "media", t["nombre"]))
 
     if any(t["interna"] for t in cat.tablas):
-        out.append(_h(
-            "R13 · Auto date/time activo", "media", "(modelo)",
-            "Power BI creó tablas de calendario ocultas por cada columna de "
-            "fecha (LocalDateTable_*): infla el modelo y duplica lógica.",
-            "Desactivar Auto date/time y usar una única tabla de calendario "
-            "marcada como tabla de fechas."))
+        out.append(_h("R13", "media", "(modelo)"))
 
     if not cat.tabla_fechas() and any(
             c["tipo"] == "dateTime" for t in visibles for c in t["columnas"]):
-        out.append(_h(
-            "R14 · Sin tabla de calendario", "media", "(modelo)",
-            "Hay columnas de fecha pero ninguna tabla de calendario marcada: "
-            "la inteligencia de tiempo (YTD, año anterior) puede devolver "
-            "resultados incorrectos sin avisar.",
-            "Crear una tabla de calendario continua y marcarla como tabla de "
-            "fechas."))
+        out.append(_h("R14", "media", "(modelo)"))
 
     con_medidas = [t["nombre"] for t in visibles
                    if t["medidas"] and any(not c["oculta"] for c in t["columnas"])]
     if len(con_medidas) >= 2:
-        out.append(_h(
-            "R15 · Medidas dispersas", "baja", ", ".join(con_medidas[:5]),
-            "Las medidas viven repartidas en tablas de datos; el panel de "
-            "campos mezcla modelo y cálculos.",
-            "Concentrarlas en una tabla de medidas dedicada.", auto=True))
+        out.append(_h("R15", "baja", ", ".join(con_medidas[:5]), auto=True))
     return out
 
 
@@ -227,8 +176,7 @@ def agrupar(hallazgos: list[dict]) -> list[dict]:
     for h in hallazgos:
         g = grupos.setdefault(h["regla"], {
             "regla": h["regla"], "severidad": h["severidad"],
-            "detalle": h["detalle"], "arreglo": h["arreglo"],
-            "auto": h["auto"], "objetos": [],
+            "datos": h.get("datos") or {}, "auto": h["auto"], "objetos": [],
         })
         g["objetos"].append(h["objeto"])
     orden = {s: i for i, s in enumerate(SEVERIDADES)}
