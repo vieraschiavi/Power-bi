@@ -1639,6 +1639,22 @@ T: dict[str, dict[str, str]] = {
     "genx_nombre_topn": {"es": "{base} · top {n} {col}",
                         "en": "{base} · top {n} {col}",
                         "pt": "{base} · top {n} {col}"},
+    # ---- validación de referencias contra el catálogo -------------------
+    "cat_tabla_inexistente": {
+        "es": "La tabla '{tabla}' no existe en el modelo.",
+        "en": "Table '{tabla}' does not exist in the model.",
+        "pt": "A tabela '{tabla}' não existe no modelo.",
+    },
+    "cat_columna_inexistente": {
+        "es": "La columna {tabla}[{col}] no existe en el modelo.",
+        "en": "Column {tabla}[{col}] does not exist in the model.",
+        "pt": "A coluna {tabla}[{col}] não existe no modelo.",
+    },
+    "cat_medida_inexistente": {
+        "es": "La medida [{medida}] no existe en el modelo.",
+        "en": "Measure [{medida}] does not exist in the model.",
+        "pt": "A medida [{medida}] não existe no modelo.",
+    },
 }
 
 

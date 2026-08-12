@@ -15,6 +15,7 @@ import json
 import re
 import unicodedata
 
+from .i18n import IDIOMA_DEFECTO, t as traducir
 from .modelo import expr_texto
 
 TIPOS_NUMERICOS = {"int64", "double", "decimal", "currency"}
@@ -373,17 +374,21 @@ def referencias_dax(expresion: str) -> dict:
     return {"columnas": columnas, "medidas": medidas}
 
 
-def validar_referencias(expresion: str, cat: Catalogo) -> list[str]:
+def validar_referencias(expresion: str, cat: Catalogo,
+                        idioma: str = IDIOMA_DEFECTO) -> list[str]:
     """Devuelve la lista de referencias que NO existen en el modelo."""
     errores = []
     refs = referencias_dax(expresion)
     for tabla, col in refs["columnas"]:
         t = cat.tabla(tabla)
         if not t:
-            errores.append(f"La tabla '{tabla}' no existe en el modelo.")
+            errores.append(
+                traducir("cat_tabla_inexistente", idioma).format(tabla=tabla))
         elif not cat.existe_columna(tabla, col):
-            errores.append(f"La columna {tabla}[{col}] no existe en el modelo.")
+            errores.append(traducir("cat_columna_inexistente", idioma).format(
+                tabla=tabla, col=col))
     for med in refs["medidas"]:
         if not cat.medida(med):
-            errores.append(f"La medida [{med}] no existe en el modelo.")
+            errores.append(
+                traducir("cat_medida_inexistente", idioma).format(medida=med))
     return errores

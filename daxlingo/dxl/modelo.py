@@ -72,6 +72,12 @@ def cargar(ruta: str | Path) -> dict:
       modelo        el TMSL completo (dict) o None si no se pudo leer
       layout        el layout del reporte (dict) o None
       advertencias  lista de strings con lo que NO se pudo leer y por qué
+
+    Un archivo corrupto o truncado (zip roto, JSON a medio escribir) no tira
+    un traceback crudo — cae en `advertencias` como cualquier otro «no se
+    pudo leer», que es lo que ya hacía `_cargar_pbip` para el caso de un
+    model.bim faltante. Sin esto, subir un .pbit corrupto en la app rompía
+    la pestaña con un `JSONDecodeError` sin traducir en vez de avisar.
     """
     ruta = Path(ruta)
     if not ruta.exists():
@@ -79,17 +85,27 @@ def cargar(ruta: str | Path) -> dict:
 
     sufijo = ruta.suffix.lower()
     if sufijo == ".pbit":
-        return _cargar_pbit(ruta)
-    if sufijo == ".pbix":
-        return _cargar_pbix(ruta)
-    if sufijo == ".bim" or (sufijo == ".json" and ruta.name != "report.json"):
-        return _cargar_bim(ruta)
-    if sufijo == ".pbip" or ruta.is_dir():
-        return _cargar_pbip(ruta)
-    raise ValueError(
-        f"Formato no reconocido: {ruta.name}. "
-        "Se aceptan .pbit, .pbix, .bim, .pbip o una carpeta PBIP."
-    )
+        formato, cargador = "pbit", _cargar_pbit
+    elif sufijo == ".pbix":
+        formato, cargador = "pbix", _cargar_pbix
+    elif sufijo == ".bim" or (sufijo == ".json" and ruta.name != "report.json"):
+        formato, cargador = "bim", _cargar_bim
+    elif sufijo == ".pbip" or ruta.is_dir():
+        formato, cargador = "pbip", _cargar_pbip
+    else:
+        raise ValueError(
+            f"Formato no reconocido: {ruta.name}. "
+            "Se aceptan .pbit, .pbix, .bim, .pbip o una carpeta PBIP."
+        )
+    try:
+        return cargador(ruta)
+    except (zipfile.BadZipFile, json.JSONDecodeError, UnicodeDecodeError,
+            KeyError, OSError) as exc:
+        return {"formato": formato, "modelo": None, "layout": None,
+                "advertencias": [
+                    f"No se pudo leer {ruta.name} ({type(exc).__name__}): "
+                    f"{exc}. ¿El archivo está corrupto o incompleto?"],
+                "origen": str(ruta)}
 
 
 def _cargar_pbit(ruta: Path) -> dict:

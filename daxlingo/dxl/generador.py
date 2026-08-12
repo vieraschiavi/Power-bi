@@ -529,7 +529,7 @@ def _con_ia(pedido: str, cat: Catalogo, api_key: str | None, proveedor: str,
         return _error(traducir("genx_ia_error", idioma).format(
             error=salida["error"]))
 
-    errores = validar_referencias(salida.get("dax", ""), cat)
+    errores = validar_referencias(salida.get("dax", ""), cat, idioma)
     if errores:
         return _error(traducir("genx_ia_referencias_invalidas", idioma).format(
             detalle="; ".join(errores)))

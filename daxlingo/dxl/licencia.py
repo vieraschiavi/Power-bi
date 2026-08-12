@@ -38,6 +38,7 @@ import hashlib
 import hmac
 import json
 import os
+import secrets
 import time
 from pathlib import Path
 
@@ -84,7 +85,11 @@ def verificar(clave: str, secreto: str) -> dict | None:
     cuerpo, firma = partes[1], partes[2]
     esperada = _b64u(hmac.new(secreto.encode(), cuerpo.encode(),
                               hashlib.sha256).digest())
-    if not hmac.compare_digest(firma, esperada):
+    # Comparación en bytes, no en str: `compare_digest` exige ASCII puro para
+    # argumentos str y tira TypeError con cualquier otra cosa — pegar una
+    # clave con un caracter no-ASCII no tiene por qué reventar la pestaña de
+    # Licencia con un traceback, tiene que decir «licencia inválida».
+    if not hmac.compare_digest(firma.encode(), esperada.encode()):
         return None
     try:
         payload = json.loads(_des_b64u(cuerpo).decode())
@@ -131,19 +136,45 @@ def _edicion_horneada() -> dict:
     """
     Lee `edicion.json` del paquete. Lo escribe el build por edición; si no
     está (repo clonado, desarrollo), asumimos demo NO bloqueada.
+
+    El sello EMPAQUETADO (`resources/app/` o la raíz del portable) va
+    primero; `MVDAXLAB_EDICION_ARCHIVO` es el mecanismo con el que
+    `lanzador.py`/Electron le dicen al motor DÓNDE está ese sello — no un
+    permiso para que el usuario apunte la variable a un archivo propio y se
+    invente una edición. Si el sello empaquetado existe, la variable no se
+    consulta para nada.
     """
     candidatos = [
-        Path(os.environ.get("MVDAXLAB_EDICION_ARCHIVO", "")),
         Path(__file__).resolve().parents[1] / "edicion.json",
         Path(__file__).resolve().parents[2] / "edicion.json",
     ]
     for c in candidatos:
-        if c and c.name and c.exists():
+        if c.exists():
             try:
                 return json.loads(c.read_text(encoding="utf-8"))
             except (ValueError, OSError):
                 continue
+    desde_env = Path(os.environ.get("MVDAXLAB_EDICION_ARCHIVO", ""))
+    if desde_env.name and desde_env.exists():
+        try:
+            return json.loads(desde_env.read_text(encoding="utf-8"))
+        except (ValueError, OSError):
+            pass
     return {"edicion": "demo", "bloqueada": False}
+
+
+_SECRETO_DEV = "mvdaxlab-secreto-de-desarrollo-cambiar-en-el-build"
+
+# Si una copia SELLADA (bloqueada: true) sale sin secreto horneado —el
+# empaquetador se corrió sin MVDAX_LICENSE_SECRET, por ejemplo—, NO hay que
+# caer al secreto de desarrollo: es público (está en el código fuente), así
+# que cualquiera podría firmar una licencia válida contra todas las copias
+# que tengan ese mismo agujero — un keygen distribuible. Se genera uno al
+# azar por proceso en su lugar: la copia queda sin poder validar NINGUNA
+# licencia (ni siquiera una legítima), lo cual es ruidoso —el cliente se
+# queja de que su licencia no activa— y por eso mismo seguro: un build roto
+# tiene que fallar cerrado, no abierto.
+_SECRETO_SELLO_ROTO = secrets.token_hex(32)
 
 
 def secreto_licencia() -> str:
@@ -161,11 +192,10 @@ def secreto_licencia() -> str:
     """
     horneada = _edicion_horneada()
     if horneada.get("bloqueada"):
-        return (horneada.get("secreto")
-                or "mvdaxlab-secreto-de-desarrollo-cambiar-en-el-build")
+        return horneada.get("secreto") or _SECRETO_SELLO_ROTO
     return (os.environ.get("MVDAX_LICENSE_SECRET")
             or horneada.get("secreto")
-            or "mvdaxlab-secreto-de-desarrollo-cambiar-en-el-build")
+            or _SECRETO_DEV)
 
 
 # ==========================================================================

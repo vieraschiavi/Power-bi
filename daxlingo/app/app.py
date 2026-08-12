@@ -188,6 +188,25 @@ def aplicar_modelo(nuevo: dict, cambios: list[str]) -> None:
     st.session_state.historial.extend(cambios)
 
 
+def _flash(mensaje: str, tipo: str = "success") -> None:
+    """Guarda un mensaje para mostrarlo recién en el próximo render.
+
+    `st.rerun()` corta la ejecución actual ahí mismo — un `st.success(...)`
+    seguido de `st.rerun()` nunca llega a pintarse, así que el mensaje de
+    confirmación desaparecía sin que nadie lo viera. Guardarlo acá y
+    mostrarlo al principio del render siguiente es lo único que lo hace
+    sobrevivir al rerun que refresca el estado.
+    """
+    st.session_state["_flash"] = (tipo, mensaje)
+
+
+def _mostrar_flash() -> None:
+    pendiente = st.session_state.pop("_flash", None)
+    if pendiente:
+        tipo, mensaje = pendiente
+        getattr(st, tipo)(mensaje)
+
+
 def gate(funcion: str) -> bool:
     """True si la edición/licencia habilita la función; si no, avisa."""
     if ESTADO_LIC.permite(funcion):
@@ -208,6 +227,11 @@ with st.sidebar:
     if nuevo_idioma != IDIOMA:
         st.session_state.idioma = nuevo_idioma
         lic.guardar_preferencia("idioma", nuevo_idioma)
+        # `historial` guarda los cambios ya traducidos al idioma de cuando
+        # pasaron, no la clave — mostrar entradas viejas junto a las nuevas
+        # dejaría un historial mitad en un idioma, mitad en otro. Es «cambios
+        # de esta sesión»: al cambiar de idioma, arranca de nuevo.
+        st.session_state.historial = []
         st.rerun()
 
     icono = {"owner": "👑", "licencia": "✅", "demo": "🕒",
@@ -224,6 +248,8 @@ with st.sidebar:
 # ==========================================================================
 # Header
 # ==========================================================================
+_mostrar_flash()
+
 izq, der = st.columns([0.65, 0.35])
 with izq:
     st.markdown(f"# 🟨 {MARCA} <span class='dxl-badge'>DAX · Power BI · "
@@ -319,7 +345,7 @@ with tab_modelo:
                               _("oculta"): "✔" if c["oculta"] else "",
                               _("calculada"): "✔" if c["calculada"] else ""}
                              for c in tb["columnas"]],
-                            use_container_width=True, hide_index=True)
+                            width="stretch", hide_index=True)
                     for m in tb["medidas"]:
                         st.markdown(f"**[{m['nombre']}]** "
                                     f"`{m['formato'] or _('sin_formato')}`")
@@ -366,7 +392,7 @@ with tab_rel:
             lineas.append(f'  "{r["desde_tabla"]}" -> "{r["hacia_tabla"]}"'
                           f'{attrs};')
         lineas.append("}")
-        st.graphviz_chart("\n".join(lineas), use_container_width=True)
+        st.graphviz_chart("\n".join(lineas), width="stretch")
         st.caption(_("leyenda_grafo"))
 
 
@@ -405,7 +431,7 @@ with tab_analisis:
                 nuevo, cambios = transformador.aplicar_arreglos(
                     st.session_state.cargado["modelo"], hallazgos, IDIOMA)
                 aplicar_modelo(nuevo, cambios)
-                st.success(f"{len(cambios)} {_('cambios_aplicados')}")
+                _flash(f"{len(cambios)} {_('cambios_aplicados')}")
                 st.rerun()
 
         prov = st.session_state.proveedor
@@ -496,7 +522,7 @@ with tab_explicar:
                            _("exp_que_hace"): f["descripcion"],
                            _("exp_categoria"): f["categoria_txt"]}
                           for f in e["funciones"]],
-                         use_container_width=True, hide_index=True)
+                         width="stretch", hide_index=True)
         for falta in e["faltantes"]:
             st.error(falta)
 
@@ -525,7 +551,7 @@ with tab_transformar:
                             cargado["modelo"], actual, nuevo_nombre,
                             idioma=IDIOMA)
                         aplicar_modelo(nuevo, cambios)
-                        st.success(" · ".join(cambios))
+                        _flash(" · ".join(cambios))
                         st.rerun()
                     except ValueError as exc:
                         st.error(str(exc))
@@ -534,7 +560,7 @@ with tab_transformar:
                 nuevo, cambios = transformador.crear_tabla_medidas(
                     cargado["modelo"], idioma=IDIOMA)
                 aplicar_modelo(nuevo, cambios)
-                st.success(" · ".join(cambios) or _("nada_que_mover"))
+                _flash(" · ".join(cambios) or _("nada_que_mover"))
                 st.rerun()
         with c2:
             st.markdown(f"**{_('tr_col_calculada')}**")
@@ -549,7 +575,7 @@ with tab_transformar:
                     nuevo, cambios = asistente.agregar_columna_calculada(
                         cargado["modelo"], t_sel, cc_nombre, cc_dax)
                     aplicar_modelo(nuevo, cambios)
-                    st.success(" · ".join(cambios))
+                    _flash(" · ".join(cambios))
                     st.rerun()
                 except ValueError as exc:
                     st.error(str(exc))
@@ -559,7 +585,7 @@ with tab_transformar:
                     cargado["modelo"], idioma=IDIOMA)
                 nuevo, c_2 = transformador.ocultar_claves(nuevo, idioma=IDIOMA)
                 aplicar_modelo(nuevo, c_1 + c_2)
-                st.success(f"{len(c_1) + len(c_2)} {_('cambios_aplicados')}")
+                _flash(f"{len(c_1) + len(c_2)} {_('cambios_aplicados')}")
                 st.rerun()
 
 
@@ -726,7 +752,7 @@ python daxlingo/overlay/DAX_Overlay.py
                                 tabla=t_destino)
                             aplicar_modelo(nuevo, cambios)
                             asistente.marcar(item["_archivo"], "aplicado")
-                            st.success(" · ".join(cambios))
+                            _flash(" · ".join(cambios))
                             st.rerun()
                         except ValueError as exc:
                             st.error(str(exc))
@@ -777,7 +803,7 @@ with tab_academia:
                         if not hecho:
                             st.session_state.xp += e["xp"]
                             st.session_state.resueltos.add(e["id"])
-                        st.success(v["detalle"])
+                        _flash(v["detalle"])
                         st.rerun()
                     else:
                         st.error(v["detalle"])
@@ -810,9 +836,8 @@ with tab_tools:
     with c1:
         st.markdown(f"**{_('he_para_daxstudio')}**")
         if cat and cat.medidas():
-            tmp = Path(tempfile.mkdtemp(prefix="dxl_dax_"))
-            ruta = herramientas.exportar_medidas_dax(cat, tmp / "medidas.dax")
-            st.download_button("⬇️ medidas.dax", ruta.read_text("utf-8"),
+            st.download_button("⬇️ medidas.dax",
+                               herramientas.texto_medidas_dax(cat),
                                file_name="medidas.dax")
         else:
             st.caption(_("he_carga_medidas"))
@@ -883,7 +908,7 @@ with tab_lic:
     if clave and col_a.button(_("lic_activar"), type="primary"):
         try:
             lic.activar(clave)
-            st.success(_("lic_activada"))
+            _flash(_("lic_activada"))
             st.rerun()
         except ValueError:
             st.error(_("lic_invalida"))

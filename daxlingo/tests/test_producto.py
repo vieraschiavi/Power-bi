@@ -138,6 +138,30 @@ def datos(tmp_path, monkeypatch):
     return tmp_path
 
 
+def test_secreto_vacio_en_copia_sellada_no_cae_al_publico(datos, monkeypatch):
+    """Un empaquetado corrido sin MVDAX_LICENSE_SECRET deja `secreto: ""` en
+    el sello. Eso NO puede caer al secreto de desarrollo: es público (está
+    en el código fuente), así que cualquiera firmaría una licencia válida
+    contra todas las copias con ese mismo agujero — un keygen distribuible.
+    """
+    monkeypatch.delenv("MVDAX_LICENSE_SECRET", raising=False)
+    archivo = datos / "edicion.json"
+    archivo.write_text(json.dumps(
+        {"edicion": "profesional", "bloqueada": True, "secreto": ""}),
+        encoding="utf-8")
+    monkeypatch.setenv("MVDAXLAB_EDICION_ARCHIVO", str(archivo))
+
+    efectivo = licencia.secreto_licencia()
+    assert efectivo != "mvdaxlab-secreto-de-desarrollo-cambiar-en-el-build", \
+        "el secreto público de desarrollo sigue validando copias selladas rotas"
+
+    forjada = licencia.firmar(
+        {"plan": "perpetua"}, "mvdaxlab-secreto-de-desarrollo-cambiar-en-el-build")
+    estado = licencia.evaluar(forjada)
+    assert estado.motivo != "licencia", \
+        f"una licencia firmada con el secreto público quedó válida: {estado}"
+
+
 def test_demo_arranca_con_siete_dias(datos):
     estado = licencia.evaluar()
     assert estado.edicion == "demo"
@@ -598,6 +622,23 @@ def test_una_copia_vendida_no_se_convierte_en_owner_con_una_variable(tmp_path):
         f"una variable de entorno convirtió la copia vendida en {obtenida}"
 
 
+def test_el_sello_empaquetado_manda_sobre_la_variable_de_entorno(tmp_path):
+    """`MVDAXLAB_EDICION_ARCHIVO` es CÓMO `lanzador.py`/Electron le dicen al
+    motor dónde está el sello empaquetado — no un permiso para que la
+    variable apunte a un `edicion.json` cualquiera y se invente una edición.
+    Si el sello empaquetado (`resources/app/edicion.json`) existe, tiene que
+    ganar aunque la variable apunte a otro lado.
+    """
+    destino = _copia_instalada(
+        tmp_path, {"edicion": "profesional", "bloqueada": True, "secreto": "s"})
+    falso = tmp_path / "falso.json"
+    falso.write_text(json.dumps({"edicion": "owner", "bloqueada": True}),
+                     encoding="utf-8")
+    obtenida = _edicion_en(destino, tmp_path, MVDAXLAB_EDICION_ARCHIVO=str(falso))
+    assert obtenida == "profesional", \
+        f"la variable de entorno apuntó a un sello falso y ganó: {obtenida}"
+
+
 def test_el_secreto_de_licencia_tambien_esta_sellado(tmp_path):
     """El candado de la edición no alcanza si el SECRETO se puede pisar.
 
@@ -653,6 +694,49 @@ def test_el_main_pasa_el_nombre_de_variable_que_el_motor_lee():
     assert "MVDAXLAB_EDICION_ARCHIVO" in main
     assert "MVDAX_EDICION_ARCHIVO:" not in main, \
         "quedó el nombre viejo, que el motor ignora"
+
+
+def test_lanzador_fija_mvdax_edicion_igual_que_electron(tmp_path, monkeypatch):
+    """`entorno()` tiene que fijar MVDAX_EDICION a propósito, como ya hace
+    `desktop/main.cjs` — no dejar pasar lo que sea que traiga el entorno del
+    usuario cuando falta el sello (una carpeta portable incompleta)."""
+    import lanzador
+
+    monkeypatch.setattr(lanzador, "RAIZ", tmp_path)
+    monkeypatch.setenv("MVDAX_EDICION", "owner")  # lo que el atacante puso
+
+    # Sin sello: no hay que confiar en la variable ambiente.
+    env = lanzador.entorno()
+    assert env["MVDAX_EDICION"] == "demo", \
+        f"sin sello, ganó la variable de entorno: {env['MVDAX_EDICION']}"
+    assert "MVDAXLAB_EDICION_ARCHIVO" not in env
+
+    # Con sello: la edición horneada manda, tanto en MVDAX_EDICION como en
+    # dónde le dice a licencia.py que busque el sello real.
+    (tmp_path / "edicion.json").write_text(
+        json.dumps({"edicion": "profesional", "bloqueada": True,
+                   "secreto": "s"}), encoding="utf-8")
+    env = lanzador.entorno()
+    assert env["MVDAX_EDICION"] == "profesional"
+    assert env["MVDAXLAB_EDICION_ARCHIVO"] == str(tmp_path / "edicion.json")
+
+
+def test_lanzador_guarda_la_salida_de_streamlit_para_diagnosticar(tmp_path,
+                                                                   monkeypatch):
+    """El portable no tiene consola de desarrollador: si Streamlit falla al
+    arrancar, `cola_log()` tiene que devolver lo que dijo — antes se tiraba
+    a DEVNULL y `MV_DAX_Lab.bat` prometía «el detalle está arriba» sin que
+    hubiera ningún detalle."""
+    import lanzador
+
+    monkeypatch.setattr(lanzador, "RAIZ", tmp_path)
+    monkeypatch.setenv("MVDAXLAB_DATOS", str(tmp_path / "datos"))
+    assert lanzador.cola_log() == "", "sin log todavía, tiene que devolver vacío"
+
+    lanzador.archivo_log().parent.mkdir(parents=True, exist_ok=True)
+    lanzador.archivo_log().write_text(
+        "ModuleNotFoundError: No module named 'streamlit'\n", encoding="utf-8")
+    assert "ModuleNotFoundError" in lanzador.cola_log()
 
 
 def test_sellar_una_instalacion_como_owner_y_volver_atras(tmp_path):

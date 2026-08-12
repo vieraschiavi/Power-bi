@@ -25,9 +25,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from dxl import MARCA, __version__  # noqa: E402
 from dxl import analizador, catalogo, explicador, generador  # noqa: E402
+from dxl import licencia  # noqa: E402
 from dxl import modelo as modmod  # noqa: E402
 from dxl import tablero, transformador  # noqa: E402
-from dxl.i18n import IDIOMA_DEFECTO  # noqa: E402
+from dxl.i18n import IDIOMA_DEFECTO, t as traducir  # noqa: E402
 
 # Estado del servidor: el modelo cargado en la sesión.
 ESTADO: dict = {"cargado": None}
@@ -59,28 +60,38 @@ HERRAMIENTAS = [
         "name": "generar_dax",
         "description": "Genera una medida DAX desde un pedido en lenguaje "
                        "natural, validada contra el modelo activo. "
-                       "aplicar=true la agrega al modelo.",
+                       "aplicar=true la agrega al modelo. Requiere licencia "
+                       "vigente (edición demo vencida: bloqueado).",
         "inputSchema": {"type": "object",
                         "properties": {"pedido": {"type": "string"},
-                                       "aplicar": {"type": "boolean"}},
+                                       "aplicar": {"type": "boolean"},
+                                       "idioma": {"type": "string",
+                                                  "enum": ["es", "en", "pt"]}},
                         "required": ["pedido"]},
     },
     {
         "name": "explicar_dax",
-        "description": "Explica una expresión DAX en español: qué calcula, "
-                       "funciones, referencias y nivel.",
+        "description": "Explica una expresión DAX: qué calcula, funciones, "
+                       "referencias y nivel.",
         "inputSchema": {"type": "object",
-                        "properties": {"dax": {"type": "string"}},
+                        "properties": {"dax": {"type": "string"},
+                                       "idioma": {"type": "string",
+                                                  "enum": ["es", "en", "pt"]}},
                         "required": ["dax"]},
     },
     {
         "name": "exportar",
         "description": "Exporta el modelo activo (con tablero automático) a "
-                       ".pbit o PBIP en la ruta indicada.",
+                       ".pbit o PBIP en la ruta indicada. No pisa un archivo "
+                       "existente salvo sobrescribir=true. Requiere licencia "
+                       "vigente.",
         "inputSchema": {"type": "object",
                         "properties": {"destino": {"type": "string"},
                                        "formato": {"type": "string",
-                                                   "enum": ["pbit", "pbip"]}},
+                                                   "enum": ["pbit", "pbip"]},
+                                       "sobrescribir": {"type": "boolean"},
+                                       "idioma": {"type": "string",
+                                                  "enum": ["es", "en", "pt"]}},
                         "required": ["destino"]},
     },
 ]
@@ -130,10 +141,13 @@ def ejecutar_herramienta(nombre: str, args: dict) -> dict:
         return _texto(json.dumps(salida, ensure_ascii=False, indent=2))
 
     if nombre == "generar_dax":
-        cat = _cat()
-        # Mismo criterio que explicar_dax: el agente puede pedir el idioma;
-        # si no, el del producto.
+        # Mismo criterio que `app.py:gate("generar")`: la pestaña entera de
+        # generación DAX está detrás de la licencia, no solo el botón de
+        # agregar la medida al modelo.
         idioma_pedido = args.get("idioma", IDIOMA_DEFECTO)
+        if not licencia.evaluar().permite("generar"):
+            raise ValueError(traducir("lic_bloqueado", idioma_pedido))
+        cat = _cat()
         r = generador.generar(args["pedido"], cat, idioma=idioma_pedido)
         if r["ok"] and args.get("aplicar"):
             nuevo, cambios = transformador.agregar_medida(
@@ -156,6 +170,9 @@ def ejecutar_herramienta(nombre: str, args: dict) -> dict:
         return _texto(json.dumps(r, ensure_ascii=False, indent=2))
 
     if nombre == "exportar":
+        idioma_pedido = args.get("idioma", IDIOMA_DEFECTO)
+        if not licencia.evaluar().permite("exportar"):
+            raise ValueError(traducir("lic_bloqueado", idioma_pedido))
         cargado = ESTADO.get("cargado")
         if not cargado or not cargado.get("modelo"):
             raise ValueError("No hay modelo cargado.")
@@ -164,6 +181,17 @@ def ejecutar_herramienta(nombre: str, args: dict) -> dict:
         if layout is None and cat.medidas():
             layout = tablero.disenar_auto(cat, titulo=cat.nombre or "Tablero")
         destino = Path(args["destino"])
+        # Un cliente MCP comprometido o con un prompt inyectado no tiene por
+        # qué poder pisar un archivo cualquiera del disco (p. ej. un
+        # ~/.bashrc) solo con pedirle a `exportar` esa ruta como destino. La
+        # carga de modelos SÍ necesita poder apuntar a cualquier .pbit del
+        # usuario —es de solo lectura y modelo.cargar() ya rechaza lo que no
+        # sea un formato Power BI reconocido—, pero escribir es distinto:
+        # por defecto no se pisa un archivo que ya existe.
+        if destino.exists() and not args.get("sobrescribir"):
+            raise ValueError(
+                f"Ya existe un archivo en «{destino}». Pasá "
+                "sobrescribir=true si es a propósito.")
         if args.get("formato", "pbit") == "pbip":
             ruta = modmod.exportar_pbip(cargado["modelo"], layout,
                                         destino.parent, destino.stem)

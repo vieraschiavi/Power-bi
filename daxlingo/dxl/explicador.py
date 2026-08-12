@@ -149,7 +149,7 @@ def explicar(expresion: str, cat: Catalogo | None = None,
     faltantes = []
     if cat is not None and not cat.parcial:
         from .catalogo import validar_referencias
-        faltantes = validar_referencias(expr, cat)
+        faltantes = validar_referencias(expr, cat, idioma)
 
     pasos = _narrar(expr, usadas, refs, idioma)
     nivel = _nivel(usadas, expr)
