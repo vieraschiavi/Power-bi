@@ -303,6 +303,22 @@ def test_el_motor_no_deja_texto_en_espanol_en_otro_idioma(cat):
     assert (analizador.describir(hallazgos[0], "es")["detalle"]
             != analizador.describir(hallazgos[0], "en")["detalle"])
 
+    from dxl import generador
+    r_es = generador.generar("promedio de costo", cat, idioma="es")
+    r_en = generador.generar("promedio de costo", cat, idioma="en")
+    assert r_es["ok"] and r_en["ok"]
+    assert r_es["nombre"] != r_en["nombre"], \
+        f"el nombre de la medida no varía con el idioma: {r_es['nombre']!r}"
+    assert r_es["explicacion"] != r_en["explicacion"]
+
+    r_es_error = generador.generar("promedio de columnainexistente", cat,
+                                   idioma="es")
+    r_en_error = generador.generar("promedio de columnainexistente", cat,
+                                   idioma="en")
+    assert not r_es_error["ok"] and not r_en_error["ok"]
+    assert r_es_error["advertencias"] != r_en_error["advertencias"], \
+        f"el error del generador no se tradujo: {r_es_error['advertencias']!r}"
+
 
 def test_arreglos_automaticos(cat):
     hallazgos = analizador.analizar(cat)

@@ -49,7 +49,6 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-RAIZ = Path(__file__).resolve().parents[1]
 AUDIO = Path(__file__).resolve().parent / "audio"
 
 # El modelo multilingüe: la misma voz sirve para los tres idiomas.

@@ -22,7 +22,7 @@ import streamlit as st
 RAIZ = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(RAIZ))
 
-from dxl import LEMA, MARCA, __version__, sitio  # noqa: E402
+from dxl import MARCA, __version__, sitio  # noqa: E402
 from dxl import analizador, asistente, catalogo, ejercicios  # noqa: E402
 from dxl import explicador, fabric, generador, herramientas, ia  # noqa: E402
 from dxl import licencia as lic  # noqa: E402
@@ -455,7 +455,7 @@ with tab_generar:
                         nuevo, cambios = transformador.agregar_medida(
                             st.session_state.cargado["modelo"], r["nombre"],
                             r["dax"], formato=r["formato"],
-                            descripcion=r["explicacion"])
+                            descripcion=r["explicacion"], idioma=IDIOMA)
                         aplicar_modelo(nuevo, cambios)
                         st.success(cambios[0])
                     except ValueError as exc:
@@ -522,7 +522,8 @@ with tab_transformar:
                 if nuevo_nombre and st.button(_("tr_btn_renombrar")):
                     try:
                         nuevo, cambios = transformador.renombrar_medida(
-                            cargado["modelo"], actual, nuevo_nombre)
+                            cargado["modelo"], actual, nuevo_nombre,
+                            idioma=IDIOMA)
                         aplicar_modelo(nuevo, cambios)
                         st.success(" · ".join(cambios))
                         st.rerun()
@@ -531,7 +532,7 @@ with tab_transformar:
             st.markdown(f"**{_('tr_tabla_medidas')}**")
             if st.button(_("tr_btn_concentrar")):
                 nuevo, cambios = transformador.crear_tabla_medidas(
-                    cargado["modelo"])
+                    cargado["modelo"], idioma=IDIOMA)
                 aplicar_modelo(nuevo, cambios)
                 st.success(" · ".join(cambios) or _("nada_que_mover"))
                 st.rerun()
@@ -554,8 +555,9 @@ with tab_transformar:
                     st.error(str(exc))
             st.markdown(f"**{_('tr_formatos')}**")
             if st.button(_("tr_btn_formatos")):
-                nuevo, c_1 = transformador.asignar_formatos(cargado["modelo"])
-                nuevo, c_2 = transformador.ocultar_claves(nuevo)
+                nuevo, c_1 = transformador.asignar_formatos(
+                    cargado["modelo"], idioma=IDIOMA)
+                nuevo, c_2 = transformador.ocultar_claves(nuevo, idioma=IDIOMA)
                 aplicar_modelo(nuevo, c_1 + c_2)
                 st.success(f"{len(c_1) + len(c_2)} {_('cambios_aplicados')}")
                 st.rerun()

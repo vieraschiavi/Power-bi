@@ -151,10 +151,20 @@ def secreto_licencia() -> str:
     Clave de verificación. En el build se hornea en `edicion.json`; en
     desarrollo sale del entorno. El valor por defecto es deliberadamente
     obvio: una copia sin configurar no valida licencias reales.
+
+    En una edición sellada (`bloqueada: true`) el secreto horneado manda
+    siempre, igual que `edicion_actual()` ya hace con la edición: si la
+    variable de entorno pudiera pisarlo, alcanzaría con
+    MVDAX_LICENSE_SECRET + `firmar()` para activar cualquier copia vendida
+    con una licencia falsa — el mismo agujero que el bloqueo de edición
+    tapa, pero por la puerta de al lado.
     """
-    horneada = _edicion_horneada().get("secreto")
+    horneada = _edicion_horneada()
+    if horneada.get("bloqueada"):
+        return (horneada.get("secreto")
+                or "mvdaxlab-secreto-de-desarrollo-cambiar-en-el-build")
     return (os.environ.get("MVDAX_LICENSE_SECRET")
-            or horneada
+            or horneada.get("secreto")
             or "mvdaxlab-secreto-de-desarrollo-cambiar-en-el-build")
 
 

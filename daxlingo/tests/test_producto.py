@@ -521,6 +521,12 @@ def test_avisa_cuando_el_pedido_encajaba_en_varias_medidas(cat_demo):
     ("moving average 3 months Unidades", "DATESINPERIOD"),
     ("Unidades vs ano anterior", "SAMEPERIODLASTYEAR"),
     ("distinct Cliente", "DISTINCTCOUNT"),
+    # «by» en vez de «por»: el conector inglés, no solo la palabra clave del
+    # patrón, tiene que reconocerse — si no, «rank X by Y» le pasa Y pegado
+    # a X como si fuera todo la dimensión, y termina rankeando una medida
+    # contra sí misma.
+    ("rank pais by ventas", "RANKX"),
+    ("top 5 pais by ventas", "TOPN"),
 ])
 def test_el_motor_de_reglas_tambien_entiende_ingles_y_portugues(
         cat_demo, pedido, esperado):
@@ -590,6 +596,43 @@ def test_una_copia_vendida_no_se_convierte_en_owner_con_una_variable(tmp_path):
                            MVDAX_EDICION="owner")
     assert obtenida == "profesional", \
         f"una variable de entorno convirtió la copia vendida en {obtenida}"
+
+
+def test_el_secreto_de_licencia_tambien_esta_sellado(tmp_path):
+    """El candado de la edición no alcanza si el SECRETO se puede pisar.
+
+    `edicion_actual()` ya ignora `MVDAX_EDICION` en una copia sellada — pero
+    `secreto_licencia()` seguía prefiriendo `MVDAX_LICENSE_SECRET` por
+    encima del secreto horneado. Con eso alcanzaba `licencia.firmar()` +
+    esa variable para fabricar una licencia «profesional» válida sobre
+    cualquier copia DEMO vendida, sin tocar la edición para nada.
+    """
+    destino = _copia_instalada(
+        tmp_path, {"edicion": "demo", "bloqueada": True,
+                   "secreto": "secreto-real-del-build"})
+    sello = destino / "edicion.json"
+    import subprocess
+    guion = (
+        "import os, sys, json\n"
+        f"sys.path.insert(0, {str(destino)!r})\n"
+        f"os.environ['MVDAXLAB_DATOS'] = {str(tmp_path / 'datos')!r}\n"
+        "from dxl import licencia as lic\n"
+        "clave = lic.firmar({'plan': 'perpetua'}, os.environ['MVDAX_LICENSE_SECRET'])\n"
+        "estado = lic.evaluar(clave)\n"
+        "print(json.dumps({'secreto_usado': lic.secreto_licencia(),\n"
+        "                  'edicion': estado.edicion, 'motivo': estado.motivo}))\n")
+    r = subprocess.run(
+        [sys.executable, "-c", guion], capture_output=True, text=True,
+        env={**os.environ, "MVDAXLAB_EDICION_ARCHIVO": str(sello),
+             "MVDAX_LICENSE_SECRET": "secreto-inventado-por-el-cliente"})
+    assert r.returncode == 0, r.stderr
+    resultado = json.loads(r.stdout.strip())
+    assert resultado["secreto_usado"] == "secreto-real-del-build", \
+        f"el secreto horneado se puede pisar con una variable: {resultado}"
+    assert resultado["motivo"] != "licencia", \
+        f"una licencia firmada con un secreto inventado se aceptó como válida: {resultado}"
+    assert resultado["edicion"] != "profesional", \
+        f"una licencia falsa convirtió la copia DEMO en profesional: {resultado}"
 
 
 def test_el_empaquetado_lleva_el_sello_a_donde_python_lo_busca():

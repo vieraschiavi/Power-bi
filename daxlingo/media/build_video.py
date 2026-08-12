@@ -326,8 +326,6 @@ def cuadro_pestana(captura: Path, titulo: str, bajada: str,
                         Image.LANCZOS)
     if nuevo.height > disp_h:
         nuevo = nuevo.crop((0, 0, disp_w, disp_h))
-    else:
-        disp_h = nuevo.height
     # Centrada vertical: la captura es más ancha que alta, así que anclada
     # arriba dejaba la mitad inferior del cuadro vacía.
     disp_y = (ALTO - nuevo.height) // 2
@@ -398,6 +396,15 @@ def duracion_audio(ruta: Path) -> float | None:
     return int(h) * 3600 + int(mi) * 60 + float(s)
 
 
+def _correr(cmd: list[str]) -> None:
+    """`subprocess.run(..., check=True)` pero con el stderr real de ffmpeg en
+    el error — con `capture_output=True` a secas, `CalledProcessError` solo
+    trae el código de salida y el mensaje real queda descartado."""
+    r = subprocess.run(cmd, capture_output=True, text=True)
+    if r.returncode != 0:
+        raise subprocess.CalledProcessError(r.returncode, cmd, r.stdout, r.stderr)
+
+
 def sonorizar(mudo: Path, pistas: list[tuple[Path | None, float]]) -> None:
     """Le pega la narración al video, placa por placa, y pisa el archivo.
 
@@ -419,22 +426,20 @@ def sonorizar(mudo: Path, pistas: list[tuple[Path | None, float]]) -> None:
                 cmd = [_ffmpeg(), "-y", "-i", str(clip),
                        "-af", f"apad=whole_dur={segundos:.4f}", *comun,
                        str(parte)]
-            subprocess.run(cmd, capture_output=True, check=True)
+            _correr(cmd)
             partes.append(parte)
 
         lista = tmp / "partes.txt"
         lista.write_text("".join(f"file '{p}'\n" for p in partes),
                          encoding="utf-8")
         pista = tmp / "voz.wav"
-        subprocess.run([_ffmpeg(), "-y", "-f", "concat", "-safe", "0",
-                        "-i", str(lista), "-c", "copy", str(pista)],
-                       capture_output=True, check=True)
+        _correr([_ffmpeg(), "-y", "-f", "concat", "-safe", "0",
+                 "-i", str(lista), "-c", "copy", str(pista)])
 
         con_voz = tmp / "con-voz.mp4"
-        subprocess.run([_ffmpeg(), "-y", "-i", str(mudo), "-i", str(pista),
-                        "-c:v", "copy", "-c:a", "aac", "-b:a", "160k",
-                        "-movflags", "+faststart", "-shortest", str(con_voz)],
-                       capture_output=True, check=True)
+        _correr([_ffmpeg(), "-y", "-i", str(mudo), "-i", str(pista),
+                 "-c:v", "copy", "-c:a", "aac", "-b:a", "160k",
+                 "-movflags", "+faststart", "-shortest", str(con_voz)])
         shutil.move(str(con_voz), str(mudo))
 
 

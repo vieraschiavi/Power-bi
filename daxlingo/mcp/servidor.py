@@ -131,11 +131,15 @@ def ejecutar_herramienta(nombre: str, args: dict) -> dict:
 
     if nombre == "generar_dax":
         cat = _cat()
-        r = generador.generar(args["pedido"], cat)
+        # Mismo criterio que explicar_dax: el agente puede pedir el idioma;
+        # si no, el del producto.
+        idioma_pedido = args.get("idioma", IDIOMA_DEFECTO)
+        r = generador.generar(args["pedido"], cat, idioma=idioma_pedido)
         if r["ok"] and args.get("aplicar"):
             nuevo, cambios = transformador.agregar_medida(
                 ESTADO["cargado"]["modelo"], r["nombre"], r["dax"],
-                formato=r["formato"], descripcion=r["explicacion"])
+                formato=r["formato"], descripcion=r["explicacion"],
+                idioma=idioma_pedido)
             ESTADO["cargado"]["modelo"] = nuevo
             r["aplicado"] = cambios
         return _texto(json.dumps(r, ensure_ascii=False, indent=2))
