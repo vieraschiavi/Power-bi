@@ -875,6 +875,562 @@ T: dict[str, dict[str, str]] = {
         "en": "Concentrate them in a dedicated measures table.",
         "pt": "Concentrá-las numa tabela de medidas dedicada.",
     },
+    # ---- explicador: base de conocimiento DAX y prosa -----------------
+    # Las 62 descripciones de función, las categorías y las frases del
+    # explicador. Estaban en español dentro de `explicador.py`, así que la
+    # pestaña Explicador contestaba en español con la app en otro idioma.
+    "fn_SUM": {
+        "es": "suma los valores de una columna",
+        "en": "sums the values of a column",
+        "pt": "soma os valores de uma coluna",
+    },
+    "fn_SUMX": {
+        "es": "recorre la tabla fila por fila, evalúa la expresión y suma los resultados",
+        "en": "walks the table row by row, evaluates the expression and sums the results",
+        "pt": "percorre a tabela linha a linha, avalia a expressão e soma os resultados",
+    },
+    "fn_AVERAGE": {
+        "es": "promedia los valores de una columna",
+        "en": "averages the values of a column",
+        "pt": "faz a média dos valores de uma coluna",
+    },
+    "fn_AVERAGEX": {
+        "es": "recorre la tabla fila por fila y promedia la expresión evaluada",
+        "en": "walks the table row by row and averages the evaluated expression",
+        "pt": "percorre a tabela linha a linha e faz a média da expressão avaliada",
+    },
+    "fn_MIN": {
+        "es": "devuelve el mínimo de una columna",
+        "en": "returns the minimum of a column",
+        "pt": "devolve o mínimo de uma coluna",
+    },
+    "fn_MAX": {
+        "es": "devuelve el máximo de una columna",
+        "en": "returns the maximum of a column",
+        "pt": "devolve o máximo de uma coluna",
+    },
+    "fn_MINX": {
+        "es": "mínimo de una expresión evaluada fila por fila",
+        "en": "minimum of an expression evaluated row by row",
+        "pt": "mínimo de uma expressão avaliada linha a linha",
+    },
+    "fn_MAXX": {
+        "es": "máximo de una expresión evaluada fila por fila",
+        "en": "maximum of an expression evaluated row by row",
+        "pt": "máximo de uma expressão avaliada linha a linha",
+    },
+    "fn_COUNT": {
+        "es": "cuenta los valores no vacíos de una columna",
+        "en": "counts the non-blank values of a column",
+        "pt": "conta os valores não vazios de uma coluna",
+    },
+    "fn_COUNTROWS": {
+        "es": "cuenta las filas de una tabla",
+        "en": "counts the rows of a table",
+        "pt": "conta as linhas de uma tabela",
+    },
+    "fn_COUNTX": {
+        "es": "cuenta evaluando una expresión fila por fila",
+        "en": "counts by evaluating an expression row by row",
+        "pt": "conta avaliando uma expressão linha a linha",
+    },
+    "fn_DISTINCTCOUNT": {
+        "es": "cuenta los valores distintos de una columna",
+        "en": "counts the distinct values of a column",
+        "pt": "conta os valores distintos de uma coluna",
+    },
+    "fn_CALCULATE": {
+        "es": "evalúa la expresión CAMBIANDO el contexto de filtro con los filtros que se le pasan",
+        "en": "evaluates the expression CHANGING the filter context with the filters it receives",
+        "pt": "avalia a expressão MUDANDO o contexto de filtro com os filtros que recebe",
+    },
+    "fn_CALCULATETABLE": {
+        "es": "como CALCULATE pero devuelve una tabla",
+        "en": "like CALCULATE but returns a table",
+        "pt": "como CALCULATE mas devolve uma tabela",
+    },
+    "fn_FILTER": {
+        "es": "devuelve las filas de la tabla que cumplen la condición",
+        "en": "returns the rows of the table that meet the condition",
+        "pt": "devolve as linhas da tabela que cumprem a condição",
+    },
+    "fn_ALL": {
+        "es": "quita los filtros de la tabla o columna indicada",
+        "en": "removes the filters from the given table or column",
+        "pt": "remove os filtros da tabela ou coluna indicada",
+    },
+    "fn_ALLEXCEPT": {
+        "es": "quita todos los filtros salvo los de las columnas indicadas",
+        "en": "removes every filter except those on the given columns",
+        "pt": "remove todos os filtros exceto os das colunas indicadas",
+    },
+    "fn_ALLSELECTED": {
+        "es": "quita los filtros internos del visual pero respeta los slicers",
+        "en": "removes the visual's inner filters but respects the slicers",
+        "pt": "remove os filtros internos do visual mas respeita os slicers",
+    },
+    "fn_REMOVEFILTERS": {
+        "es": "quita filtros — versión moderna y legible de ALL",
+        "en": "removes filters — the modern, readable version of ALL",
+        "pt": "remove filtros — versão moderna e legível de ALL",
+    },
+    "fn_KEEPFILTERS": {
+        "es": "agrega el filtro sin pisar los existentes (intersección)",
+        "en": "adds the filter without overwriting the existing ones (intersection)",
+        "pt": "adiciona o filtro sem sobrepor os existentes (interseção)",
+    },
+    "fn_VALUES": {
+        "es": "devuelve los valores visibles (distintos) de una columna en el contexto actual",
+        "en": "returns the visible (distinct) values of a column in the current context",
+        "pt": "devolve os valores visíveis (distintos) de uma coluna no contexto atual",
+    },
+    "fn_DISTINCT": {
+        "es": "devuelve los valores distintos de una columna",
+        "en": "returns the distinct values of a column",
+        "pt": "devolve os valores distintos de uma coluna",
+    },
+    "fn_SELECTEDVALUE": {
+        "es": "devuelve el valor si hay UNO solo visible; si no, el alternativo",
+        "en": "returns the value if exactly ONE is visible; otherwise the fallback",
+        "pt": "devolve o valor se houver apenas UM visível; caso contrário, o alternativo",
+    },
+    "fn_HASONEVALUE": {
+        "es": "verdadero si la columna tiene un único valor visible",
+        "en": "true if the column has a single visible value",
+        "pt": "verdadeiro se a coluna tem um único valor visível",
+    },
+    "fn_ISFILTERED": {
+        "es": "verdadero si la columna está siendo filtrada",
+        "en": "true if the column is being filtered",
+        "pt": "verdadeiro se a coluna está sendo filtrada",
+    },
+    "fn_DIVIDE": {
+        "es": "divide de forma segura: ante denominador 0 o BLANK devuelve BLANK (o el alternativo)",
+        "en": "divides safely: on a 0 or BLANK divisor it returns BLANK (or the fallback)",
+        "pt": "divide de forma segura: com divisor 0 ou BLANK devolve BLANK (ou o alternativo)",
+    },
+    "fn_IF": {
+        "es": "evalúa una condición y devuelve una de dos ramas",
+        "en": "evaluates a condition and returns one of two branches",
+        "pt": "avalia uma condição e devolve um de dois ramos",
+    },
+    "fn_SWITCH": {
+        "es": "compara contra varios casos y devuelve la rama que coincide",
+        "en": "compares against several cases and returns the matching branch",
+        "pt": "compara com vários casos e devolve o ramo que coincide",
+    },
+    "fn_AND": {
+        "es": "verdadero si ambas condiciones lo son",
+        "en": "true if both conditions are true",
+        "pt": "verdadeiro se ambas as condições o forem",
+    },
+    "fn_OR": {
+        "es": "verdadero si alguna condición lo es",
+        "en": "true if either condition is true",
+        "pt": "verdadeiro se alguma condição o for",
+    },
+    "fn_NOT": {
+        "es": "invierte la condición",
+        "en": "inverts the condition",
+        "pt": "inverte a condição",
+    },
+    "fn_COALESCE": {
+        "es": "devuelve el primer valor no BLANK de la lista",
+        "en": "returns the first non-BLANK value in the list",
+        "pt": "devolve o primeiro valor não BLANK da lista",
+    },
+    "fn_ISBLANK": {
+        "es": "verdadero si el valor es BLANK",
+        "en": "true if the value is BLANK",
+        "pt": "verdadeiro se o valor é BLANK",
+    },
+    "fn_BLANK": {
+        "es": "devuelve el valor vacío BLANK",
+        "en": "returns the empty BLANK value",
+        "pt": "devolve o valor vazio BLANK",
+    },
+    "fn_TOTALYTD": {
+        "es": "acumula la expresión desde el inicio del año hasta la fecha del contexto",
+        "en": "accumulates the expression from the start of the year to the context date",
+        "pt": "acumula a expressão desde o início do ano até a data do contexto",
+    },
+    "fn_TOTALQTD": {
+        "es": "acumula desde el inicio del trimestre",
+        "en": "accumulates from the start of the quarter",
+        "pt": "acumula desde o início do trimestre",
+    },
+    "fn_TOTALMTD": {
+        "es": "acumula desde el inicio del mes",
+        "en": "accumulates from the start of the month",
+        "pt": "acumula desde o início do mês",
+    },
+    "fn_SAMEPERIODLASTYEAR": {
+        "es": "desplaza las fechas del contexto un año hacia atrás",
+        "en": "shifts the context dates one year back",
+        "pt": "desloca as datas do contexto um ano para trás",
+    },
+    "fn_DATEADD": {
+        "es": "desplaza las fechas del contexto el intervalo indicado",
+        "en": "shifts the context dates by the given interval",
+        "pt": "desloca as datas do contexto pelo intervalo indicado",
+    },
+    "fn_DATESINPERIOD": {
+        "es": "devuelve las fechas de un período móvil que termina en la fecha dada",
+        "en": "returns the dates of a rolling period ending on the given date",
+        "pt": "devolve as datas de um período móvel que termina na data dada",
+    },
+    "fn_DATESYTD": {
+        "es": "las fechas desde el inicio del año hasta la actual",
+        "en": "the dates from the start of the year to the current one",
+        "pt": "as datas desde o início do ano até a atual",
+    },
+    "fn_PREVIOUSMONTH": {
+        "es": "las fechas del mes anterior completo",
+        "en": "the dates of the whole previous month",
+        "pt": "as datas do mês anterior completo",
+    },
+    "fn_LASTDATE": {
+        "es": "la última fecha visible en el contexto",
+        "en": "the last date visible in the context",
+        "pt": "a última data visível no contexto",
+    },
+    "fn_FIRSTDATE": {
+        "es": "la primera fecha visible en el contexto",
+        "en": "the first date visible in the context",
+        "pt": "a primeira data visível no contexto",
+    },
+    "fn_EOMONTH": {
+        "es": "el fin de mes de una fecha, con corrimiento opcional",
+        "en": "the end of month of a date, with an optional offset",
+        "pt": "o fim de mês de uma data, com deslocamento opcional",
+    },
+    "fn_TODAY": {
+        "es": "la fecha de hoy",
+        "en": "today's date",
+        "pt": "a data de hoje",
+    },
+    "fn_RANKX": {
+        "es": "posición de cada elemento al ordenar la tabla por la expresión",
+        "en": "the position of each item when sorting the table by the expression",
+        "pt": "posição de cada elemento ao ordenar a tabela pela expressão",
+    },
+    "fn_TOPN": {
+        "es": "las N filas con mayor valor de la expresión",
+        "en": "the N rows with the highest value of the expression",
+        "pt": "as N linhas com maior valor da expressão",
+    },
+    "fn_RELATED": {
+        "es": "trae el valor desde el lado «uno» de la relación",
+        "en": "brings the value from the “one” side of the relationship",
+        "pt": "traz o valor do lado «um» da relação",
+    },
+    "fn_RELATEDTABLE": {
+        "es": "las filas relacionadas desde el lado «muchos»",
+        "en": "the related rows from the “many” side",
+        "pt": "as linhas relacionadas do lado «muitos»",
+    },
+    "fn_USERELATIONSHIP": {
+        "es": "activa una relación inactiva solo dentro de este cálculo",
+        "en": "activates an inactive relationship only inside this calculation",
+        "pt": "ativa uma relação inativa apenas dentro deste cálculo",
+    },
+    "fn_CROSSFILTER": {
+        "es": "cambia la dirección del filtro de una relación solo en este cálculo",
+        "en": "changes a relationship's filter direction only in this calculation",
+        "pt": "muda a direção do filtro de uma relação apenas neste cálculo",
+    },
+    "fn_TREATAS": {
+        "es": "aplica los valores de una tabla como filtro sobre otras columnas",
+        "en": "applies a table's values as a filter over other columns",
+        "pt": "aplica os valores de uma tabela como filtro sobre outras colunas",
+    },
+    "fn_LOOKUPVALUE": {
+        "es": "busca un valor en otra tabla por igualdad de claves",
+        "en": "looks a value up in another table by matching keys",
+        "pt": "busca um valor em outra tabela por igualdade de chaves",
+    },
+    "fn_SUMMARIZE": {
+        "es": "agrupa una tabla por columnas",
+        "en": "groups a table by columns",
+        "pt": "agrupa uma tabela por colunas",
+    },
+    "fn_ADDCOLUMNS": {
+        "es": "agrega columnas calculadas a una tabla en memoria",
+        "en": "adds calculated columns to an in-memory table",
+        "pt": "adiciona colunas calculadas a uma tabela em memória",
+    },
+    "fn_SELECTCOLUMNS": {
+        "es": "proyecta columnas de una tabla",
+        "en": "projects columns from a table",
+        "pt": "projeta colunas de uma tabela",
+    },
+    "fn_UNION": {
+        "es": "apila dos tablas",
+        "en": "stacks two tables",
+        "pt": "empilha duas tabelas",
+    },
+    "fn_CONCATENATEX": {
+        "es": "concatena textos evaluados fila por fila",
+        "en": "concatenates texts evaluated row by row",
+        "pt": "concatena textos avaliados linha a linha",
+    },
+    "fn_FORMAT": {
+        "es": "convierte un valor a texto con formato",
+        "en": "converts a value to formatted text",
+        "pt": "converte um valor em texto com formato",
+    },
+    "fn_VAR": {
+        "es": "define una variable: se evalúa una vez y se reutiliza",
+        "en": "declares a variable: evaluated once and reused",
+        "pt": "define uma variável: é avaliada uma vez e reutilizada",
+    },
+    "fn_RETURN": {
+        "es": "devuelve el resultado final usando las variables definidas",
+        "en": "returns the final result using the declared variables",
+        "pt": "devolve o resultado final usando as variáveis definidas",
+    },
+    "catfn_agregacion": {
+        "es": "agregación",
+        "en": "aggregation",
+        "pt": "agregação",
+    },
+    "catfn_iterador": {
+        "es": "iterador",
+        "en": "iterator",
+        "pt": "iterador",
+    },
+    "catfn_contexto": {
+        "es": "contexto",
+        "en": "context",
+        "pt": "contexto",
+    },
+    "catfn_tabla": {
+        "es": "tabla",
+        "en": "table",
+        "pt": "tabela",
+    },
+    "catfn_matematica": {
+        "es": "matemática",
+        "en": "maths",
+        "pt": "matemática",
+    },
+    "catfn_logica": {
+        "es": "lógica",
+        "en": "logic",
+        "pt": "lógica",
+    },
+    "catfn_tiempo": {
+        "es": "tiempo",
+        "en": "time intelligence",
+        "pt": "tempo",
+    },
+    "catfn_ranking": {
+        "es": "ranking",
+        "en": "ranking",
+        "pt": "ranking",
+    },
+    "catfn_relacion": {
+        "es": "relación",
+        "en": "relationship",
+        "pt": "relação",
+    },
+    "catfn_texto": {
+        "es": "texto",
+        "en": "text",
+        "pt": "texto",
+    },
+    "catfn_estructura": {
+        "es": "estructura",
+        "en": "structure",
+        "pt": "estrutura",
+    },
+    "catfn_otra": {
+        "es": "otra",
+        "en": "other",
+        "pt": "outra",
+    },
+    "exp_vacia": {
+        "es": "Expresión vacía.",
+        "en": "Empty expression.",
+        "pt": "Expressão vazia.",
+    },
+    "exp_fn_desconocida": {
+        "es": "función DAX",
+        "en": "DAX function",
+        "pt": "função DAX",
+    },
+    "exp_quien_medida": {
+        "es": "La medida [{nombre}]",
+        "en": "Measure [{nombre}]",
+        "pt": "A medida [{nombre}]",
+    },
+    "exp_quien_expresion": {
+        "es": "La expresión",
+        "en": "The expression",
+        "pt": "A expressão",
+    },
+    "exp_res_tiempo": {
+        "es": "{quien} calcula un valor con inteligencia de tiempo: desplaza o acumula el período del contexto antes de agregar.",
+        "en": "{quien} computes a value with time intelligence: it shifts or accumulates the context period before aggregating.",
+        "pt": "{quien} calcula um valor com inteligência de tempo: desloca ou acumula o período do contexto antes de agregar.",
+    },
+    "exp_res_ytd": {
+        "es": "{quien} acumula el valor desde el inicio del año.",
+        "en": "{quien} accumulates the value from the start of the year.",
+        "pt": "{quien} acumula o valor desde o início do ano.",
+    },
+    "exp_res_rank": {
+        "es": "{quien} calcula una posición en un ranking.",
+        "en": "{quien} computes a position in a ranking.",
+        "pt": "{quien} calcula uma posição num ranking.",
+    },
+    "exp_res_divide": {
+        "es": "{quien} calcula un cociente con división segura.",
+        "en": "{quien} computes a ratio with safe division.",
+        "pt": "{quien} calcula um quociente com divisão segura.",
+    },
+    "exp_res_calculate": {
+        "es": "{quien} agrega un valor modificando antes el contexto de filtro (eso es CALCULATE: cambia sobre qué filas se calcula).",
+        "en": "{quien} aggregates a value after modifying the filter context (that is what CALCULATE does: it changes which rows are used).",
+        "pt": "{quien} agrega um valor modificando antes o contexto de filtro (isso é CALCULATE: muda sobre quais linhas se calcula).",
+    },
+    "exp_res_base": {
+        "es": "{quien} {base}{sobre}.",
+        "en": "{quien} {base}{sobre}.",
+        "pt": "{quien} {base}{sobre}.",
+    },
+    "exp_res_simple": {
+        "es": "{quien} evalúa una expresión aritmética simple.",
+        "en": "{quien} evaluates a simple arithmetic expression.",
+        "pt": "{quien} avalia uma expressão aritmética simples.",
+    },
+    "exp_sobre": {
+        "es": " sobre {col}",
+        "en": " over {col}",
+        "pt": " sobre {col}",
+    },
+    "exp_paso_var": {
+        "es": "Define {n} variable(s) ({lista}{mas}): cada una se evalúa una sola vez y congela su valor — más rápido y más legible.",
+        "en": "Declares {n} variable(s) ({lista}{mas}): each is evaluated once and freezes its value — faster and easier to read.",
+        "pt": "Define {n} variável(is) ({lista}{mas}): cada uma é avaliada uma só vez e congela seu valor — mais rápido e mais legível.",
+    },
+    "exp_paso_calculate": {
+        "es": "CALCULATE cambia el contexto de filtro: los filtros que recibe reemplazan (o intersecan, con KEEPFILTERS) a los del visual antes de evaluar la expresión.",
+        "en": "CALCULATE changes the filter context: the filters it receives replace (or intersect, with KEEPFILTERS) the visual's own before the expression is evaluated.",
+        "pt": "CALCULATE muda o contexto de filtro: os filtros que recebe substituem (ou intersectam, com KEEPFILTERS) os do visual antes de avaliar a expressão.",
+    },
+    "exp_paso_iterador": {
+        "es": "{lista} recorre(n) la tabla fila por fila: el costo crece con la cantidad de filas visibles.",
+        "en": "{lista} walk(s) the table row by row: the cost grows with the number of visible rows.",
+        "pt": "{lista} percorre(m) a tabela linha a linha: o custo cresce com a quantidade de linhas visíveis.",
+    },
+    "exp_paso_tiempo": {
+        "es": "Inteligencia de tiempo ({lista}): necesita una tabla de calendario continua y marcada como tabla de fechas para dar resultados correctos.",
+        "en": "Time intelligence ({lista}): it needs a continuous date table, marked as such, to return correct results.",
+        "pt": "Inteligência de tempo ({lista}): precisa de uma tabela de calendário contínua e marcada como tabela de datas para dar resultados corretos.",
+    },
+    "exp_paso_medidas": {
+        "es": "Reutiliza medidas existentes ({lista}): el cambio en la medida base se propaga solo.",
+        "en": "Reuses existing measures ({lista}): a change in the base measure propagates on its own.",
+        "pt": "Reutiliza medidas existentes ({lista}): a mudança na medida base se propaga sozinha.",
+    },
+    "exp_paso_directo": {
+        "es": "Agregación directa sobre el contexto del visual, sin modificar filtros.",
+        "en": "Direct aggregation over the visual's context, with no filter changes.",
+        "pt": "Agregação direta sobre o contexto do visual, sem modificar filtros.",
+    },
+    "nivel_basico": {
+        "es": "básico",
+        "en": "basic",
+        "pt": "básico",
+    },
+    "nivel_intermedio": {
+        "es": "intermedio",
+        "en": "intermediate",
+        "pt": "intermediário",
+    },
+    "nivel_avanzado": {
+        "es": "avanzado",
+        "en": "advanced",
+        "pt": "avançado",
+    },
+    # ---- transformador, generador y nombre de la edición ---------------
+    # Último resto de texto de usuario que vivía hardcodeado en español.
+    "tr_divide": {
+        "es": "[{obj}]: {n} división(es) «/» → DIVIDE",
+        "en": "[{obj}]: {n} “/” division(s) → DIVIDE",
+        "pt": "[{obj}]: {n} divisão(ões) «/» → DIVIDE",
+    },
+    "tr_formato": {
+        "es": "[{obj}]: formato → {formato}",
+        "en": "[{obj}]: format → {formato}",
+        "pt": "[{obj}]: formato → {formato}",
+    },
+    "tr_oculta_clave": {
+        "es": "{obj}: oculta (clave de relación)",
+        "en": "{obj}: hidden (relationship key)",
+        "pt": "{obj}: oculta (chave de relação)",
+    },
+    "tr_tabla_medidas": {
+        "es": "Tabla de medidas «{nombre}» creada",
+        "en": "Measures table “{nombre}” created",
+        "pt": "Tabela de medidas «{nombre}» criada",
+    },
+    "tr_movidas": {
+        "es": "{n} medida(s) movida(s) desde {origen}",
+        "en": "{n} measure(s) moved from {origen}",
+        "pt": "{n} medida(s) movida(s) de {origen}",
+    },
+    "tr_renombrada": {
+        "es": "[{antes}] → [{despues}]",
+        "en": "[{antes}] → [{despues}]",
+        "pt": "[{antes}] → [{despues}]",
+    },
+    "tr_referencias": {
+        "es": "[{obj}]: {n} referencia(s) actualizada(s)",
+        "en": "[{obj}]: {n} reference(s) updated",
+        "pt": "[{obj}]: {n} referência(s) atualizada(s)",
+    },
+    "tr_sin_tablas": {
+        "es": "El modelo no tiene tablas.",
+        "en": "The model has no tables.",
+        "pt": "O modelo não tem tabelas.",
+    },
+    "gen_vacio": {
+        "es": "Escribí qué medida querés: p. ej. «total de ventas», «ventas vs año anterior».",
+        "en": "Type the measure you want: e.g. “total sales”, “sales vs last year”.",
+        "pt": "Escreva a medida que quer: p. ex. «total de vendas», «vendas vs ano anterior».",
+    },
+    "gen_sin_modelo": {
+        "es": "Primero cargá un modelo: el generador solo escribe DAX validado contra tu catálogo.",
+        "en": "Load a model first: the generator only writes DAX validated against your catalog.",
+        "pt": "Carregue um modelo primeiro: o gerador só escreve DAX validado contra o seu catálogo.",
+    },
+    "gen_sin_patron": {
+        "es": "El motor de reglas no reconoció el patrón y la IA falló: {motivo}",
+        "en": "The rule engine did not recognise the pattern and the AI failed: {motivo}",
+        "pt": "O motor de regras não reconheceu o padrão e a IA falhou: {motivo}",
+    },
+    "edicion_owner": {
+        "es": "owner",
+        "en": "owner",
+        "pt": "owner",
+    },
+    "edicion_profesional": {
+        "es": "profesional",
+        "en": "professional",
+        "pt": "profissional",
+    },
+    "edicion_demo": {
+        "es": "demo",
+        "en": "demo",
+        "pt": "demo",
+    },
+    "gen_sin_reconocer": {
+        "es": "No reconocí el patrón del pedido. Probá con: total / promedio / máximo / mínimo / conteo distinto de <columna>, «% del total por <dimensión>», «<columna> acumulado del año», «<columna> vs año anterior», «media móvil 3 meses de <columna>», «ranking de <dimensión> por <columna>». Con una clave de IA configurada, el pedido libre también funciona.",
+        "en": "I did not recognise the request pattern. Try: total / average / max / min / distinct count of <column>, “% of total by <dimension>”, “<column> year to date”, “<column> vs last year”, “3-month moving average of <column>”, “rank <dimension> by <column>”. With an AI key configured, free-form requests work too.",
+        "pt": "Não reconheci o padrão do pedido. Tente: total / média / máximo / mínimo / contagem distinta de <coluna>, «% do total por <dimensão>», «<coluna> acumulado do ano», «<coluna> vs ano anterior», «média móvel 3 meses de <coluna>», «ranking de <dimensão> por <coluna>». Com uma chave de IA configurada, o pedido livre também funciona.",
+    },
 }
 
 

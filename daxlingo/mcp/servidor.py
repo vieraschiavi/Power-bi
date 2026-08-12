@@ -27,6 +27,7 @@ from dxl import MARCA, __version__  # noqa: E402
 from dxl import analizador, catalogo, explicador, generador  # noqa: E402
 from dxl import modelo as modmod  # noqa: E402
 from dxl import tablero, transformador  # noqa: E402
+from dxl.i18n import IDIOMA_DEFECTO  # noqa: E402
 
 # Estado del servidor: el modelo cargado en la sesión.
 ESTADO: dict = {"cargado": None}
@@ -145,7 +146,9 @@ def ejecutar_herramienta(nombre: str, args: dict) -> dict:
             cat = _cat()
         except ValueError:
             pass
-        r = explicador.explicar(args["dax"], cat)
+        # El agente puede pedir el idioma; si no, el del producto.
+        r = explicador.explicar(args["dax"], cat,
+                                idioma=args.get("idioma", IDIOMA_DEFECTO))
         return _texto(json.dumps(r, ensure_ascii=False, indent=2))
 
     if nombre == "exportar":

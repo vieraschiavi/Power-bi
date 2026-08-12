@@ -11,6 +11,7 @@ from __future__ import annotations
 import copy
 import re
 
+from .i18n import IDIOMA_DEFECTO, t as traducir
 from .catalogo import Catalogo, _norm
 from .modelo import expr_lineas, expr_texto
 
@@ -26,7 +27,8 @@ def _medidas(modelo: dict):
 
 
 # ==========================================================================
-def aplicar_divide(modelo: dict) -> tuple[dict, list[str]]:
+def aplicar_divide(modelo: dict,
+                   idioma: str = IDIOMA_DEFECTO) -> tuple[dict, list[str]]:
     """
     Reemplaza divisiones «a / b» simples por DIVIDE(a, b) en las medidas.
     Solo convierte los casos inequívocos (operandos simples: referencia,
@@ -46,11 +48,13 @@ def aplicar_divide(modelo: dict) -> tuple[dict, list[str]]:
         nuevo, n = patron.subn(r"DIVIDE ( \1, \2 )", expr)
         if n:
             m["expression"] = expr_lineas(nuevo)
-            cambios.append(f"[{m['name']}]: {n} división(es) «/» → DIVIDE")
+            cambios.append(traducir("tr_divide", idioma).format(
+                obj=m["name"], n=n))
     return modelo, cambios
 
 
-def asignar_formatos(modelo: dict) -> tuple[dict, list[str]]:
+def asignar_formatos(modelo: dict,
+                     idioma: str = IDIOMA_DEFECTO) -> tuple[dict, list[str]]:
     """Asigna formatString a las medidas que no lo tienen, por heurística."""
     modelo = copy.deepcopy(modelo)
     cambios = []
@@ -72,11 +76,13 @@ def asignar_formatos(modelo: dict) -> tuple[dict, list[str]]:
         else:
             formato = "#,0"
         m["formatString"] = formato
-        cambios.append(f"[{m['name']}]: formato → {formato}")
+        cambios.append(traducir("tr_formato", idioma).format(
+            obj=m["name"], formato=formato))
     return modelo, cambios
 
 
-def ocultar_claves(modelo: dict) -> tuple[dict, list[str]]:
+def ocultar_claves(modelo: dict,
+                   idioma: str = IDIOMA_DEFECTO) -> tuple[dict, list[str]]:
     """Oculta las columnas que son lado «muchos» de una relación."""
     modelo = copy.deepcopy(modelo)
     cambios = []
@@ -88,13 +94,14 @@ def ocultar_claves(modelo: dict) -> tuple[dict, list[str]]:
             if (_norm(t.get("name", "")), _norm(c.get("name", ""))) in claves \
                     and not c.get("isHidden"):
                 c["isHidden"] = True
-                cambios.append(f"{t['name']}[{c['name']}]: oculta (clave de "
-                               "relación)")
+                cambios.append(traducir("tr_oculta_clave", idioma).format(
+                    obj=f"{t['name']}[{c['name']}]"))
     return modelo, cambios
 
 
-def crear_tabla_medidas(modelo: dict,
-                        nombre: str = "_Medidas") -> tuple[dict, list[str]]:
+def crear_tabla_medidas(modelo: dict, nombre: str = "_Medidas",
+                        idioma: str = IDIOMA_DEFECTO
+                        ) -> tuple[dict, list[str]]:
     """
     Mueve todas las medidas a una tabla de medidas dedicada (la crea si no
     existe). El panel de campos queda con el modelo a un lado y los cálculos
@@ -122,7 +129,8 @@ def crear_tabla_medidas(modelo: dict,
             "measures": [],
         }
         tablas.append(destino)
-        cambios.append(f"Tabla de medidas «{nombre}» creada")
+        cambios.append(traducir("tr_tabla_medidas", idioma).format(
+            nombre=nombre))
     destino.setdefault("measures", [])
     for t in tablas:
         if t is destino:
@@ -130,8 +138,8 @@ def crear_tabla_medidas(modelo: dict,
         movidas = t.pop("measures", [])
         if movidas:
             destino["measures"].extend(movidas)
-            cambios.append(f"{len(movidas)} medida(s) movida(s) desde "
-                           f"«{t['name']}»")
+            cambios.append(traducir("tr_movidas", idioma).format(
+                n=len(movidas), origen=t["name"]))
     return modelo, cambios
 
 
@@ -175,8 +183,9 @@ def agregar_medida(modelo: dict, nombre: str, dax: str, formato: str = "",
     return modelo, [f"Medida [{nombre}] agregada en «{destino['name']}»"]
 
 
-def renombrar_medida(modelo: dict, actual: str,
-                     nuevo: str) -> tuple[dict, list[str]]:
+def renombrar_medida(modelo: dict, actual: str, nuevo: str,
+                     idioma: str = IDIOMA_DEFECTO
+                     ) -> tuple[dict, list[str]]:
     """Renombra una medida y propaga la referencia [actual] en el resto."""
     modelo = copy.deepcopy(modelo)
     cambios = []
@@ -185,7 +194,8 @@ def renombrar_medida(modelo: dict, actual: str,
         if m.get("name") == actual:
             m["name"] = nuevo
             encontrada = True
-            cambios.append(f"[{actual}] → [{nuevo}]")
+            cambios.append(traducir("tr_renombrada", idioma).format(
+                antes=actual, despues=nuevo))
             break
     if not encontrada:
         raise ValueError(f"No existe la medida [{actual}].")
@@ -195,7 +205,8 @@ def renombrar_medida(modelo: dict, actual: str,
         nuevo_expr, n = patron.subn(f"[{nuevo}]", expr)
         if n:
             m["expression"] = expr_lineas(nuevo_expr)
-            cambios.append(f"[{m['name']}]: {n} referencia(s) actualizada(s)")
+            cambios.append(traducir("tr_referencias", idioma).format(
+                obj=m["name"], n=n))
     return modelo, cambios
 
 
@@ -221,7 +232,8 @@ def eliminar_medida(modelo: dict, nombre: str) -> tuple[dict, list[str]]:
 
 
 # ==========================================================================
-def aplicar_arreglos(modelo: dict, hallazgos: list[dict]) -> tuple[dict, list[str]]:
+def aplicar_arreglos(modelo: dict, hallazgos: list[dict],
+                     idioma: str = IDIOMA_DEFECTO) -> tuple[dict, list[str]]:
     """
     Aplica en cadena todos los arreglos automáticos que el analizador marcó
     (`auto=True`), en orden seguro. Devuelve el modelo nuevo y el log.
@@ -229,15 +241,15 @@ def aplicar_arreglos(modelo: dict, hallazgos: list[dict]) -> tuple[dict, list[st
     cambios: list[str] = []
     reglas = {h["regla"].split(" ·")[0] for h in hallazgos if h.get("auto")}
     if "R01" in reglas:
-        modelo, c = aplicar_divide(modelo)
+        modelo, c = aplicar_divide(modelo, idioma)
         cambios += c
     if "R02" in reglas:
-        modelo, c = asignar_formatos(modelo)
+        modelo, c = asignar_formatos(modelo, idioma)
         cambios += c
     if "R08" in reglas:
-        modelo, c = ocultar_claves(modelo)
+        modelo, c = ocultar_claves(modelo, idioma)
         cambios += c
     if "R15" in reglas:
-        modelo, c = crear_tabla_medidas(modelo)
+        modelo, c = crear_tabla_medidas(modelo, idioma=idioma)
         cambios += c
     return modelo, cambios

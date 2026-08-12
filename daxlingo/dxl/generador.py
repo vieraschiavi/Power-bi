@@ -21,6 +21,7 @@ from __future__ import annotations
 import json
 import re
 
+from .i18n import IDIOMA_DEFECTO, t as traducir
 from .catalogo import Catalogo, _norm, validar_referencias
 from .proveedores_ia import PROVEEDOR_DEFECTO, consultar, hay_clave
 
@@ -62,6 +63,7 @@ def _sin(texto: str, *frases: str) -> str:
 # Motor de reglas
 # ==========================================================================
 def generar(pedido: str, cat: Catalogo, api_key: str | None = None,
+            idioma: str = IDIOMA_DEFECTO,
             proveedor: str = PROVEEDOR_DEFECTO, modelo_ia: str = "",
             endpoint: str = "") -> dict:
     """
@@ -71,11 +73,9 @@ def generar(pedido: str, cat: Catalogo, api_key: str | None = None,
     """
     pedido = (pedido or "").strip()
     if not pedido:
-        return _error("Escribí qué medida querés: p. ej. «total de ventas», "
-                      "«% del total por país», «ventas vs año anterior».")
+        return _error(traducir("gen_vacio", idioma))
     if not cat.tablas:
-        return _error("Primero cargá un modelo: el generador solo escribe DAX "
-                      "sobre columnas que existen.")
+        return _error(traducir("gen_sin_modelo", idioma))
 
     resultado = _con_reglas(pedido, cat)
     if resultado is not None:
@@ -87,16 +87,8 @@ def generar(pedido: str, cat: Catalogo, api_key: str | None = None,
                            endpoint)
         except Exception as exc:  # red caída, clave inválida, etc.
             return _error(
-                f"El motor de reglas no reconoció el patrón y la IA falló: "
-                f"{exc}. Reformulá el pedido (p. ej. «total de <columna>»).")
-    return _error(
-        "No reconocí el patrón del pedido. Probá con: total / promedio / "
-        "máximo / mínimo / conteo distinto de <columna>, «% del total por "
-        "<dimensión>», «<columna> acumulado del año», «<columna> vs año "
-        "anterior», «media móvil 3 meses de <columna>», «ranking de "
-        "<dimensión> por <columna>». Con una ANTHROPIC_API_KEY configurada, "
-        "también entiendo pedidos libres con la IA que elijas (Claude, "
-        "ChatGPT, Gemini, Copilot…).")
+                traducir("gen_sin_patron", idioma).format(motivo=exc))
+    return _error(traducir("gen_sin_reconocer", idioma))
 
 
 def _error(msg: str) -> dict:
