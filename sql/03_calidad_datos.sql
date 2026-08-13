@@ -1,3 +1,5 @@
+-- © 2026 Martín Viera. Todos los derechos reservados.
+
 /* =========================================================================
    FARMA DEMO — 03 · Controles de calidad de datos (Data Steward)
 

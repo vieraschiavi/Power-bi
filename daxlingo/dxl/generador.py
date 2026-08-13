@@ -1,3 +1,5 @@
+# © 2026 Martín Viera. Todos los derechos reservados.
+
 """
 MV DAX Lab · Generador NL→DAX: de un pedido en español (o inglés) a una medida.
 

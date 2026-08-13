@@ -1,3 +1,5 @@
+# © 2026 Martín Viera. Todos los derechos reservados.
+
 """
 MV DAX Lab · Tests del producto: i18n trilingüe, licencias y ediciones,
 proveedores de IA, landing y video.

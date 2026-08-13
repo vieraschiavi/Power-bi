@@ -1,3 +1,5 @@
+# © 2026 Martín Viera. Todos los derechos reservados.
+
 """
 Configuración compartida del proyecto Farma Demo — Excelencia Comercial.
 

@@ -1,3 +1,5 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
+
 // Puente entre el proceso principal y la pantalla React.
 // contextIsolation activado: el renderer NO ve Node, solo esta superficie
 // mínima y explícita.

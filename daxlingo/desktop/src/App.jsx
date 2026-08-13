@@ -1,3 +1,5 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
+
 import { useEffect, useState } from "react";
 
 // Pantalla de arranque de MV DAX Lab.

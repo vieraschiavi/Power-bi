@@ -1,3 +1,5 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
+
 // La suscripción se corta sola: cuando el cliente la da de baja, la licencia
 // deja de renovarse y caduca. Lo que se prueba acá es que una suscripción que
 // NO está autorizada no consiga clave, y que la que sí lo está la reciba con

@@ -1,3 +1,5 @@
+# © 2026 Martín Viera. Todos los derechos reservados.
+
 """
 Genera los archivos de Power BI de los tres tableros.
 

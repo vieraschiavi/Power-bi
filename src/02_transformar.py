@@ -1,3 +1,5 @@
+# © 2026 Martín Viera. Todos los derechos reservados.
+
 """
 PASO 2 — Transformación de datos y trabajo de Data Steward.
 

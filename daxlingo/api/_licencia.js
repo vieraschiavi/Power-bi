@@ -1,3 +1,5 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
+
 // Firma y verificación de licencias MV DAX Lab (HMAC-SHA256, sin dependencias).
 // Prefijo "_" para que Vercel NO lo trate como endpoint: es un módulo interno.
 //

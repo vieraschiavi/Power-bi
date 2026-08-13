@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// © 2026 Martín Viera. Todos los derechos reservados.
+
 // MV DAX Lab · Construye los instaladores por edición.
 //
 // Un mismo código produce TRES instaladores distintos, con la edición

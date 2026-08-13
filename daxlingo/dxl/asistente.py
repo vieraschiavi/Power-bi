@@ -1,3 +1,5 @@
+# © 2026 Martín Viera. Todos los derechos reservados.
+
 """
 MV DAX Lab · Puente entre el DAX Overlay (capturas de pantalla) y la app.
 

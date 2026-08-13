@@ -1,3 +1,5 @@
+# © 2026 Martín Viera. Todos los derechos reservados.
+
 """
 Genera `sql/04_vistas_semanticas.sql` desde el contrato de `esquema.py`.
 

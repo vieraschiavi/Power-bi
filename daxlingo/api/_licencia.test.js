@@ -1,3 +1,5 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
+
 // `_licencia.js` es el candado de la venta: firma la licencia que recibe
 // quien pagó, y `verificar()` es lo único que separa una licencia real de
 // una inventada. Por eso es lo primero que se testea del eje de dinero.

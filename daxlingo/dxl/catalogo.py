@@ -1,3 +1,5 @@
+# © 2026 Martín Viera. Todos los derechos reservados.
+
 """
 MV DAX Lab · Catálogo del modelo: la vista de trabajo sobre el TMSL.
 

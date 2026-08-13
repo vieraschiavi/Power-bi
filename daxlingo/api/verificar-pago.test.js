@@ -1,3 +1,5 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
+
 // Lo que se prueba acá es que NO se emite licencia sin pago aprobado.
 const { test, beforeEach } = require("node:test");
 const assert = require("node:assert/strict");

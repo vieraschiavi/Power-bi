@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# © 2026 Martín Viera. Todos los derechos reservados.
+
 """
 MV DAX Lab · Genera el dataset y el modelo de práctica, 100% sintéticos.
 

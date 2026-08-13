@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# © 2026 Martín Viera. Todos los derechos reservados.
+
 """
 MV DAX Lab · Arma los ZIP de la versión portable, uno por edición.
 

@@ -1,3 +1,5 @@
+# © 2026 Martín Viera. Todos los derechos reservados.
+
 """
 MV DAX Lab · Multi-proveedor de IA (BYOK) y configuración MCP por agente.
 

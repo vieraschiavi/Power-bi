@@ -1,3 +1,5 @@
+-- © 2026 Martín Viera. Todos los derechos reservados.
+
 /* =========================================================================
    FARMA DEMO — Excelencia Comercial Corporativo
    01 · DDL del modelo estrella (SQL Server / T-SQL)

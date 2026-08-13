@@ -1,3 +1,5 @@
+# © 2026 Martín Viera. Todos los derechos reservados.
+
 """
 PASO 5 — Motor de IA para recomendación de PRECIO y PRODUCTO por segmento.
 

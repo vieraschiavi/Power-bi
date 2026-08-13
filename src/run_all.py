@@ -1,3 +1,5 @@
+# © 2026 Martín Viera. Todos los derechos reservados.
+
 """
 Orquestador: corre el pipeline completo de punta a punta.
 
