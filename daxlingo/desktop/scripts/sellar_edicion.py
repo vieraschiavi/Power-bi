@@ -8,7 +8,7 @@ El sello es `resources/app/edicion.json`, el archivo que el motor lee al
 arrancar para saber qué edición es. Cambiarlo convierte una instalación ya
 hecha en otra edición sin reinstalar ni descargar nada.
 
-Lo usa `DESBLOQUEAR_OWNER.bat`. Está en Python y no embebido en el .bat a
+Lo usa `Convertir-a-version-dueno.bat`. Está en Python y no embebido en el .bat a
 propósito: hay que **conservar** `secreto` y `sitio` del sello anterior —si se
 pisaran, la copia dejaría de validar las licencias emitidas y los botones de
 compra apuntarían a ningún lado— y batch no sabe leer JSON. Armarlo a mano con
@@ -29,7 +29,7 @@ from pathlib import Path
 
 # Mismo motivo que en empaquetar-portable.py: el runtime embebido de Windows
 # usa cp1252 con stdout redirigido, y este archivo imprime «tildes». Sin esto
-# es cuestión de tiempo hasta que DESBLOQUEAR_OWNER.bat reviente con el mismo
+# es cuestión de tiempo hasta que Convertir-a-version-dueno.bat reviente con el mismo
 # UnicodeEncodeError.
 for _flujo in (sys.stdout, sys.stderr):
     try:

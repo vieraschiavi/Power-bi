@@ -4,12 +4,12 @@
 # ni compilar ni ejecutar ahí: sin este runner, "el instalador funciona" sería
 # una afirmación sin respaldo. Acá se instala de verdad, se arranca el motor
 # empaquetado, se comprueba el candado de la edición, se corre
-# DESBLOQUEAR_OWNER.bat y se desinstala.
+# Convertir-a-version-dueno.bat y se desinstala.
 #
 # La edición OWNER se construye para verificar que compila, pero NO se sube
 # como artifact: este repositorio es público y cualquiera podría bajarla.
 # Para tenerla: daxlingo/desktop/CONSTRUIR_OWNER.bat en tu máquina, o instalar
-# la de cliente y pasarle DESBLOQUEAR_OWNER.bat.
+# la de cliente y pasarle Convertir-a-version-dueno.bat.
 
 name: Instaladores de Windows
 
@@ -29,7 +29,11 @@ permissions:
 
 env:
   PYTHON_EMBED: "3.11.9"
+  # A propósito NO es una ruta por defecto de NSIS: así la instalación solo se
+  # puede encontrar leyendo el registro, que es lo que hay que probar.
   INSTALL_DIR: "C:\\pruebainstal"
+  # Desde acá se corre el .bat de owner, lejos de la instalación.
+  OWNER_DIR: "C:\\prueba-owner"
 
 jobs:
   construir-y-probar:
@@ -280,15 +284,25 @@ jobs:
 
       # ------------------------------------------------------------------
       # Y ahora el .bat de owner, sobre esa misma instalación.
+      #
+      # Se corre desde una carpeta NEUTRA, no desde adentro de la instalación:
+      # así se ejercita la detección automática de verdad. La app quedó en
+      # C:\pruebainstal —que NO es ninguna de las rutas por defecto de NSIS—,
+      # así que el .bat solo puede encontrarla leyendo el registro. Corriéndolo
+      # desde adentro, como se hacía antes, alcanzaba con mirar su propia
+      # carpeta y la búsqueda nunca se probaba.
       # ------------------------------------------------------------------
-      - name: Pasar la instalación a owner con DESBLOQUEAR_OWNER.bat
+      - name: Pasar la instalación a owner con Convertir-a-version-dueno.bat
         shell: cmd
         run: |
-          copy "daxlingo\desktop\DESBLOQUEAR_OWNER.bat" "${{ env.INSTALL_DIR }}\" >nul
-          mkdir "${{ env.INSTALL_DIR }}\scripts" 2>nul
-          copy "daxlingo\desktop\scripts\*.py" "${{ env.INSTALL_DIR }}\scripts\" >nul
-          cd /d "${{ env.INSTALL_DIR }}"
-          call DESBLOQUEAR_OWNER.bat < nul
+          mkdir "${{ env.OWNER_DIR }}\scripts" 2>nul
+          copy "daxlingo\desktop\Convertir-a-version-dueno.bat" "${{ env.OWNER_DIR }}\" >nul
+          copy "daxlingo\desktop\scripts\*.py" "${{ env.OWNER_DIR }}\scripts\" >nul
+          cd /d "${{ env.OWNER_DIR }}"
+          call Convertir-a-version-dueno.bat < nul > salida.txt 2>&1
+          type salida.txt
+          findstr /i /c:"${{ env.INSTALL_DIR }}" salida.txt >nul || (echo [X] el .bat no detecto la instalacion en ${{ env.INSTALL_DIR }} & exit /b 1)
+          echo OK: la deteccion automatica encontro ${{ env.INSTALL_DIR }}
 
       - name: Comprobar que quedó en owner, sin clave y sin vencimiento
         shell: pwsh
@@ -301,7 +315,7 @@ jobs:
           Remove-Item Env:\MVDAX_EDICION -ErrorAction SilentlyContinue
           # La carpeta de la app va por argumento, no por PYTHONPATH: ver el
           # comentario del paso del candado.
-          $salida = (& $py "$raiz\scripts\estado_edicion.py" $app).Trim()
+          $salida = (& $py "${{ env.OWNER_DIR }}\scripts\estado_edicion.py" $app).Trim()
           Write-Host "estado tras el .bat: $salida"
           $partes = $salida.Split("|")
           if ($partes[0] -ne "owner") { throw "no quedó en owner: $salida" }
@@ -312,8 +326,8 @@ jobs:
       - name: Revertir y comprobar que vuelve atrás
         shell: cmd
         run: |
-          cd /d "${{ env.INSTALL_DIR }}"
-          call DESBLOQUEAR_OWNER.bat /revertir < nul
+          cd /d "${{ env.OWNER_DIR }}"
+          call Convertir-a-version-dueno.bat /revertir < nul
 
       - name: Desinstalar y comprobar que no deja nada
         shell: pwsh

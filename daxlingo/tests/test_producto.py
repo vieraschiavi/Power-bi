@@ -741,8 +741,42 @@ def test_lanzador_guarda_la_salida_de_streamlit_para_diagnosticar(tmp_path,
     assert "ModuleNotFoundError" in lanzador.cola_log()
 
 
+def test_el_bat_de_owner_busca_la_instalacion_en_el_registro():
+    """El instalador deja ELEGIR la carpeta, así que el .bat de owner no puede
+    depender de una lista de rutas fijas: tiene que leer del registro dónde
+    quedó instalado. Antes solo miraba `%LOCALAPPDATA%\\Programs` con tres
+    nombres, y cualquiera que instalara en D:\\ se quedaba sin poder
+    convertirla.
+
+    El .bat no se puede ejecutar acá (esto corre en Linux); lo que se cubre es
+    que la búsqueda por registro siga existiendo y que no reaparezca el error
+    de sintaxis que la rompía."""
+    bat = RAIZ / "desktop" / "Convertir-a-version-dueno.bat"
+    assert bat.exists(), "falta el .bat que pasa una instalación a owner"
+    texto = bat.read_text(encoding="utf-8", errors="replace")
+
+    assert "reg query" in texto.lower(), \
+        "el .bat ya no consulta el registro: volvió a depender de rutas fijas"
+    assert "Uninstall" in texto, \
+        "no busca en las claves de desinstalación, que es donde está la ruta real"
+    assert "InstallLocation" in texto, \
+        "no lee InstallLocation, que es el valor con la carpeta de instalación"
+
+    # `%ProgramFiles(x86)%` escrito adentro de un bloque `( ... )` hace que cmd
+    # tome su paréntesis como el cierre del bloque y el .bat muere con un error
+    # de sintaxis. Tiene que estar copiado a una variable ANTES del bloque.
+    for linea in texto.splitlines():
+        despojada = linea.strip()
+        if despojada.startswith("REM") or despojada.startswith("::"):
+            continue
+        if "%ProgramFiles(x86)%" in despojada:
+            assert despojada.lower().startswith('set "pf'), (
+                "%ProgramFiles(x86)% solo puede usarse al asignarlo a una "
+                f"variable, nunca dentro de un bloque: {despojada!r}")
+
+
 def test_sellar_una_instalacion_como_owner_y_volver_atras(tmp_path):
-    """`DESBLOQUEAR_OWNER.bat` pasa una instalación a owner reescribiendo el
+    """`Convertir-a-version-dueno.bat` pasa una instalación a owner reescribiendo el
     sello. Tiene que dejarla sin clave ni vencimiento, conservar el secreto de
     licencias y el sitio, y poder revertirse."""
     import subprocess
