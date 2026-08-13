@@ -40,10 +40,14 @@ REM --- via 1: al lado de este .bat (lo mas rapido si esta junto al .exe) -----
 if exist "%~dp0%MARCA%" call :agregar "%~dp0"
 
 REM --- via 2: el registro de Windows ----------------------------------------
-REM  perMachine:false => la app se registra en HKCU. Igual se mira HKLM por si
-REM  alguna vez se instalo para todos los usuarios. Se recorren las claves de
-REM  desinstalacion, se filtra por DisplayName y se lee InstallLocation.
-for %%R in (HKCU HKLM) do call :buscarEnRegistro %%R
+REM  perMachine:false => la app se registra en HKCU. Igual se miran las tres
+REM  ramas de "Agregar o quitar programas" por si alguna vez se instalo para
+REM  todos los usuarios: usuario, maquina, y la de 32 bits en un Windows de 64
+REM  (WOW6432Node), que es donde cae un paquete x86 y no aparece en la otra.
+REM  Se recorren las claves, se filtra por DisplayName y se lee InstallLocation.
+call :buscarEnRegistro "HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall"
+call :buscarEnRegistro "HKLM\Software\Microsoft\Windows\CurrentVersion\Uninstall"
+call :buscarEnRegistro "HKLM\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall"
 
 REM --- via 3: las rutas por defecto de NSIS ----------------------------------
 REM  Red de seguridad para una instalacion cuya entrada de registro se haya
@@ -201,13 +205,13 @@ set /a TOTAL+=1
 set "RUTA%TOTAL%=%CAND%"
 exit /b 0
 
-REM --- :buscarEnRegistro <HKCU|HKLM> ----------------------------------------
+REM --- :buscarEnRegistro <clave raiz de desinstalacion> ---------------------
 REM  Recorre las entradas de "Agregar o quitar programas" y se queda con las
 REM  que son de MV DAX Lab. La ruta sale de InstallLocation; si esa esta vacia
 REM  (pasa con algunos paquetes), se usa la carpeta del DisplayIcon, que
 REM  instalador.nsh apunta al .exe instalado.
 :buscarEnRegistro
-set "RAIZ=%~1\Software\Microsoft\Windows\CurrentVersion\Uninstall"
+set "RAIZ=%~1"
 for /f "delims=" %%K in ('reg query "%RAIZ%" 2^>nul') do (
     set "NOMBRE="
     for /f "tokens=2,*" %%A in ('reg query "%%K" /v DisplayName 2^>nul ^| findstr /i /c:"DisplayName"') do set "NOMBRE=%%B"
