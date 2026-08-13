@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# © 2026 Martín Viera. Todos los derechos reservados.
+
 """
 MV DAX Lab · Capturas reales de la app, pestaña por pestaña y en los 3 idiomas.
 

@@ -1,3 +1,5 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
+
 // MV DAX Lab · Modalidades de pago — fuente única para el checkout, la
 // emisión de licencias y la landing.
 //

@@ -1,3 +1,5 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
+
 // Verifica un pago único de MercadoPago contra la API real (server-side) y
 // recién entonces emite la licencia firmada. Es lo que impide armar la URL de
 // /descarga.html a mano sin haber pagado.

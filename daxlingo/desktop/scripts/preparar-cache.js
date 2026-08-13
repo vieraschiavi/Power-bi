@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// © 2026 Martín Viera. Todos los derechos reservados.
+
 // MV DAX Lab · Dejar la caché de electron-builder lista ANTES de construir.
 //
 // Existe por dos fallas reales al construir en una PC Windows común, las dos

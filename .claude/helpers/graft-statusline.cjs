@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// © 2026 Martín Viera. Todos los derechos reservados.
+
 const path = require('path');
 const fs = require('fs');
 const { pathToFileURL } = require('url');

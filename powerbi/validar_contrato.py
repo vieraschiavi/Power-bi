@@ -1,3 +1,5 @@
+# © 2026 Martín Viera. Todos los derechos reservados.
+
 """
 Valida que las cuatro representaciones del modelo digan lo mismo.
 

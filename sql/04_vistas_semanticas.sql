@@ -1,3 +1,5 @@
+-- © 2026 Martín Viera. Todos los derechos reservados.
+
 /* =========================================================================
    FARMA DEMO — 04 · Vistas semánticas para Power BI
 

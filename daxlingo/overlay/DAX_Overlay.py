@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# © 2026 Martín Viera. Todos los derechos reservados.
+
 """
 MV DAX Lab · DAX Overlay — resolvé Power BI sin salir de la pantalla.
 

@@ -1,3 +1,5 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
+
 // MV DAX Lab · Textos de la landing en ES / EN / PT.
 //
 // Espejo de `dxl/i18n.py`: mismas tres claves por texto. Hay un test que

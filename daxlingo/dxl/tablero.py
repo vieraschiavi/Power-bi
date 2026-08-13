@@ -1,3 +1,5 @@
+# © 2026 Martín Viera. Todos los derechos reservados.
+
 """
 MV DAX Lab · Generador de tableros: del modelo a un reporte con visuales,
 slicers (filtros) y navegación, listo para exportar como .pbit o PBIP.

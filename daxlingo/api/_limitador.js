@@ -1,3 +1,5 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
+
 // Freno por IP para las funciones serverless (api/*.js).
 //
 // Es "mejor esfuerzo", no un límite distribuido: cada instancia de la función

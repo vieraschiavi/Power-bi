@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# © 2026 Martín Viera. Todos los derechos reservados.
+
 """
 MV DAX Lab · Servidor MCP propio (stdio, sin dependencias).
 

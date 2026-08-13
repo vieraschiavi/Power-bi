@@ -1,3 +1,5 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
+
 // Emite (y renueva) la licencia de la modalidad mensual.
 //
 // Una suscripción de MercadoPago es un `preapproval`: una autorización que va

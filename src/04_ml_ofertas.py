@@ -1,3 +1,5 @@
+# © 2026 Martín Viera. Todos los derechos reservados.
+
 """
 PASO 4 — Modelo predictivo de OFERTAS COMERCIALES.
 

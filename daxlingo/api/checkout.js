@@ -1,3 +1,5 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
+
 // Checkout de MercadoPago — función serverless (Vercel, CommonJS).
 //
 // Dos caminos, porque MercadoPago los trata distinto:

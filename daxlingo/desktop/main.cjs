@@ -1,3 +1,5 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
+
 // MV DAX Lab · Proceso principal de Electron.
 //
 // La app de escritorio no reimplementa la UI: levanta el mismo motor Python

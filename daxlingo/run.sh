@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# © 2026 Martín Viera. Todos los derechos reservados.
+
 # MV DAX Lab — arranque en un comando.
 set -e
 cd "$(dirname "$0")"

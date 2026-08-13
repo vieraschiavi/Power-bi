@@ -1,3 +1,5 @@
+# © 2026 Martín Viera. Todos los derechos reservados.
+
 """
 MV DAX Lab · Dashboard principal (Streamlit), trilingüe ES/EN/PT.
 

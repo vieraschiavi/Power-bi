@@ -1,3 +1,5 @@
+# © 2026 Martín Viera. Todos los derechos reservados.
+
 """
 PASO 1 — Simulación de los sistemas origen de Farma Demo.
 

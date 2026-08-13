@@ -1,3 +1,5 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
+
 // MV DAX Lab · Lógica de la landing: idioma, galería y checkout.
 // JS vanilla, sin dependencias ni build.
 

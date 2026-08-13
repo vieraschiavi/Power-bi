@@ -1,3 +1,5 @@
+# © 2026 Martín Viera. Todos los derechos reservados.
+
 """
 Contrato del modelo semántico: nombres, tipos y relaciones.
 

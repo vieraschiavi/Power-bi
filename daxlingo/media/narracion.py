@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# © 2026 Martín Viera. Todos los derechos reservados.
+
 """
 MV DAX Lab · La voz del video demo, en los tres idiomas.
 

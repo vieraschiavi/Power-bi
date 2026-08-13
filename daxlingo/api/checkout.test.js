@@ -1,3 +1,5 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
+
 // El checkout es la puerta del dinero: si acepta una modalidad inventada,
 // manda la suscripción al endpoint del pago único o filtra el error crudo de
 // MercadoPago, el problema es real. No hay red acá — se mockea `fetch`.

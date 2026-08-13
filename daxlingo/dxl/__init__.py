@@ -1,3 +1,5 @@
+# © 2026 Martín Viera. Todos los derechos reservados.
+
 """
 MV DAX Lab · Motor de análisis, generación y exportación de modelos de Power BI.
 

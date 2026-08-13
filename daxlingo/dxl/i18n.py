@@ -1,3 +1,5 @@
+# © 2026 Martín Viera. Todos los derechos reservados.
+
 """
 MV DAX Lab · Textos trilingües (ES / EN / PT).
 

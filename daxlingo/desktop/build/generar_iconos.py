@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# © 2026 Martín Viera. Todos los derechos reservados.
+
 """
 Genera el icono del producto: `icono.png` (ventana y Linux) e `icono.ico`
 multi-resolución (Windows: instalador, acceso directo, barra de tareas).
