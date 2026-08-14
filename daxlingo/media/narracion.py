@@ -225,8 +225,16 @@ def sintetizar_edge(texto: str, voz: str, destino: Path) -> None:
     # para siempre y el video salía con tramos mudos en vez de reintentar.
     tmp = destino.with_suffix(".mp3.parcial")
 
+    # edge-tts NO mira las variables de entorno de proxy por su cuenta (aiohttp
+    # solo las usa con trust_env), así que sale directo aunque la máquina tenga
+    # un proxy configurado. Detrás de uno corporativo eso daba un error de
+    # certificado —el handshake lo termina el proxy, no Microsoft— que no tiene
+    # nada que ver con la causa real. Pasándoselo, el TLS valida y, si el host
+    # está bloqueado, el error que se ve es el que de verdad importa.
+    proxy = os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy") or None
+
     async def _hablar() -> None:
-        com = edge_tts.Communicate(texto, voz, rate=RITMO_EDGE)
+        com = edge_tts.Communicate(texto, voz, rate=RITMO_EDGE, proxy=proxy)
         await com.save(str(tmp))
 
     try:
