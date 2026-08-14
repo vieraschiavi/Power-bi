@@ -218,11 +218,24 @@ def sintetizar_edge(texto: str, voz: str, destino: Path) -> None:
 
     import edge_tts
 
+    # Se sintetiza a un temporal y recién al terminar se mueve al destino.
+    # `Communicate.save()` abre el archivo y lo va llenando a medida que le
+    # llega el stream: si la conexión se corta, deja un MP3 de 0 bytes. Como
+    # `generar()` saltea lo que ya existe, esa cáscara vacía se daba por buena
+    # para siempre y el video salía con tramos mudos en vez de reintentar.
+    tmp = destino.with_suffix(".mp3.parcial")
+
     async def _hablar() -> None:
         com = edge_tts.Communicate(texto, voz, rate=RITMO_EDGE)
-        await com.save(str(destino))
+        await com.save(str(tmp))
 
-    asyncio.run(_hablar())
+    try:
+        asyncio.run(_hablar())
+        if tmp.stat().st_size == 0:
+            raise RuntimeError("el servicio devolvió un audio vacío")
+        tmp.replace(destino)
+    finally:
+        tmp.unlink(missing_ok=True)
 
 
 def ruta(idioma: str, slug: str) -> Path:
@@ -266,7 +279,10 @@ def generar(idioma: str, rehacer: bool = False) -> int:
     escritos = 0
     for slug, texto in GUION[idioma].items():
         destino = ruta(idioma, slug)
-        if destino.exists() and not rehacer:
+        # Un MP3 de una frase pesa varios KB. Cualquier cosa por debajo de 1 KB
+        # es basura de un intento anterior que se cortó, así que se rehace en
+        # vez de darla por buena: un clip trunco es un tramo mudo en el video.
+        if destino.exists() and destino.stat().st_size >= 1024 and not rehacer:
             print(f"  · {idioma}/{slug}.mp3 ya estaba")
             continue
         try:

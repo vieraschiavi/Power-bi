@@ -32,7 +32,7 @@ on:
         default: "es en pt"
 
 permissions:
-  contents: read
+  contents: write   # el paso final commitea la voz y los videos sonorizados
 
 jobs:
   narrar:
@@ -125,3 +125,28 @@ jobs:
           path: |
             daxlingo/media/audio/**/*.mp3
             daxlingo/web/assets/video/demo-*.mp4
+
+      # El artifact solo no alcanza: es lo que pasaba antes. La voz se generaba
+      # bien acá arriba, pero los MP4 versionados —los que sirve la landing—
+      # seguían mudos hasta que alguien bajara el zip a mano y los commiteara.
+      # Nadie lo hacía, así que el sitio mostraba el video sin audio.
+      - name: Commitear la voz y los videos sonorizados
+        run: |
+          set -e
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f daxlingo/media/audio daxlingo/web/assets/video/demo-*.mp4
+          if git diff --cached --quiet; then
+            echo "La voz y los videos ya estaban al día: no hay nada que commitear."
+            exit 0
+          fi
+          git commit -m "Regenerar la narración del video demo (motor: ${{ inputs.motor }})"
+          # El runner puede haber quedado atrás si alguien pusheó mientras tanto.
+          for i in 1 2 3 4; do
+            git push && exit 0
+            echo "push rechazado; reintento $i tras rebase"
+            git pull --rebase origin "${GITHUB_REF_NAME}"
+            sleep $((2 ** i))
+          done
+          echo "No se pudo pushear la voz tras 4 intentos." >&2
+          exit 1
