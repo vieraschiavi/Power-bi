@@ -296,10 +296,12 @@ def test_config_mcp_por_agente():
     for agente, info in proveedores_ia.AGENTES_MCP.items():
         cfg = proveedores_ia.config_mcp(agente, ".")
         servidores = cfg[info["clave"]]
-        assert set(servidores) == {"powerbi-remote", "powerbi-modeling",
-                                   "mv-dax-lab"}
+        assert set(servidores) == {"powerbi-remote", "fabric-core",
+                                   "powerbi-modeling", "mv-dax-lab"}
         assert servidores["powerbi-remote"]["url"] == \
             proveedores_ia.MCP_REMOTO_POWERBI
+        assert servidores["fabric-core"]["url"] == \
+            proveedores_ia.MCP_REMOTO_FABRIC
         json.dumps(cfg)  # tiene que ser serializable tal cual
 
 
@@ -739,6 +741,47 @@ def test_lanzador_guarda_la_salida_de_streamlit_para_diagnosticar(tmp_path,
     lanzador.archivo_log().write_text(
         "ModuleNotFoundError: No module named 'streamlit'\n", encoding="utf-8")
     assert "ModuleNotFoundError" in lanzador.cola_log()
+
+
+def test_el_audio_se_rehace_cuando_cambia_el_texto_del_guion(tmp_path):
+    """Corregir una frase del guion tiene que regenerar ese clip.
+
+    Antes `generar()` solo miraba si el MP3 existía, así que un cambio de texto
+    no regeneraba nada: el video seguía diciendo la versión vieja y no había
+    forma de notarlo salvo escuchándolo entero. Misma clase de problema que el
+    video mudo — dar por bueno un artefacto viejo porque el archivo está.
+    """
+    sys.path.insert(0, str(RAIZ / "media"))
+    import narracion
+
+    mp3 = tmp_path / "x.mp3"
+    mp3.write_bytes(b"0" * 2048)
+
+    # Sin huella (un clip de antes de este cambio) se rehace.
+    assert not narracion._al_dia(mp3, "hola")
+
+    narracion._sellar(mp3, "hola")
+    assert narracion._al_dia(mp3, "hola"), "con el mismo texto no debe rehacerse"
+    assert not narracion._al_dia(mp3, "hola!"), "con otro texto TIENE que rehacerse"
+
+
+def test_la_narracion_no_promete_un_numero_de_servidores_mcp_equivocado():
+    """El guion dice cuántos servidores MCP se configuran; si se agrega o saca
+    uno y nadie toca la locución, el video le miente al que lo mira."""
+    sys.path.insert(0, str(RAIZ / "media"))
+    sys.path.insert(0, str(RAIZ))
+    import narracion
+    from dxl import proveedores_ia
+
+    cuantos = len(proveedores_ia.config_mcp("claude", ".")["mcpServers"])
+    palabra = {3: ("tres", "three", "três"), 4: ("cuatro", "four", "quatro")}
+    assert cuantos in palabra, f"agregá el número {cuantos} a este test"
+
+    for idioma, esperada in zip(("es", "en", "pt"), palabra[cuantos]):
+        frase = narracion.GUION[idioma]["herramientas"]
+        assert esperada in frase.lower(), (
+            f"la locución en {idioma} no dice «{esperada}» servidores MCP, "
+            f"pero config_mcp devuelve {cuantos}: {frase!r}")
 
 
 def test_el_bat_de_owner_busca_la_instalacion_en_el_registro():

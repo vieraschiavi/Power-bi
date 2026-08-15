@@ -294,6 +294,12 @@ def probar_conexion(proveedor: str, modelo: str = "",
 # Configuración MCP por agente
 # ==========================================================================
 MCP_REMOTO_POWERBI = "https://api.fabric.microsoft.com/v1/mcp/powerbi"
+# El de Fabric es OTRO servidor, no el mismo con otra ruta: `…/mcp/powerbi`
+# trabaja sobre modelos semánticos y DAX, y `…/mcp/core` sobre el tenant de
+# Fabric —workspaces, items, permisos, carpetas, capacidades—. Publicar desde
+# la app (`dxl/fabric.py`) necesita saber a qué workspace va, y eso lo contesta
+# core, no powerbi. Van los dos.
+MCP_REMOTO_FABRIC = "https://api.fabric.microsoft.com/v1/mcp/core"
 
 # Cada agente lee su config de un archivo y una clave distintas. La forma del
 # servidor (command/args o type/url) es la misma en todos.
@@ -311,8 +317,9 @@ AGENTES_MCP = {
 
 def config_mcp(agente: str = "claude", ruta_repo: str = ".") -> dict:
     """
-    Config MCP lista para el agente elegido, con los tres servidores:
-    el remoto oficial de Power BI, el local de modelado y el de esta app.
+    Config MCP lista para el agente elegido, con los cuatro servidores: los
+    dos remotos oficiales (Power BI y Fabric Core), el local de modelado y el
+    de esta app.
     """
     clave = AGENTES_MCP.get(agente, AGENTES_MCP["claude"])["clave"]
     servidores = {
@@ -322,6 +329,14 @@ def config_mcp(agente: str = "claude", ruta_repo: str = ".") -> dict:
             "comment": "MCP remoto oficial de Power BI (Fabric): inspección "
                        "de modelos publicados, gestión de DAX y "
                        "documentación. Autenticación Microsoft Entra ID.",
+        },
+        "fabric-core": {
+            "type": "http",
+            "url": MCP_REMOTO_FABRIC,
+            "comment": "MCP remoto oficial de Fabric Core (preview): "
+                       "workspaces, items, permisos, carpetas y capacidades "
+                       "del tenant. Es el que dice a qué workspace publicar. "
+                       "Autenticación Microsoft Entra ID.",
         },
         "powerbi-modeling": {
             "command": "dotnet",

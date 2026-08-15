@@ -104,7 +104,7 @@ GUION: dict[str, dict[str, str]] = {
         "academia": "Diecisiete ejercicios en cinco niveles, con verificación "
                     "al instante y sin conexión.",
         "herramientas": "Se conecta con lo que ya usás: DAX Studio, Tabular "
-                        "Editor, Bravo, ALM Toolkit y los tres servidores MCP.",
+                        "Editor, Bravo, ALM Toolkit y los cuatro servidores MCP.",
         "licencia": "Siete días con todo abierto. Después activás la clave que "
                     "te llega al pagar.",
         "configuracion": "La inteligencia artificial la elegís vos: Claude, "
@@ -139,7 +139,7 @@ GUION: dict[str, dict[str, str]] = {
         "academia": "Seventeen exercises across five levels, checked instantly "
                     "and with no connection.",
         "herramientas": "It plugs into what you already use: DAX Studio, Tabular "
-                        "Editor, Bravo, ALM Toolkit and all three MCP servers.",
+                        "Editor, Bravo, ALM Toolkit and all four MCP servers.",
         "licencia": "Seven days with everything unlocked. Then you activate the "
                     "key that arrives when you pay.",
         "configuracion": "You pick the AI: Claude, ChatGPT, Gemini or Copilot, "
@@ -173,7 +173,7 @@ GUION: dict[str, dict[str, str]] = {
         "academia": "Dezessete exercícios em cinco níveis, com verificação "
                     "instantânea e sem conexão.",
         "herramientas": "Conecta com o que você já usa: DAX Studio, Tabular "
-                        "Editor, Bravo, ALM Toolkit e os três servidores MCP.",
+                        "Editor, Bravo, ALM Toolkit e os quatro servidores MCP.",
         "licencia": "Sete dias com tudo liberado. Depois você ativa a chave que "
                     "chega ao pagar.",
         "configuracion": "A inteligência artificial você escolhe: Claude, "
@@ -250,6 +250,36 @@ def ruta(idioma: str, slug: str) -> Path:
     return AUDIO / idioma / f"{slug}.mp3"
 
 
+def _huella(destino: Path) -> Path:
+    """El archivito con el hash del texto que se sintetizó en ese MP3."""
+    return destino.with_suffix(".mp3.sha")
+
+
+def _al_dia(destino: Path, texto: str) -> bool:
+    """¿El MP3 corresponde al texto que dice hoy el guion?
+
+    Antes se miraba solo si el archivo existía, así que corregir una frase del
+    guion no regeneraba nada: el video seguía diciendo la versión vieja y nadie
+    se enteraba hasta escucharlo. Es la misma clase de problema que el video
+    mudo — el pipeline daba por bueno un artefacto viejo.
+
+    Sin huella (los clips de antes de este cambio) se devuelve False: se
+    regeneran una vez y de ahí en más quedan verificables.
+    """
+    import hashlib
+    h = _huella(destino)
+    if not h.exists():
+        return False
+    esperado = hashlib.sha256(texto.encode("utf-8")).hexdigest()
+    return h.read_text(encoding="utf-8").strip() == esperado
+
+
+def _sellar(destino: Path, texto: str) -> None:
+    import hashlib
+    _huella(destino).write_text(
+        hashlib.sha256(texto.encode("utf-8")).hexdigest(), encoding="utf-8")
+
+
 def sintetizar(texto: str, voz: str, clave: str) -> bytes:
     """Un pedido a ElevenLabs. Devuelve los bytes del MP3."""
     import json
@@ -290,7 +320,8 @@ def generar(idioma: str, rehacer: bool = False) -> int:
         # Un MP3 de una frase pesa varios KB. Cualquier cosa por debajo de 1 KB
         # es basura de un intento anterior que se cortó, así que se rehace en
         # vez de darla por buena: un clip trunco es un tramo mudo en el video.
-        if destino.exists() and destino.stat().st_size >= 1024 and not rehacer:
+        if (destino.exists() and destino.stat().st_size >= 1024
+                and not rehacer and _al_dia(destino, texto)):
             print(f"  · {idioma}/{slug}.mp3 ya estaba")
             continue
         try:
@@ -298,6 +329,7 @@ def generar(idioma: str, rehacer: bool = False) -> int:
                 sintetizar_edge(texto, voz, destino)
             else:
                 destino.write_bytes(sintetizar(texto, voz, clave))
+            _sellar(destino, texto)
             escritos += 1
             print(f"  ✓ {idioma}/{slug}.mp3")
         except urllib.error.HTTPError as e:

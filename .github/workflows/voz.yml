@@ -124,6 +124,7 @@ jobs:
           if-no-files-found: error
           path: |
             daxlingo/media/audio/**/*.mp3
+            daxlingo/media/audio/**/*.sha
             daxlingo/web/assets/video/demo-*.mp4
 
       # El artifact solo no alcanza: es lo que pasaba antes. La voz se generaba
