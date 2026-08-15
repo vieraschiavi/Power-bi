@@ -673,6 +673,25 @@ def test_herramientas_registro():
     assert "mv-dax-lab" in cfg["mcpServers"]
 
 
+def test_config_mcp_trae_powerbi_y_fabric_por_separado():
+    """Son dos servidores distintos, no el mismo con otra ruta.
+
+    `…/mcp/powerbi` trabaja sobre modelos semánticos y DAX; `…/mcp/core` sobre
+    el tenant —workspaces, items, permisos—. Publicar desde la app necesita
+    saber a qué workspace va, y eso lo contesta core. Si alguien "simplifica"
+    dejando uno solo, se pierde la mitad.
+    """
+    cfg = proveedores_ia.config_mcp("claude", ".")["mcpServers"]
+    assert cfg["fabric-core"]["url"] == proveedores_ia.MCP_REMOTO_FABRIC
+    assert cfg["fabric-core"]["url"].endswith("/mcp/core")
+    assert cfg["powerbi-remote"]["url"].endswith("/mcp/powerbi")
+    assert cfg["fabric-core"]["url"] != cfg["powerbi-remote"]["url"]
+    # Los dos remotos son HTTP con OAuth de Entra ID, no procesos locales.
+    for nombre in ("powerbi-remote", "fabric-core"):
+        assert cfg[nombre]["type"] == "http", f"{nombre} no es remoto"
+        assert "command" not in cfg[nombre]
+
+
 def test_exportar_medidas_dax(tmp_path, cat):
     ruta = herramientas.exportar_medidas_dax(cat, tmp_path / "m.dax")
     texto = ruta.read_text("utf-8")

@@ -67,13 +67,22 @@ analizador, el explicador, el mapa de relaciones, la Academia y todo el export.
 ⚙️ Configuración y 🛠️ Herramientas generan el archivo de configuración para el
 agente que uses — Claude Code/Desktop (`.mcp.json`), ChatGPT/Codex
 (`mcp.json`), GitHub Copilot (`.vscode/mcp.json`) o Gemini CLI
-(`.gemini/settings.json`) — con **tres servidores**:
+(`.gemini/settings.json`) — con **cuatro servidores**:
 
-1. **`powerbi-remote`** — el MCP remoto oficial:
-   `https://api.fabric.microsoft.com/v1/mcp/powerbi` (Entra ID).
-2. **`powerbi-modeling`** — el MCP local de Microsoft contra Power BI Desktop.
-3. **`mv-dax-lab`** — el propio: `cargar_modelo`, `resumen_modelo`,
+1. **`powerbi-remote`** — el MCP remoto oficial de Power BI:
+   `https://api.fabric.microsoft.com/v1/mcp/powerbi` (Entra ID). Modelos
+   semánticos publicados, DAX y documentación.
+2. **`fabric-core`** — el MCP remoto oficial de Fabric Core (preview):
+   `https://api.fabric.microsoft.com/v1/mcp/core` (Entra ID). Workspaces,
+   items, permisos, carpetas y capacidades del tenant.
+3. **`powerbi-modeling`** — el MCP local de Microsoft contra Power BI Desktop.
+4. **`mv-dax-lab`** — el propio: `cargar_modelo`, `resumen_modelo`,
    `analizar_modelo`, `generar_dax`, `explicar_dax`, `exportar`.
+
+Los dos primeros son servidores **distintos**, no el mismo con otra ruta:
+`powerbi` contesta sobre el modelo semántico y `core` sobre el tenant. Publicar
+desde la app (`dxl/fabric.py`) necesita saber a qué workspace va, y eso lo
+contesta `core`.
 
 ## Ediciones y licencias
 
