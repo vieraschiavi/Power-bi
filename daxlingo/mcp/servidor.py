@@ -198,7 +198,11 @@ def ejecutar_herramienta(nombre: str, args: dict) -> dict:
             ruta = modmod.exportar_pbip(cargado["modelo"], layout,
                                         destino.parent, destino.stem)
         else:
-            ruta = modmod.exportar_pbit(cargado["modelo"], layout, destino)
+            ruta = modmod.exportar_pbit(
+                cargado["modelo"], layout, destino,
+                # Igual que en la app: sin el DataMashup el modelo exportado
+                # pierde las consultas de Power Query del archivo original.
+                datamashup=cargado.get("datamashup"))
         return _texto(f"Exportado: {ruta}")
 
     raise ValueError(f"Herramienta desconocida: {nombre}")

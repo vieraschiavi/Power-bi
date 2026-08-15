@@ -230,8 +230,8 @@ def forecast_mensual(df: pd.DataFrame):
     # Target: inversión comercial del mes (USD de descuento efectivamente otorgado)
     m["y"] = np.log1p(m["inversion_usd"])
     gf = m.groupby("id_filial", observed=True)
-    for l in (1, 2, 3):
-        m[f"lag{l}"] = gf["y"].shift(l)
+    for retardo in (1, 2, 3):
+        m[f"lag{retardo}"] = gf["y"].shift(retardo)
     m["media3"] = gf["y"].shift(1).rolling(3).mean().reset_index(level=0, drop=True)
     m["tasa_acept_lag1"] = gf.apply(
         lambda g: (g["aceptadas"] / g["ofertas"]).shift(1), include_groups=False

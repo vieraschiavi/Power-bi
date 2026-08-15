@@ -11,6 +11,7 @@ Fabric y servidor MCP. Sin red: todo local y determinístico.
 """
 from __future__ import annotations
 
+import re
 import json
 import sys
 from pathlib import Path
@@ -133,6 +134,92 @@ def test_pbit_ida_y_vuelta(tmp_path, cat):
     assert cat2.resumen()["tablas"] == 4
     assert cat2.resumen()["medidas"] == 2
     assert len(cargado["layout"]["sections"]) == 2
+
+
+def test_el_ida_y_vuelta_no_pierde_las_consultas_de_power_query(tmp_path, cat):
+    """Un modelo que entra con su DataMashup tiene que salir con él.
+
+    Antes ni se leía: la parte se descartaba al cargar y nunca se escribía al
+    exportar, así que un .pbit real perdía TODAS sus consultas de Power Query
+    al pasar por la app. En Power BI el modelo quedaba sin origen de datos —
+    nada que refrescar— y la pérdida era silenciosa: no había forma de notarla
+    salvo abriendo el archivo.
+    """
+    import zipfile
+
+    # Un .pbit "de origen" con DataMashup, como el que exporta Power BI.
+    origen = tmp_path / "origen.pbit"
+    mashup = b"PK\x03\x04-binario-propietario-de-microsoft-\x00\x01\x02"
+    modmod.exportar_pbit(modelo_juguete(), None, origen, datamashup=mashup)
+    with zipfile.ZipFile(origen) as z:
+        assert "DataMashup" in z.namelist(), "no se escribió la parte"
+        assert z.read("DataMashup") == mashup, "los bytes no se copian tal cual"
+
+    # Se carga y se vuelve a exportar: el DataMashup tiene que sobrevivir.
+    cargado = modmod.cargar(origen)
+    assert cargado["datamashup"] == mashup, "se perdió al cargar"
+
+    destino = tmp_path / "salida.pbit"
+    modmod.exportar_pbit(cargado["modelo"], cargado["layout"], destino,
+                         datamashup=cargado["datamashup"])
+    with zipfile.ZipFile(destino) as z:
+        assert z.read("DataMashup") == mashup, "se perdió al reexportar"
+        # Y el Content_Types tiene que declararla: una parte escrita pero no
+        # declarada es de las cosas que Power BI rechaza como corrupto.
+        ct = z.read("[Content_Types].xml").decode("utf-8")
+        assert "/DataMashup" in ct
+
+
+def test_sin_datamashup_no_se_declara_la_parte(tmp_path):
+    """Un modelo armado desde cero no tiene consultas que copiar.
+
+    Ahí el .pbit sale sin esa parte — y el Content_Types NO tiene que
+    declararla: declarar una parte que no está es tan corrupto como escribir
+    una sin declarar.
+    """
+    import zipfile
+
+    destino = tmp_path / "vacio.pbit"
+    modmod.exportar_pbit(modelo_juguete(), None, destino)
+    with zipfile.ZipFile(destino) as z:
+        assert "DataMashup" not in z.namelist()
+        assert "/DataMashup" not in z.read("[Content_Types].xml").decode("utf-8")
+        # Lo declarado y lo escrito tienen que coincidir exactamente.
+        ct = z.read("[Content_Types].xml").decode("utf-8")
+        declaradas = set(re.findall(r'PartName="/([^"]+)"', ct))
+        escritas = {n for n in z.namelist() if n != "[Content_Types].xml"}
+        assert declaradas == escritas, f"declaradas={declaradas} escritas={escritas}"
+
+
+def test_el_servidor_mcp_conserva_las_consultas_al_exportar(tmp_path):
+    """El arreglo tiene que estar CABLEADO, no solo existir en modelo.py.
+
+    Se recorre el circuito real del MCP —cargar un .pbit con DataMashup y
+    exportarlo— y se comprueba en el archivo de salida. Sin este test, que
+    alguien olvide pasar el parámetro en un call site deja el arreglo como
+    código muerto y la pérdida vuelve a ser silenciosa.
+    """
+    import zipfile
+
+    import servidor as srv
+
+    mashup = b"consultas-M-del-cliente-\x00\x01"
+    origen = tmp_path / "origen.pbit"
+    modmod.exportar_pbit(modelo_juguete(), None, origen, datamashup=mashup)
+
+    r = srv.atender({"jsonrpc": "2.0", "id": 1, "method": "tools/call",
+                     "params": {"name": "cargar_modelo",
+                                "arguments": {"ruta": str(origen)}}})
+    assert not r["result"].get("isError"), r
+
+    destino = tmp_path / "exportado.pbit"
+    srv.atender({"jsonrpc": "2.0", "id": 2, "method": "tools/call",
+                 "params": {"name": "exportar",
+                            "arguments": {"destino": str(destino)}}})
+    assert destino.exists()
+    with zipfile.ZipFile(destino) as z:
+        assert z.read("DataMashup") == mashup, \
+            "el servidor MCP exportó sin las consultas del modelo original"
 
 
 def test_pbip_ida_y_vuelta(tmp_path, cat):

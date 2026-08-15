@@ -93,9 +93,14 @@ try:
 except ImportError:
     _abortar_falta_lib("anthropic", "anthropic")
 
-import base64
-import io
-import tkinter as tk
+# Estos imports van DESPUÉS de los chequeos de dependencias de arriba a
+# propósito: si falta `pynput` o `anthropic`, el script corta con un mensaje
+# que dice qué instalar, en vez de reventar más abajo con un ImportError
+# críptico. Mover estos imports al tope no cambiaría nada funcional, pero sí
+# el orden en que el usuario ve el error.
+import base64  # noqa: E402
+import io  # noqa: E402
+import tkinter as tk  # noqa: E402
 
 # El puente con la app principal es opcional: si el paquete dxl está al lado
 # (repo completo), cada respuesta va también a la bandeja compartida.

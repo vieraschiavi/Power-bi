@@ -339,7 +339,6 @@ def gen_sellin(clientes, productos, filiales, ofertas, depositos, transportistas
     """
     cli = clientes.set_index("id_cliente")
     prod = productos.set_index("id_producto")
-    filial_reg = filiales.set_index("id_filial")["region"]
     filial_sla = filiales.set_index("id_filial")["sla_entrega_dias"]
     filial_mad = filiales.set_index("id_filial")["madurez"]
     dep_por_filial = depositos.groupby("id_filial")["id_deposito"].apply(list).to_dict()

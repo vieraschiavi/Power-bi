@@ -624,7 +624,10 @@ with tab_exportar:
                 tmp = Path(tempfile.mkdtemp(prefix="dxl_out_"))
                 ruta = modmod.exportar_pbit(
                     cargado["modelo"], layout, tmp / f"{nombre_out}.pbit",
-                    descripcion=f"Generado por {MARCA}")
+                    descripcion=f"Generado por {MARCA}",
+                    # Las consultas de Power Query del archivo original: sin
+                    # esto el modelo exportado queda sin origen de datos.
+                    datamashup=cargado.get("datamashup"))
                 st.download_button(f"{_('ex_descargar')} {ruta.name}",
                                    ruta.read_bytes(), file_name=ruta.name)
                 st.caption(_("ex_nota_pbit"))

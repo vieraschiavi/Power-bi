@@ -15,3 +15,9 @@ toolbarMode = "minimal"
 
 [server]
 headless = true
+# Tope de subida. El default de Streamlit son 200 MB, y un .pbit/.pbix real
+# rara vez pasa de 50: el modelo viaja comprimido y las capturas no van
+# adentro. Bajarlo acota lo que puede pasar con un zip malicioso —el .zip de
+# un PBIP se descomprime a disco, así que uno muy comprimido podría llenarlo—
+# sin molestar a ningún archivo legítimo.
+maxUploadSize = 64
