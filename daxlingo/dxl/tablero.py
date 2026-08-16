@@ -279,7 +279,7 @@ def disenar_auto(cat: Catalogo, medidas_sel: list[str] | None = None,
     dims = _dimensiones(cat, maximo=3)
     fecha = cat.columna_fecha()
 
-    titulos = [f"01 · Resumen", f"02 · Detalle"]
+    titulos = ["01 · Resumen", "02 · Detalle"]
     secciones = [
         _pagina_resumen(titulos, titulo, pares, dims, fecha),
         _pagina_detalle(titulos, titulo, pares, dims),

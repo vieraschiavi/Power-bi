@@ -124,7 +124,8 @@ def main() -> int:
     for archivo in esq.BIBLIOTECA_DAX:
         texto = (DAX / archivo).read_text(encoding="utf-8")
         # comentarios fuera: adentro hay referencias de ejemplo a propósito
-        texto = "\n".join(l for l in texto.splitlines() if not l.lstrip().startswith("//"))
+        texto = "\n".join(
+            ln for ln in texto.splitlines() if not ln.lstrip().startswith("//"))
         for tab, col in re.findall(r"(v_[a-z_]+)\[([^\]]+)\]", texto):
             if tab not in columnas_modelo:
                 fallas.append(f"DAX ({archivo}): tabla inexistente '{tab}'")

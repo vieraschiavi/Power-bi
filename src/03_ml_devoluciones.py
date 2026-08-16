@@ -258,8 +258,8 @@ def forecast_mensual(df: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
 
     gf = m.groupby("id_filial", observed=True)
     g = gf["y"]
-    for l in (1, 2):
-        m[f"lag{l}"] = g.shift(l)
+    for retardo in (1, 2):
+        m[f"lag{retardo}"] = g.shift(retardo)
     m["media3"] = g.shift(1).rolling(3).mean().reset_index(level=0, drop=True)
 
     # Drivers de mix rezagados un mes (nunca contemporáneos: eso sería leakage)

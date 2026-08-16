@@ -50,17 +50,27 @@ def _des16(crudo: bytes) -> str:
     return texto
 
 
-CONTENT_TYPES = (
-    '<?xml version="1.0" encoding="utf-8"?>'
-    '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
-    '<Default Extension="json" ContentType="" />'
-    '<Override PartName="/Version" ContentType="" />'
-    '<Override PartName="/Report/Layout" ContentType="" />'
-    '<Override PartName="/Settings" ContentType="" />'
-    '<Override PartName="/Metadata" ContentType="" />'
-    '<Override PartName="/DataModelSchema" ContentType="" />'
-    "</Types>"
-)
+def _content_types(con_datamashup: bool = False) -> str:
+    """El [Content_Types].xml del .pbit, declarando las partes que se escriben.
+
+    Se arma en función de lo que realmente va adentro: declarar una parte que
+    no existe —o escribir una sin declararla— es de las cosas que hacen que
+    Power BI rechace el archivo como corrupto.
+    """
+    partes = ["/Version", "/Report/Layout", "/Settings", "/Metadata",
+              "/DataModelSchema"]
+    if con_datamashup:
+        partes.append("/DataMashup")
+    overrides = "".join(f'<Override PartName="{p}" ContentType="" />'
+                        for p in partes)
+    return ('<?xml version="1.0" encoding="utf-8"?>'
+            '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+            '<Default Extension="json" ContentType="" />'
+            f"{overrides}</Types>")
+
+
+# Compatibilidad: algunos módulos importaban la constante.
+CONTENT_TYPES = _content_types()
 
 
 # ==========================================================================
@@ -112,7 +122,7 @@ def cargar(ruta: str | Path) -> dict:
 
 def _cargar_pbit(ruta: Path) -> dict:
     resultado = {"formato": "pbit", "modelo": None, "layout": None,
-                 "advertencias": [], "origen": str(ruta)}
+                 "datamashup": None, "advertencias": [], "origen": str(ruta)}
     with zipfile.ZipFile(ruta) as z:
         nombres = set(z.namelist())
         if "DataModelSchema" in nombres:
@@ -122,7 +132,23 @@ def _cargar_pbit(ruta: Path) -> dict:
                 "El .pbit no trae DataModelSchema — ¿está corrupto?")
         if "Report/Layout" in nombres:
             resultado["layout"] = json.loads(_des16(z.read("Report/Layout")))
+        resultado["datamashup"] = _leer_datamashup(z, nombres)
     return resultado
+
+
+def _leer_datamashup(z: zipfile.ZipFile, nombres: set) -> bytes | None:
+    """Los bytes crudos de la parte `DataMashup`, si el archivo la trae.
+
+    Ahí viven las consultas de Power Query (el código M) y las credenciales
+    de conexión. Es un binario propietario: no se interpreta, se copia tal
+    cual. Antes ni se leía, así que un modelo que entraba con sus consultas
+    salía sin ellas y en Power BI no quedaba de dónde refrescar los datos —
+    la pérdida era silenciosa, nadie la veía hasta abrir el archivo.
+    """
+    for nombre in ("DataMashup", "Formulas/Section1.m"):
+        if nombre in nombres:
+            return z.read(nombre)
+    return None
 
 
 def _cargar_pbix(ruta: Path) -> dict:
@@ -203,8 +229,20 @@ def _cargar_pbip(ruta: Path) -> dict:
 # Escritura
 # ==========================================================================
 def exportar_pbit(modelo: dict, layout: dict | None, destino: str | Path,
-                  descripcion: str = "") -> Path:
-    """Escribe un .pbit listo para abrir con doble clic en Power BI Desktop."""
+                  descripcion: str = "", datamashup: bytes | None = None) -> Path:
+    """Escribe un .pbit para abrir con doble clic en Power BI Desktop.
+
+    `datamashup`: los bytes de la parte homónima del archivo de origen, si el
+    modelo vino de un .pbit/.pbix que la traía (`cargar()` la devuelve en la
+    clave `datamashup`). Ahí están las consultas de Power Query. Sin ella el
+    archivo abre igual, pero el modelo queda sin origen de datos: no hay nada
+    que refrescar. Se copia tal cual, no se interpreta — es un binario
+    propietario de Microsoft.
+
+    Para un modelo armado desde cero en la app no hay DataMashup que copiar, y
+    ahí el .pbit sale sin esa parte, que es lo correcto: inventar una mal
+    formada haría que Power BI lo rechace como corrupto.
+    """
     destino = Path(destino)
     destino.parent.mkdir(parents=True, exist_ok=True)
     metadata = {
@@ -220,12 +258,18 @@ def exportar_pbit(modelo: dict, layout: dict | None, destino: str | Path,
                   "config": json.dumps({}), "layoutOptimization": 0}
 
     with zipfile.ZipFile(destino, "w", zipfile.ZIP_DEFLATED) as z:
-        z.writestr("[Content_Types].xml", CONTENT_TYPES)
+        # El Content_Types tiene que declarar EXACTAMENTE las partes que se
+        # escriben: si declara una que no está, o falta una que sí está, Power
+        # BI da "corrupt or invalid report file".
+        z.writestr("[Content_Types].xml", _content_types(bool(datamashup)))
         z.writestr("Version", _u16("1.28"))
         z.writestr("DataModelSchema", _u16(json.dumps(modelo, ensure_ascii=False)))
         z.writestr("Report/Layout", _u16(json.dumps(layout, ensure_ascii=False)))
         z.writestr("Settings", _u16(json.dumps(settings, ensure_ascii=False)))
         z.writestr("Metadata", _u16(json.dumps(metadata, ensure_ascii=False)))
+        if datamashup:
+            # Bytes crudos: NO pasa por _u16(). Es un binario, no texto UTF-16.
+            z.writestr("DataMashup", datamashup)
     return destino
 
 

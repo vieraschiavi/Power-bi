@@ -1,0 +1,60 @@
+# Gate de calidad: linter + las dos suites de tests, en cada push y cada PR.
+#
+# Existía un hueco grande acá. Los únicos workflows eran `instaladores.yml`
+# (manual, sólo cuando se toca el escritorio) y `voz.yml` (manual). Ningún
+# check corría los 109 tests de Python ni los 23 de la API: sólo se ejecutaban
+# si alguien se acordaba de hacerlo en su máquina. Los PRs mostraban "verde"
+# porque el único check era el deploy de Vercel, que no sabe nada del motor.
+# Una regresión entraba a main sin que nada la frenara.
+#
+# Es rápido a propósito: el motor (dxl/) corre con la stdlib, así que no hace
+# falta instalar streamlit ni el stack de video. Verificado en un venv limpio:
+# pytest + ruff + pillow alcanzan para las 109 (pillow lo pide build_video,
+# que un test importa para chequear los textos del video).
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  # Un push nuevo sobre la misma rama cancela la corrida anterior: no tiene
+  # sentido pagar runner por un commit que ya quedó viejo.
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  calidad:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Instalar lo mínimo
+        run: pip install pytest ruff pillow
+
+      - name: Linter
+        run: ruff check .
+
+      - name: Tests del motor y del producto
+        run: python -m pytest daxlingo/tests/ -q
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Tests de la API de pagos
+        working-directory: daxlingo/api
+        run: node --test

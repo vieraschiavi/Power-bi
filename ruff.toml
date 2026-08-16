@@ -1,0 +1,42 @@
+# Configuración de Ruff — linter del proyecto.
+#
+# Mismo criterio que el resto de los repos: un ruff.toml dedicado en vez de
+# pyproject.toml, porque esto no se instala como paquete Python (se distribuye
+# como .exe/ZIP, ver daxlingo/packaging/) y un pyproject.toml suelto haría que
+# las herramientas de build lo confundan con un paquete instalable.
+#
+# Sin este archivo, Ruff corría con sus defaults del momento y marcaba 95
+# cosas, casi todas ruido: los `# noqa: E402` que el código ya trae quedaban
+# como "directiva sin usar" porque E402 no estaba habilitada, y se colaban
+# reglas de estilo que obligarían a reescribir el repo entero sin arreglar un
+# solo bug. Fijar el set acá lo vuelve estable y accionable.
+#
+# Reglas: el set por defecto de Ruff (E4/E7/E9 de pycodestyle + F de Pyflakes).
+# Es el que atrapa errores REALES — imports sin usar, variables muertas,
+# nombres indefinidos, f-strings mal escritos — sin imponer un formato. E501
+# (línea larga) queda fuera adrede: hay comentarios explicativos largos que son
+# deliberados y no vale la pena romperlos.
+
+line-length = 100
+target-version = "py311"
+
+exclude = [
+    ".venv",
+    "build",
+    "dist",
+    "node_modules",
+    "__pycache__",
+    # Copias congeladas del producto que arma el empaquetador: son artefactos
+    # de build, no código fuente. Lintearlas duplica cada hallazgo por tres.
+    "daxlingo/desktop/dist-portable",
+]
+
+[lint]
+# Set por defecto explícito, para que no cambie si Ruff cambia sus defaults.
+select = ["E4", "E7", "E9", "F"]
+
+[lint.per-file-ignores]
+# Los .spec de PyInstaller no son módulos normales: PyInstaller inyecta
+# SPECPATH, Analysis, PYZ y EXE como globales en tiempo de ejecución, así que
+# Pyflakes los ve como nombres indefinidos. No se lintean.
+"daxlingo/packaging/*.spec" = ["F821"]
