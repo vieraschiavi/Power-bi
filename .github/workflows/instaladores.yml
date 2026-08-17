@@ -34,11 +34,24 @@ env:
   INSTALL_DIR: "C:\\pruebainstal"
   # Desde acá se corre el .bat de owner, lejos de la instalación.
   OWNER_DIR: "C:\\prueba-owner"
+  # Letra de unidad que se crea con `subst` apuntando a una carpeta de C:.
+  # windows-latest ya no trae una D: real con espacio propio (GitHub la
+  # sacó de las imágenes de Windows Server 2025 el 14/7/2025), así que se
+  # simula: para NSIS y para el sistema de archivos, una unidad `subst` es
+  # una letra de unidad como cualquier otra. Es justo lo que hace falta
+  # probar: "elegí instalarlo en otro disco, ejemplo el D:".
+  OTRA_UNIDAD: "Z:"
+  OTRA_UNIDAD_CARPETA: "C:\\subst-otra-unidad"
 
 jobs:
   construir-y-probar:
     runs-on: windows-latest
-    timeout-minutes: 45
+    # 45 min alcanzaba para un solo ciclo instalar→verificar→desinstalar.
+    # Ahora hay tres (el original + los dos que prueban que se puede elegir
+    # disco), y cada uno puede necesitar hasta 5 reintentos por la caída
+    # intermitente de más abajo — con margen para que un mal día no tape el
+    # trabajo real con un timeout que no es culpa de este cambio.
+    timeout-minutes: 75
 
     steps:
       - uses: actions/checkout@v4
@@ -119,8 +132,13 @@ jobs:
           #
           #   /S           silencioso
           #   /NCRC        saltea el chequeo CRC del .exe (son 176 MB)
-          #   /currentuser fija el modo de instalación, que es lo que el
-          #                paquete usa igual (nsis.perMachine: false)
+          #   /currentuser fuerza el modo por usuario. Desde que
+          #                nsis.perMachine pasó a true, el paquete YA NO usa
+          #                esto por defecto (ver el paso "Reinstalar sin
+          #                decirle carpeta" más abajo, que prueba justo el
+          #                default nuevo) — se deja acá a propósito, para
+          #                seguir cubriendo que el modo por usuario, con
+          #                carpeta a mano, sigue andando como alternativa.
           #   /D=          carpeta destino
           #
           # Sin -Wait, y con espera acotada a mano: el paquete tiene
@@ -329,16 +347,84 @@ jobs:
           cd /d "${{ env.OWNER_DIR }}"
           call Convertir-a-version-dueno.bat /revertir < nul
 
-      - name: Desinstalar y comprobar que no deja nada
+      # ------------------------------------------------------------------
+      # El bug real que motivó este cambio, probado con el instalador de
+      # verdad — no adivinado, leído en el propio node_modules del proyecto
+      # (app-builder-lib/templates/nsis/assistedInstaller.nsh +
+      # multiUser.nsh): initMultiUser mira si HKCU o HKLM tienen anotada una
+      # InstallLocation para esta edición y, si la encuentra, la trata como
+      # "esto es una actualización" — reinstala DERECHO ahí y se salta la
+      # página donde se podría elegir otra carpeta o disco. Correcto cuando
+      # la instalación anterior sigue estando; un bug cuando la carpeta ya
+      # no existe (se borró a mano, quedó a medias por el disco lleno) y esa
+      # marca fantasma sigue mandando al mismo lugar sin volver a preguntar.
+      #
+      # Acá se simula exactamente eso: se borra la carpeta SIN desinstalar
+      # (así la marca del registro queda), y se reinstala sin decirle nada
+      # de carpeta. Sin el arreglo (preInit en build/instalador.nsh), esto
+      # recrearía "${{ env.INSTALL_DIR }}" —la carpeta borrada— sin más. Con
+      # el arreglo, la marca fantasma se limpia antes de decidir el modo, y
+      # cae en el default nuevo: Archivos de programa. De paso, esto prueba
+      # también cuál es ese default ahora que nsis.perMachine es true.
+      # ------------------------------------------------------------------
+      - name: Simular una instalación anterior que ya no está
         shell: pwsh
         run: |
-          $raiz = "${{ env.INSTALL_DIR }}"
+          $vieja = "${{ env.INSTALL_DIR }}"
+          if (-not (Test-Path (Join-Path $vieja "MV DAX Lab.exe"))) {
+            throw "no había nada instalado en $vieja para poder simular esto"
+          }
+          Remove-Item $vieja -Recurse -Force
+          Write-Host "carpeta borrada a mano (sin desinstalar): $vieja"
+          Write-Host "la marca en el registro sigue apuntando ahí — es la parte que hay que probar"
+
+      - name: Reinstalar sin decirle carpeta — no debe caer en la vieja
+        shell: pwsh
+        working-directory: daxlingo/desktop
+        run: |
+          $exe = Get-ChildItem dist-instalador -Filter "MV-DAX-Lab-Setup-*.exe" |
+                 Select-Object -First 1
+          $vieja = "${{ env.INSTALL_DIR }}"
+          $porDefecto = Join-Path $env:ProgramFiles "MV DAX Lab"
+          $appExe = Join-Path $porDefecto "MV DAX Lab.exe"
+
+          # Mismo patrón de reintentos que la primera instalación (ver ese
+          # paso para el porqué de la caída intermitente 0xC0000005), acá
+          # SIN /D ni /currentuser a propósito: es justo lo que hay que
+          # probar, que el instalador decida solo dónde ir.
+          $INTENTOS = 5
+          for ($intento = 1; $intento -le $INTENTOS; $intento++) {
+            if ($intento -gt 1) {
+              Write-Host "::warning::reintento $intento de $INTENTOS"
+              Remove-Item $porDefecto -Recurse -Force -ErrorAction SilentlyContinue
+            }
+            $p = Start-Process $exe.FullName -PassThru -ArgumentList "/S /NCRC"
+            if (-not $p.WaitForExit(300000)) { $p.Kill(); throw "no terminó en 5 minutos" }
+            $espera = if ($p.ExitCode -eq 0) { 60 } else { 5 }
+            foreach ($i in 1..$espera) {
+              if (Test-Path $appExe) { break }
+              Start-Sleep -Seconds 2
+            }
+            Get-Process -Name "MV DAX Lab" -ErrorAction SilentlyContinue |
+              ForEach-Object { $_.Kill() }
+            if (Test-Path $appExe) { break }
+          }
+
+          if (Test-Path (Join-Path $vieja "MV DAX Lab.exe")) {
+            throw "BUG: volvió a instalar en la carpeta vieja y borrada ($vieja) " +
+                  "en vez de preguntar/usar el default — la marca fantasma del " +
+                  "registro no se limpió"
+          }
+          if (-not (Test-Path $appExe)) {
+            throw "no quedó instalado en el default esperado ($porDefecto)"
+          }
+          Write-Host "OK: ignoró la marca fantasma y cayó en el default correcto: $porDefecto"
+
+      - name: Desinstalar la reinstalación por default
+        shell: pwsh
+        run: |
+          $raiz = Join-Path $env:ProgramFiles "MV DAX Lab"
           $des = Join-Path $raiz "Uninstall MV DAX Lab.exe"
-          # Espera acotada, por lo mismo que en la instalación: nada de
-          # -Wait, que puede quedarse colgado esperando un proceso hijo.
-          # El desinstalador de NSIS además se copia al temporal y se
-          # relanza, así que el proceso original sale antes de terminar: de
-          # ahí la espera de después.
           $p = Start-Process $des -ArgumentList '/S' -PassThru
           [void]$p.WaitForExit(180000)
           Start-Sleep -Seconds 15
@@ -346,6 +432,113 @@ jobs:
             throw "el desinstalador dejó el ejecutable"
           }
           Write-Host "desinstalación limpia"
+
+      # ------------------------------------------------------------------
+      # Y la otra mitad de "puedo elegir disco": una unidad que NO es la del
+      # sistema. /D sigue siendo la vía —silenciosa, determinística, sin
+      # depender de que la página de carpeta se muestre— pero hasta acá
+      # nunca se había probado apuntando a una LETRA DE UNIDAD distinta, así
+      # que quedaba la duda de si algo en el armado de accesos directos o en
+      # el registro asume "todo vive en C:". `subst` simula esa otra unidad:
+      # ver la nota en el bloque `env` de arriba.
+      # ------------------------------------------------------------------
+      - name: Crear la otra unidad (subst) para la prueba de disco
+        shell: cmd
+        run: |
+          mkdir "${{ env.OTRA_UNIDAD_CARPETA }}" 2>nul
+          subst ${{ env.OTRA_UNIDAD }} "${{ env.OTRA_UNIDAD_CARPETA }}"
+          dir ${{ env.OTRA_UNIDAD }}\
+
+      - name: Instalar en la otra unidad
+        shell: pwsh
+        working-directory: daxlingo/desktop
+        run: |
+          $exe = Get-ChildItem dist-instalador -Filter "MV-DAX-Lab-Setup-*.exe" |
+                 Select-Object -First 1
+          $destino = "${{ env.OTRA_UNIDAD }}\MV DAX Lab"
+          $appExe = "$destino\MV DAX Lab.exe"
+
+          $INTENTOS = 5
+          for ($intento = 1; $intento -le $INTENTOS; $intento++) {
+            if ($intento -gt 1) {
+              Write-Host "::warning::reintento $intento de $INTENTOS"
+              Remove-Item $destino -Recurse -Force -ErrorAction SilentlyContinue
+            }
+            $p = Start-Process $exe.FullName -PassThru -ArgumentList "/S /NCRC /D=$destino"
+            if (-not $p.WaitForExit(300000)) { $p.Kill(); throw "no terminó en 5 minutos" }
+            $espera = if ($p.ExitCode -eq 0) { 60 } else { 5 }
+            foreach ($i in 1..$espera) {
+              if (Test-Path $appExe) { break }
+              Start-Sleep -Seconds 2
+            }
+            Get-Process -Name "MV DAX Lab" -ErrorAction SilentlyContinue |
+              ForEach-Object { $_.Kill() }
+            if (Test-Path $appExe) { break }
+          }
+          if (-not (Test-Path $appExe)) {
+            throw "no quedó instalado en la otra unidad ($destino) tras $INTENTOS intentos"
+          }
+          Write-Host "instalado en $destino"
+
+      - name: Arrancar desde la otra unidad — confirmar que no es solo un archivo copiado
+        shell: pwsh
+        run: |
+          $py = "${{ env.OTRA_UNIDAD }}\MV DAX Lab\resources\runtime\python.exe"
+          $app = "${{ env.OTRA_UNIDAD }}\MV DAX Lab\resources\app"
+          if (-not (Test-Path $py)) { throw "falta el runtime en la otra unidad" }
+          $proc = Start-Process $py -PassThru -WindowStyle Hidden -ArgumentList `
+            "-m", "streamlit", "run", "$app\app\app.py",
+            "--server.port", "8766", "--server.headless", "true",
+            "--browser.gatherUsageStats", "false"
+          try {
+            $ok = $false
+            foreach ($i in 1..60) {
+              Start-Sleep -Seconds 2
+              try {
+                if ((Invoke-WebRequest "http://127.0.0.1:8766" -UseBasicParsing `
+                       -TimeoutSec 5).StatusCode -eq 200) { $ok = $true; break }
+              } catch { }
+            }
+            if (-not $ok) { throw "la app instalada en otra unidad no respondió en 120 s" }
+            Write-Host "respondió 200 corriendo desde ${{ env.OTRA_UNIDAD }}"
+          } finally {
+            if ($proc -and -not $proc.HasExited) { Stop-Process -Id $proc.Id -Force }
+          }
+
+      - name: Comprobar que el registro sabe que está en la otra unidad
+        shell: pwsh
+        run: |
+          # Es lo que usa Convertir-a-version-dueno.bat para encontrar una
+          # instalación sin que le digan dónde: si esto no queda bien, ese
+          # .bat tampoco la va a encontrar en la máquina de un cliente que
+          # instaló en otro disco.
+          $encontrada = $false
+          foreach ($raiz in @("HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall",
+                              "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall")) {
+            Get-ChildItem $raiz -ErrorAction SilentlyContinue | ForEach-Object {
+              $p = Get-ItemProperty $_.PSPath -ErrorAction SilentlyContinue
+              if ($p.DisplayName -eq "MV DAX Lab" -and
+                  $p.InstallLocation -like "${{ env.OTRA_UNIDAD }}*") {
+                $script:encontrada = $true
+              }
+            }
+          }
+          if (-not $encontrada) { throw "InstallLocation no apunta a la otra unidad" }
+          Write-Host "OK: el registro apunta a ${{ env.OTRA_UNIDAD }}"
+
+      - name: Desinstalar de la otra unidad y liberarla
+        shell: pwsh
+        run: |
+          $raiz = "${{ env.OTRA_UNIDAD }}\MV DAX Lab"
+          $des = Join-Path $raiz "Uninstall MV DAX Lab.exe"
+          $p = Start-Process $des -ArgumentList '/S' -PassThru
+          [void]$p.WaitForExit(180000)
+          Start-Sleep -Seconds 15
+          if (Test-Path (Join-Path $raiz "MV DAX Lab.exe")) {
+            throw "el desinstalador dejó el ejecutable en la otra unidad"
+          }
+          subst "${{ env.OTRA_UNIDAD }}" /D
+          Write-Host "desinstalación limpia y unidad liberada"
 
       # ------------------------------------------------------------------
       # La otra mitad de la distribución: el ZIP portable, que no instala
