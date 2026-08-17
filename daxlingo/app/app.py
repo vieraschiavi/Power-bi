@@ -38,6 +38,50 @@ NAVY, NAVY2, AMBAR, TINTA, APAGADO = ("#081527", "#0c2137", "#f2b441",
 st.set_page_config(page_title=f"{MARCA} · DAX + Power BI + Fabric",
                    page_icon="🟨", layout="wide")
 
+# Íconos de las 14 pestañas, en el orden de `st.tabs(...)`. Trazo de línea,
+# mismo grosor y misma caja: un sistema, no una bolsa de emojis. Van como
+# máscara CSS —ver el bloque de estilos— así el color lo pone la hoja de
+# estilos y no la fuente de emojis del sistema operativo.
+def _svg(cuerpo: str) -> str:
+    """Un SVG de línea listo para embeber como máscara en CSS.
+
+    Se usan comillas simples adentro y se escapan `<`, `>` y `#`: dentro de
+    un `url("data:image/svg+xml;utf8,...")` esos caracteres cortan el valor y
+    la regla entera se descarta en silencio.
+    """
+    svg = ("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' "
+           "fill='none' stroke='black' stroke-width='2' "
+           f"stroke-linecap='round' stroke-linejoin='round'>{cuerpo}</svg>")
+    return svg.replace("<", "%3C").replace(">", "%3E").replace("#", "%23")
+
+
+ICONOS_TABS = [
+    _svg("<circle cx='12' cy='12' r='9'/><path d='M9.1 9a3 3 0 015.8 1c0 2-3 "
+         "2.5-3 4'/><path d='M12 17.5v.01'/>"),                   # Guía
+    _svg("<path d='M12 3v12M7 11l5 5 5-5M4 21h16'/>"),            # Modelo
+    _svg("<circle cx='6' cy='6' r='2.5'/><circle cx='18' cy='6' r='2.5'/>"
+         "<circle cx='12' cy='18' r='2.5'/><path d='M8 7.5l3 8M16 7.5l-3 8'/>"),
+    _svg("<path d='M3 12h4l2.5-7 4 14L16 12h5'/>"),               # Analizador
+    _svg("<path d='M12 3l1.9 4.6 4.6 1.9-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6"
+         "-1.9z'/><path d='M18 16l.9 2.1 2.1.9-2.1.9L18 22l-.9-2.1-2.1-.9 "
+         "2.1-.9z'/>"),                                           # Generar DAX
+    _svg("<path d='M4 5h6a2 2 0 012 2v12a2 2 0 00-2-2H4zM20 5h-6a2 2 0 "
+         "00-2 2v12a2 2 0 012-2h6z'/>"),                          # Explicador
+    _svg("<path d='M4 8h11M4 16h7'/><path d='M17 5l4 3-4 3M13 13l4 3-4 3'/>"),
+    _svg("<path d='M4 20V10M10 20V4M16 20v-7M22 20H2'/>"),        # Exportar
+    _svg("<path d='M12 3l8 4.5v9L12 21l-8-4.5v-9z'/><path d='M12 12l8-4.5M12 "
+         "12v9M12 12L4 7.5'/>"),                                  # Fabric
+    _svg("<rect x='3' y='4' width='18' height='13' rx='2'/><path d='M8 21h8'/>"
+         "<path d='M9 10.5l2 2 4-4'/>"),                          # Asistente
+    _svg("<path d='M12 4L2 9l10 5 10-5z'/><path d='M6 11.5V17c0 1.7 2.7 3 6 "
+         "3s6-1.3 6-3v-5.5'/>"),                                  # Academia
+    _svg("<path d='M14.5 6.5a4 4 0 105 5L21 13l-8 8-4-4 8-8z'/>"
+         "<path d='M7 13l-4 4 4 4 2-2'/>"),                       # Herramientas
+    _svg("<circle cx='8' cy='12' r='4'/><path d='M12 12h9M18 12v3M15 12v2'/>"),
+    _svg("<circle cx='12' cy='12' r='3'/><path d='M12 2v3M12 19v3M2 12h3M19 "
+         "12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2'/>"),        # Configuración
+]
+
 # El CSS pinta el fondo oscuro sí o sí, así que TAMBIÉN tiene que pintar cada
 # color de texto. Streamlit solo lee `.streamlit/config.toml` desde el
 # directorio actual: si la app arranca desde otra carpeta —el capturador, el
@@ -90,6 +134,72 @@ section[data-testid="stSidebar"] small {{ color:{APAGADO} !important; }}
     border-radius:8px; padding:12px 16px; margin:8px 0; color:{TINTA}; }}
 .dxl-ok {{ border-left-color:#00c896; }}
 .dxl-mal {{ border-left-color:#c1443c; }}
+
+/* --- Pestaña Herramientas -------------------------------------------
+   Tarjetas con ícono SVG y una píldora de estado. Antes cada herramienta
+   era una línea de texto con un emoji de círculo (🟢/⚪) como semáforo:
+   el círculo blanco se leía igual para "no está instalada" que para "esto
+   es una web y no se instala", y los emojis se ven distintos en cada
+   sistema. Un punto CSS se ve igual en todos lados y el color lo elige el
+   estado, no el font del sistema. */
+.dxl-h {{ background:{NAVY2}; border:1px solid #1d3149; border-radius:12px;
+    padding:14px 16px; height:100%; transition:border-color .15s ease; }}
+.dxl-h:hover {{ border-color:{AMBAR}; }}
+.dxl-h-top {{ display:flex; align-items:center; gap:10px; margin-bottom:6px; }}
+.dxl-h-ico {{ flex:0 0 34px; width:34px; height:34px; border-radius:9px;
+    background:#12283f; display:flex; align-items:center; justify-content:center; }}
+.dxl-h-ico svg {{ width:18px; height:18px; stroke:{AMBAR}; fill:none;
+    stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }}
+.dxl-h-nom {{ font-weight:650; color:{TINTA}; line-height:1.25; font-size:.95rem; }}
+.dxl-h-desc {{ color:{APAGADO}; font-size:.82rem; margin:0 0 10px; }}
+.dxl-h-pill {{ display:inline-flex; align-items:center; gap:6px;
+    font-size:.74rem; padding:3px 10px; border-radius:20px;
+    border:1px solid #24405f; background:#0f2135; color:{APAGADO}; }}
+.dxl-h-pt {{ width:7px; height:7px; border-radius:50%; background:{APAGADO}; }}
+.dxl-h-si .dxl-h-pt {{ background:#00c896; }}
+.dxl-h-si {{ color:#7fe3c4; border-color:#1c5745; }}
+.dxl-h-no .dxl-h-pt {{ background:#c1443c; }}
+.dxl-h-info .dxl-h-pt {{ background:#4a9bd6; }}
+.dxl-h-info {{ color:#9ecdf0; border-color:#1e4460; }}
+.dxl-h-int {{ color:{APAGADO}; font-size:.78rem; margin-top:10px;
+    padding-top:10px; border-top:1px solid #1d3149; line-height:1.45; }}
+.dxl-h-link {{ color:{AMBAR}; font-size:.78rem; text-decoration:none;
+    margin-left:10px; }}
+.dxl-h-link:hover {{ text-decoration:underline; }}
+.dxl-etapa {{ display:flex; align-items:center; gap:10px; margin:22px 0 10px; }}
+.dxl-etapa-n {{ font-family:ui-monospace,monospace; font-size:.72rem;
+    color:#0a1a2e; background:{AMBAR}; padding:2px 8px; border-radius:5px;
+    font-weight:700; }}
+.dxl-etapa-t {{ color:{TINTA}; font-weight:600; font-size:1rem; }}
+.dxl-etapa-l {{ flex:1; height:1px; background:#1d3149; }}
+
+/* --- Íconos de las pestañas ------------------------------------------
+   Las 14 pestañas tenían un emoji cada una: ❓ 📥 🕸️ 🩺 🤖 📖 🔧 📊 🟪 🖥️
+   🎓 🛠️ 🔑 ⚙️. Mezclaban caretas, instrumental médico y cuadrados de color
+   —no eran un sistema— y encima cada sistema operativo los dibuja distinto:
+   lo que en Windows es plano, en Mac es 3D y en Android otra cosa. En un
+   producto que se vende, esa barra es lo primero que se ve.
+
+   Streamlit no acepta HTML en el label de una pestaña, así que el ícono va
+   por CSS: un SVG embebido como máscara, con el color de la marca. Se ve
+   idéntico en todos lados, acompaña el estado activo y no depende de la
+   fuente de emojis del sistema. El orden es el de `st.tabs(...)`. */
+.stTabs [data-testid="stTab"] p::before,
+.stTabs button[role="tab"] p::before {{
+    content:""; display:inline-block; width:16px; height:16px;
+    margin-right:8px; vertical-align:-3px;
+    background-color:{APAGADO};
+    -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
+    -webkit-mask-position:center; mask-position:center;
+    -webkit-mask-size:contain; mask-size:contain; }}
+.stTabs [data-testid="stTab"][aria-selected="true"] p::before,
+.stTabs button[role="tab"][aria-selected="true"] p::before {{
+    background-color:{AMBAR}; }}
+{"".join(
+    f'.stTabs [role="tablist"] > *:nth-child({i}) p::before {{'
+    f'-webkit-mask-image:url("data:image/svg+xml;utf8,{svg}");'
+    f'mask-image:url("data:image/svg+xml;utf8,{svg}"); }}'
+    for i, svg in enumerate(ICONOS_TABS, start=1))}
 code, .stCode code {{ color:{AMBAR}; }}
 pre, .stCode {{ background:#0a1b30 !important; border:1px solid #1d3149;
     border-radius:10px; }}
@@ -102,7 +212,7 @@ pre, .stCode {{ background:#0a1b30 !important; border:1px solid #1d3149;
    invisible salvo que supieras que la barra scrollea. Se apunta por rol y por
    atributo porque el nombre interno cambia entre versiones de Streamlit. */
 .stTabs div[role="tablist"], .stTabs [data-baseweb="tab-list"] {{
-    gap:2px; border-bottom:1px solid #1d3149;
+    gap:6px 18px; border-bottom:1px solid #1d3149;
     flex-wrap:wrap !important; overflow:visible !important;
     scrollbar-width:none; }}
 .stTabs div[role="tablist"]::-webkit-scrollbar {{ display:none; }}
@@ -822,26 +932,86 @@ with tab_academia:
 with tab_tools:
     st.subheader(_("he_titulo"))
     cat = cat_actual()
+
+    # Íconos de línea, uno por herramienta. Se dibujan con el mismo trazo y el
+    # ámbar de la marca, así la grilla se lee como un sistema y no como una
+    # bolsa de emojis — que además cambian de forma en cada sistema operativo.
+    _ICONOS = {
+        "desktop": "<rect x='3' y='4' width='18' height='13' rx='2'/>"
+                   "<path d='M8 21h8M12 17v4'/>",
+        "powerquery": "<path d='M4 7h16M4 12h10M4 17h6'/>"
+                      "<path d='M17 14l3 3-3 3'/>",
+        "service": "<circle cx='12' cy='12' r='9'/>"
+                   "<path d='M3 12h18M12 3a15 15 0 010 18a15 15 0 010-18'/>",
+        "bravo": "<path d='M12 3l2.6 5.6 6.4.9-4.6 4.4 1.1 6.1L12 17l-5.5 3 "
+                 "1.1-6.1L3 9.5l6.4-.9z'/>",
+        "daxstudio": "<path d='M4 6l5 6-5 6M12 18h8'/>",
+        "tabulareditor": "<rect x='3' y='4' width='18' height='16' rx='2'/>"
+                         "<path d='M3 9h18M9 9v11'/>",
+        "almtoolkit": "<path d='M7 4v10M17 10v10'/>"
+                      "<circle cx='7' cy='17' r='3'/><circle cx='17' cy='7' r='3'/>",
+        "vscode": "<path d='M8 6l-5 6 5 6M16 6l5 6-5 6'/>",
+        "fabric": "<path d='M12 3l8 4.5v9L12 21l-8-4.5v-9z'/>"
+                  "<path d='M12 12l8-4.5M12 12v9M12 12L4 7.5'/>",
+        "mcp": "<circle cx='12' cy='12' r='3'/>"
+               "<path d='M12 3v4M12 17v4M3 12h4M17 12h4'/>",
+    }
+    # Cada nivel de estado con su clase y su etiqueta. Reemplaza el semáforo
+    # de dos posiciones, que mentía en seis de las diez herramientas.
+    _NIVELES = {
+        "instalada": ("dxl-h-si", "he_instalada"),
+        "falta": ("dxl-h-no", "he_falta"),
+        "web": ("dxl-h-info", "he_web"),
+        "incluida": ("dxl-h-si", "he_incluida"),
+        "lista": ("dxl-h-info", "he_lista"),
+        "sin_soporte": ("", "he_sin_soporte"),
+    }
+
+    _estados = herramientas.estados()
+    _disponibles = sum(1 for e in _estados.values()
+                       if e["nivel"] in ("instalada", "incluida", "web", "lista"))
+    st.caption(_("he_resumen").format(n=_disponibles, total=len(_estados)))
+
     for etapa in ("01 · Crear", "02 · Operar", "03 · Modelar",
                   "04 · Industrializar", "05 · Escalar con IA"):
         grupo = [h for h in herramientas.HERRAMIENTAS if h["etapa"] == etapa]
-        st.markdown(f"#### {etapa}")
+        # OJO: no usar `_` como descarte acá — es la función de traducción de
+        # todo el módulo, y pisarla rompe cada llamada posterior de la pestaña.
+        _num, _sep, _tit = etapa.partition(" · ")
+        st.markdown(
+            f"<div class='dxl-etapa'><span class='dxl-etapa-n'>{_num}</span>"
+            f"<span class='dxl-etapa-t'>{_tit}</span>"
+            f"<span class='dxl-etapa-l'></span></div>",
+            unsafe_allow_html=True)
         cols = st.columns(len(grupo))
         for col, h in zip(cols, grupo):
             with col:
-                ruta = herramientas.detectar(h)
-                estado_txt = (f"🟢 {_('he_detectada')}" if ruta
-                              else f"⚪ {_('he_no_detectada')}")
-                st.markdown(f"**{h['nombre']}**  \n{h['descripcion']}  \n"
-                            f"{estado_txt}  \n[{_('he_sitio')}]({h['url']})")
-                st.caption(h["integracion"])
+                e = _estados[h["clave"]]
+                clase, clave_txt = _NIVELES[e["nivel"]]
+                ico = _ICONOS.get(h["clave"], "<circle cx='12' cy='12' r='8'/>")
+                # La ruta detectada va en el title: sirve para confirmar cuál
+                # de dos instalaciones encontró, sin ensuciar la tarjeta.
+                titulo = f" title='{e['detalle']}'" if e.get("detalle") else ""
+                st.markdown(
+                    f"<div class='dxl-h'>"
+                    f"<div class='dxl-h-top'>"
+                    f"<span class='dxl-h-ico'><svg viewBox='0 0 24 24'>{ico}</svg></span>"
+                    f"<span class='dxl-h-nom'>{h['nombre']}</span></div>"
+                    f"<p class='dxl-h-desc'>{h['descripcion']}</p>"
+                    f"<span class='dxl-h-pill {clase}'{titulo}>"
+                    f"<span class='dxl-h-pt'></span>{_(clave_txt)}</span>"
+                    f"<a class='dxl-h-link' href='{h['url']}' target='_blank'>"
+                    f"{_('he_abrir')} →</a>"
+                    f"<div class='dxl-h-int'>{h['integracion']}</div>"
+                    f"</div>",
+                    unsafe_allow_html=True)
 
     st.markdown("---")
     c1, c2, c3 = st.columns(3)
     with c1:
         st.markdown(f"**{_('he_para_daxstudio')}**")
         if cat and cat.medidas():
-            st.download_button("⬇️ medidas.dax",
+            st.download_button(f"{_('he_descargar')} · medidas.dax",
                                herramientas.texto_medidas_dax(cat),
                                file_name="medidas.dax")
         else:
@@ -851,7 +1021,7 @@ with tab_tools:
         cargado = st.session_state.cargado
         if cargado and cargado.get("modelo"):
             st.download_button(
-                "⬇️ model.bim",
+                f"{_('he_descargar')} · model.bim",
                 json.dumps(cargado["modelo"], indent=2, ensure_ascii=False),
                 file_name="model.bim")
         else:
@@ -863,7 +1033,7 @@ with tab_tools:
             format_func=lambda a: proveedores_ia.AGENTES_MCP[a]["nombre"],
             key="mcp_agente_tools")
         archivo = proveedores_ia.AGENTES_MCP[agente]["archivo"]
-        st.download_button(f"⬇️ {archivo}",
+        st.download_button(f"{_('he_descargar')} · {archivo}",
                            proveedores_ia.config_mcp_texto(agente, "."),
                            file_name=Path(archivo).name)
         st.caption(_("he_mcp_nota"))

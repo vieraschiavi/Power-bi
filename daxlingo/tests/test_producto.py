@@ -40,8 +40,27 @@ def test_paridad_trilingue_programa():
 
 
 def test_t_cae_a_espanol_sin_romper():
-    assert i18n.t("tab_modelo", "en") == "📥 Model"
+    assert i18n.t("tab_modelo", "en") == "Model"
     assert i18n.t("clave_que_no_existe", "es") == "clave_que_no_existe"
+
+
+def test_las_pestanas_no_llevan_emojis_en_el_texto():
+    """Los íconos de las pestañas van por CSS, no en la cadena traducida.
+
+    Antes cada etiqueta traía su emoji adentro (📥 Modelo, 🩺 Analizador…).
+    Eso rompe de tres formas: cada sistema operativo los dibuja distinto,
+    ensucia la cadena que se traduce a tres idiomas, y obliga a repetir el
+    mismo emoji en las tres. El ícono es presentación: va en la hoja de
+    estilos, que además lo pinta del color del estado activo.
+    """
+    import re
+    emoji = re.compile(
+        "[\U0001F300-\U0001FAFF←-⇿⌀-➿️]")
+    for clave in (k for k in i18n.T if k.startswith("tab_")):
+        for idioma in i18n.IDIOMAS:
+            texto = i18n.T[clave][idioma]
+            assert not emoji.search(texto), \
+                f"{clave}[{idioma}] todavía trae un emoji: {texto!r}"
 
 
 def test_las_pestanas_no_se_repiten_en_ningun_idioma():
