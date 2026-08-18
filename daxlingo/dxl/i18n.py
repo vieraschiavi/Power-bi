@@ -25,9 +25,9 @@ T: dict[str, dict[str, str]] = {
     # Ojo: este texto se inyecta dentro de un <div>, así que va en HTML, no en
     # markdown — los asteriscos saldrían literales.
     "sin_modelo": {
-        "es": "Sin modelo cargado — empezá por la pestaña <b>📥 Modelo</b>.",
-        "en": "No model loaded — start on the <b>📥 Model</b> tab.",
-        "pt": "Sem modelo carregado — comece pela aba <b>📥 Modelo</b>.",
+        "es": "Sin modelo cargado — empezá por la pestaña <b>Modelo</b>.",
+        "en": "No model loaded — start on the <b>Model</b> tab.",
+        "pt": "Sem modelo carregado — comece pela aba <b>Modelo</b>.",
     },
     "tablas": {"es": "Tablas", "en": "Tables", "pt": "Tabelas"},
     "columnas": {"es": "Columnas", "en": "Columns", "pt": "Colunas"},
@@ -75,74 +75,74 @@ T: dict[str, dict[str, str]] = {
     },
     "guia_pasos": {
         "es": """
-1. **📥 Modelo** — cargá un `.pbit`, un proyecto **PBIP**, un `model.bim` o un
+1. **Modelo** — cargá un `.pbit`, un proyecto **PBIP**, un `model.bim` o un
    `.pbix` (de un `.pbix` se lee el reporte y un catálogo parcial; el modelo
    tabular viaja en un binario propietario — la app te dice cómo obtener el
    completo).
-2. **🕸️ Relaciones** — el modelo dibujado: tablas, cardinalidades, calendario.
-3. **🩺 Analizador** — reglas de buenas prácticas con severidad y arreglo; las
+2. **Relaciones** — el modelo dibujado: tablas, cardinalidades, calendario.
+3. **Analizador** — reglas de buenas prácticas con severidad y arreglo; las
    automáticas se aplican con un clic.
-4. **🤖 Generar DAX** — pedile medidas en tu idioma. Sin API key usa el motor
+4. **Generar DAX** — pedile medidas en tu idioma. Sin API key usa el motor
    de reglas local; con tu clave, pedidos libres con la IA que elijas. En
    ambos casos la expresión se **valida contra el catálogo**.
-5. **🔧 Transformar** — renombrar con propagación, columnas calculadas, tabla
+5. **Transformar** — renombrar con propagación, columnas calculadas, tabla
    de medidas, formatos.
-6. **📊 Exportar** — de vuelta a `.pbit` o **PBIP**, con **tablero automático**:
+6. **Exportar** — de vuelta a `.pbit` o **PBIP**, con **tablero automático**:
    KPIs, evolución, barras, dona, matriz y filtros.
-7. **🟪 Fabric** — publicación directa por API o vía integración Git del PBIP.
-8. **🖥️ Asistente de pantalla** — F9 / Shift+F9 / Ctrl+F9 y lo que la IA
+7. **Fabric** — publicación directa por API o vía integración Git del PBIP.
+8. **Asistente de pantalla** — F9 / Shift+F9 / Ctrl+F9 y lo que la IA
    propone se aplica acá con un clic.
-9. **🎓 Academia DAX** — práctica por niveles con verificación instantánea.
+9. **Academia DAX** — práctica por niveles con verificación instantánea.
 """,
         "en": """
-1. **📥 Model** — load a `.pbit`, a **PBIP** project, a `model.bim` or a
+1. **Model** — load a `.pbit`, a **PBIP** project, a `model.bim` or a
    `.pbix` (from a `.pbix` we read the report and a partial catalog; its
    tabular model ships as a proprietary binary — the app tells you how to get
    the full one).
-2. **🕸️ Relationships** — the model drawn: tables, cardinality, calendar.
-3. **🩺 Analyzer** — best-practice rules with severity and fix; the automatic
+2. **Relationships** — the model drawn: tables, cardinality, calendar.
+3. **Analyzer** — best-practice rules with severity and fix; the automatic
    ones apply in one click.
-4. **🤖 Generate DAX** — ask for measures in your language. With no API key it
+4. **Generate DAX** — ask for measures in your language. With no API key it
    uses the local rules engine; with your key, free-form requests through the
    AI you choose. Either way the expression is **validated against the
    catalog**.
-5. **🔧 Transform** — rename with reference propagation, calculated columns,
+5. **Transform** — rename with reference propagation, calculated columns,
    measures table, formats.
-6. **📊 Export** — back to `.pbit` or **PBIP**, with an **automatic report**:
+6. **Export** — back to `.pbit` or **PBIP**, with an **automatic report**:
    KPIs, trend, bars, donut, matrix and slicers.
-7. **🟪 Fabric** — direct API publish or via the PBIP Git integration.
-8. **🖥️ Screen assistant** — F9 / Shift+F9 / Ctrl+F9, and whatever the AI
+7. **Fabric** — direct API publish or via the PBIP Git integration.
+8. **Screen assistant** — F9 / Shift+F9 / Ctrl+F9, and whatever the AI
    proposes applies here in one click.
-9. **🎓 DAX Academy** — levelled practice with instant checking.
+9. **DAX Academy** — levelled practice with instant checking.
 """,
         "pt": """
-1. **📥 Modelo** — carregue um `.pbit`, um projeto **PBIP**, um `model.bim` ou
+1. **Modelo** — carregue um `.pbit`, um projeto **PBIP**, um `model.bim` ou
    um `.pbix` (de um `.pbix` lemos o relatório e um catálogo parcial; o modelo
    tabular vem num binário proprietário — o app explica como obter o
    completo).
-2. **🕸️ Relações** — o modelo desenhado: tabelas, cardinalidades, calendário.
-3. **🩺 Analisador** — regras de boas práticas com severidade e correção; as
+2. **Relações** — o modelo desenhado: tabelas, cardinalidades, calendário.
+3. **Analisador** — regras de boas práticas com severidade e correção; as
    automáticas se aplicam com um clique.
-4. **🤖 Gerar DAX** — peça medidas no seu idioma. Sem API key usa o motor de
+4. **Gerar DAX** — peça medidas no seu idioma. Sem API key usa o motor de
    regras local; com sua chave, pedidos livres com a IA que escolher. Nos dois
    casos a expressão é **validada contra o catálogo**.
-5. **🔧 Transformar** — renomear com propagação, colunas calculadas, tabela de
+5. **Transformar** — renomear com propagação, colunas calculadas, tabela de
    medidas, formatos.
-6. **📊 Exportar** — de volta a `.pbit` ou **PBIP**, com **painel automático**:
+6. **Exportar** — de volta a `.pbit` ou **PBIP**, com **painel automático**:
    KPIs, evolução, barras, rosca, matriz e filtros.
-7. **🟪 Fabric** — publicação direta por API ou via integração Git do PBIP.
-8. **🖥️ Assistente de tela** — F9 / Shift+F9 / Ctrl+F9 e o que a IA propõe se
+7. **Fabric** — publicação direta por API ou via integração Git do PBIP.
+8. **Assistente de tela** — F9 / Shift+F9 / Ctrl+F9 e o que a IA propõe se
    aplica aqui com um clique.
-9. **🎓 Academia DAX** — prática por níveis com verificação instantânea.
+9. **Academia DAX** — prática por níveis com verificação instantânea.
 """,
     },
     "guia_demo": {
         "es": "La demo trae un modelo de ejemplo con 117 medidas y 20 tablas, "
-              "listo en **📥 Modelo**, sin subir nada.",
+              "listo en **Modelo**, sin subir nada.",
         "en": "The demo ships an example model with 117 measures and 20 "
-              "tables, ready in **📥 Model**, with nothing to upload.",
+              "tables, ready in **Model**, with nothing to upload.",
         "pt": "A demo traz um modelo de exemplo com 117 medidas e 20 tabelas, "
-              "pronto em **📥 Modelo**, sem enviar nada.",
+              "pronto em **Modelo**, sem enviar nada.",
     },
 
     # ---- modelo --------------------------------------------------------
@@ -212,24 +212,24 @@ T: dict[str, dict[str, str]] = {
                         "en": "Fixable automatically",
                         "pt": "Corrigível automaticamente"},
     "btn_arreglar": {
-        "es": "🔧 Aplicar todos los arreglos automáticos",
-        "en": "🔧 Apply every automatic fix",
-        "pt": "🔧 Aplicar todas as correções automáticas",
+        "es": "Aplicar todos los arreglos automáticos",
+        "en": "Apply every automatic fix",
+        "pt": "Aplicar todas as correções automáticas",
     },
     "cambios_aplicados": {"es": "cambio(s) aplicados.",
                           "en": "change(s) applied.",
                           "pt": "mudança(s) aplicadas."},
-    "opinion_ia": {"es": "🧠 Opinión de la IA sobre este modelo",
-                   "en": "🧠 AI opinion on this model",
-                   "pt": "🧠 Opinião da IA sobre este modelo"},
+    "opinion_ia": {"es": "Opinión de la IA sobre este modelo",
+                   "en": "AI opinion on this model",
+                   "pt": "Opinião da IA sobre este modelo"},
     "consultando": {"es": "Consultando…", "en": "Asking…",
                     "pt": "Consultando…"},
     "sin_clave_opinion": {
-        "es": "Con una API key (⚙️ Configuración) también tenés la opinión de "
+        "es": "Con una API key (Configuración) también tenés la opinión de "
               "la IA sobre el modelo.",
-        "en": "With an API key (⚙️ Settings) you also get the AI's opinion on "
+        "en": "With an API key (Settings) you also get the AI's opinion on "
               "the model.",
-        "pt": "Com uma API key (⚙️ Configuração) você também recebe a opinião "
+        "pt": "Com uma API key (Configuração) você também recebe a opinião "
               "da IA sobre o modelo.",
     },
 
@@ -252,9 +252,9 @@ T: dict[str, dict[str, str]] = {
     },
     "gen_motor": {"es": "motor", "en": "engine", "pt": "motor"},
     "gen_porque": {"es": "Por qué", "en": "Why", "pt": "Por quê"},
-    "gen_agregar": {"es": "➕ Agregar esta medida al modelo",
-                    "en": "➕ Add this measure to the model",
-                    "pt": "➕ Adicionar esta medida ao modelo"},
+    "gen_agregar": {"es": "Agregar esta medida al modelo",
+                    "en": "Add this measure to the model",
+                    "pt": "Adicionar esta medida ao modelo"},
     "formato": {"es": "formato", "en": "format", "pt": "formato"},
 
     # ---- explicador ----------------------------------------------------
@@ -375,8 +375,8 @@ T: dict[str, dict[str, str]] = {
     "fab_workspace": {"es": "Workspace", "en": "Workspace", "pt": "Workspace"},
     "fab_nombre_item": {"es": "Nombre del ítem", "en": "Item name",
                         "pt": "Nome do item"},
-    "fab_btn": {"es": "🚀 Publicar en Fabric", "en": "🚀 Publish to Fabric",
-                "pt": "🚀 Publicar no Fabric"},
+    "fab_btn": {"es": "Publicar en Fabric", "en": "Publish to Fabric",
+                "pt": "Publicar no Fabric"},
     "fab_publicando": {"es": "Publicando…", "en": "Publishing…",
                        "pt": "Publicando…"},
     "fab_error": {"es": "Fabric respondió con error",
@@ -384,11 +384,11 @@ T: dict[str, dict[str, str]] = {
                   "pt": "O Fabric respondeu com erro"},
     "fab_mcp_nota": {
         "es": "El MCP remoto oficial de Power BI también trabaja sobre "
-              "modelos ya publicados — configuralo desde 🛠️ Herramientas.",
+              "modelos ya publicados — configuralo desde Herramientas.",
         "en": "Power BI's official remote MCP also works on already published "
-              "models — set it up from 🛠️ Tools.",
+              "models — set it up from Tools.",
         "pt": "O MCP remoto oficial do Power BI também funciona sobre modelos "
-              "já publicados — configure em 🛠️ Ferramentas.",
+              "já publicados — configure em Ferramentas.",
     },
 
     # ---- overlay -------------------------------------------------------
@@ -443,19 +443,19 @@ T: dict[str, dict[str, str]] = {
     },
     "ov_btn_resolver": {"es": "Resolver con la IA", "en": "Solve with the AI",
                         "pt": "Resolver com a IA"},
-    "ov_bandeja": {"es": "📬 Bandeja del overlay", "en": "📬 Overlay inbox",
-                   "pt": "📬 Caixa do overlay"},
+    "ov_bandeja": {"es": "Bandeja del overlay", "en": "Overlay inbox",
+                   "pt": "Caixa do overlay"},
     "ov_vacia": {
         "es": "Sin resultados todavía. Usá el overlay o la consulta de arriba.",
         "en": "Nothing yet. Use the overlay or the box above.",
         "pt": "Nada ainda. Use o overlay ou a consulta acima.",
     },
-    "ov_aplicar": {"es": "➕ Aplicar", "en": "➕ Apply", "pt": "➕ Aplicar"},
+    "ov_aplicar": {"es": "Aplicar", "en": "Apply", "pt": "Aplicar"},
     "ov_descartar": {"es": "Descartar", "en": "Discard", "pt": "Descartar"},
     "ov_tabla_destino": {"es": "Tabla destino", "en": "Target table",
                          "pt": "Tabela destino"},
-    "ov_limpiar": {"es": "🧹 Limpiar resueltos", "en": "🧹 Clear resolved",
-                   "pt": "🧹 Limpar resolvidos"},
+    "ov_limpiar": {"es": "Limpiar resueltos", "en": "Clear resolved",
+                   "pt": "Limpar resolvidos"},
 
     # ---- academia ------------------------------------------------------
     "ac_titulo": {
@@ -469,9 +469,9 @@ T: dict[str, dict[str, str]] = {
     "ac_faltan": {"es": "faltan", "en": "needs", "pt": "faltam"},
     "ac_maximo": {"es": "¡máximo!", "en": "maxed out!", "pt": "máximo!"},
     "ac_modelo_practica": {
-        "es": "📋 El modelo de práctica (común a todos los ejercicios)",
-        "en": "📋 The practice model (shared by every exercise)",
-        "pt": "📋 O modelo de prática (comum a todos os exercícios)",
+        "es": "El modelo de práctica (común a todos los ejercicios)",
+        "en": "The practice model (shared by every exercise)",
+        "pt": "O modelo de prática (comum a todos os exercícios)",
     },
     "ac_tu_dax": {"es": "Tu DAX", "en": "Your DAX", "pt": "Seu DAX"},
     "ac_verificar": {"es": "Verificar", "en": "Check", "pt": "Verificar"},
@@ -589,9 +589,9 @@ T: dict[str, dict[str, str]] = {
               "exigem uma licença.",
     },
     "lic_bloqueado": {
-        "es": "Esta función necesita una licencia activa. Miralo en 🔑 Licencia.",
-        "en": "This feature needs an active license. See 🔑 License.",
-        "pt": "Este recurso precisa de uma licença ativa. Veja 🔑 Licença.",
+        "es": "Esta función necesita una licencia activa. Miralo en Licencia.",
+        "en": "This feature needs an active license. See License.",
+        "pt": "Este recurso precisa de uma licença ativa. Veja Licença.",
     },
     "lic_owner": {
         "es": "Edición OWNER: todo desbloqueado, sin vencimiento.",

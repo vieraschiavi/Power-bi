@@ -55,6 +55,7 @@
           "overlay/**/*",
           ".streamlit/**/*",
           "requirements.txt",
+          "desktop/build/icono.png",
           "!**/__pycache__/**"
         ]
       },

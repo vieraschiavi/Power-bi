@@ -6,10 +6,12 @@
 # empaquetado, se comprueba el candado de la edición, se corre
 # Convertir-a-version-dueno.bat y se desinstala.
 #
-# La edición OWNER se construye para verificar que compila, pero NO se sube
-# como artifact: este repositorio es público y cualquiera podría bajarla.
-# Para tenerla: daxlingo/desktop/CONSTRUIR_OWNER.bat en tu máquina, o instalar
-# la de cliente y pasarle Convertir-a-version-dueno.bat.
+# La edición OWNER no va en los artifacts —los de un repo público los baja
+# cualquiera con una cuenta de GitHub— pero sí queda disponible para el dueño
+# en un release BORRADOR (último paso del job): GitHub se los muestra solo a
+# las cuentas con permiso de escritura sobre el repo. Alternativas sin pasar
+# por el CI: daxlingo/desktop/CONSTRUIR_OWNER.bat en tu máquina, o instalar la
+# de cliente y pasarle Convertir-a-version-dueno.bat.
 
 name: Instaladores de Windows
 
@@ -24,8 +26,11 @@ on:
       - "daxlingo/requirements-app.txt"
       - ".github/workflows/instaladores.yml"
 
+# `write` porque el último paso deja el instalador OWNER en un release
+# BORRADOR. Es el permiso mínimo que permite crear releases; no hace falta
+# nada más (ni packages, ni id-token).
 permissions:
-  contents: read
+  contents: write
 
 env:
   PYTHON_EMBED: "3.11.9"
@@ -629,3 +634,62 @@ jobs:
             daxlingo/desktop/dist-instalador/MV-DAX-Lab-DEMO-Setup-*.exe
             daxlingo/desktop/dist-portable/MV-DAX-Lab-portable.zip
             daxlingo/desktop/dist-portable/MV-DAX-Lab-DEMO-portable.zip
+
+      # ------------------------------------------------------------------
+      # El instalador OWNER, en un release BORRADOR.
+      #
+      # El pedido es tener siempre un .exe de owner en GitHub para poder
+      # probar el producto entero. El problema es que la edición owner
+      # desbloquea todo sin licencia y sin vencimiento: subirla a un release
+      # normal es regalar el producto a cualquiera que pase por el repo.
+      #
+      # Un release en BORRADOR resuelve las dos cosas a la vez. GitHub los
+      # muestra ÚNICAMENTE a las cuentas con permiso de escritura sobre el
+      # repositorio —o sea, al dueño, ya logueado— y no aparecen ni en la
+      # pestaña Releases ni en la API para un visitante anónimo. Sirve igual
+      # con el repo público (hoy) que privado (después), así que no depende
+      # de acordarse de cambiar nada cuando cambie la visibilidad.
+      #
+      # ⚠️ NO le saques el `--draft`. Es lo único que separa "mi copia para
+      # probar" de "el producto completo, gratis, para cualquiera".
+      # ------------------------------------------------------------------
+      - name: Dejar el instalador OWNER en un release borrador
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $exe = Get-ChildItem daxlingo/desktop/dist-instalador `
+                   -Filter "MV-DAX-Lab-OWNER-Setup-*.exe" |
+                 Select-Object -First 1
+          if (-not $exe) { throw "no se construyó el instalador owner" }
+
+          # Se borra y se recrea en vez de editar: `gh release upload` no
+          # pisa un asset que ya existe con el mismo nombre, y así queda
+          # siempre uno solo y siempre el último build.
+          $ErrorActionPreference = "Continue"
+          gh release view owner-ultimo *> $null
+          if ($LASTEXITCODE -eq 0) { gh release delete owner-ultimo --yes }
+          $global:LASTEXITCODE = 0
+          $ErrorActionPreference = "Stop"
+
+          gh release create owner-ultimo $exe.FullName `
+            --draft `
+            --title "MV DAX Lab OWNER — solo para el dueño" `
+            --notes @"
+          Instalador de la edición **owner**: todo desbloqueado, sin clave y sin vencimiento.
+
+          Este release es un **borrador**: solo lo ve quien tiene permiso de escritura en el repo.
+          Publicarlo regala el producto entero. No lo publiques.
+
+          Build: $($exe.Name) — commit ${{ github.sha }}
+          "@
+
+          # Evidencia, no confianza: si por lo que sea saliera publicado, el
+          # paso tiene que fallar acá y no dejar el .exe expuesto.
+          $esBorrador = (gh release view owner-ultimo --json isDraft --jq .isDraft).Trim()
+          Write-Host "isDraft = $esBorrador"
+          if ($esBorrador -ne "true") {
+            gh release delete owner-ultimo --yes
+            throw "el release de owner NO quedó en borrador — se borró por las dudas"
+          }
+          Write-Host "OK: owner quedó en un release borrador, invisible para el público"
