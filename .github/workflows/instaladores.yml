@@ -32,6 +32,15 @@ on:
 permissions:
   contents: write
 
+# Cada push a la misma rama deja obsoleta la corrida anterior, y esta tarda
+# entre 20 y 45 minutos en un runner de Windows. Sin esto quedaban dos o tres
+# corridas viejas terminando en paralelo, gastando runner para responder una
+# pregunta que ya no importa — y ensuciando la lectura de "¿cómo está la rama?"
+# con resultados de commits que ya no existen.
+concurrency:
+  group: instaladores-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   PYTHON_EMBED: "3.11.9"
   # A propósito NO es una ruta por defecto de NSIS: así la instalación solo se
@@ -39,14 +48,10 @@ env:
   INSTALL_DIR: "C:\\pruebainstal"
   # Desde acá se corre el .bat de owner, lejos de la instalación.
   OWNER_DIR: "C:\\prueba-owner"
-  # Letra de unidad que se crea con `subst` apuntando a una carpeta de C:.
-  # windows-latest ya no trae una D: real con espacio propio (GitHub la
-  # sacó de las imágenes de Windows Server 2025 el 14/7/2025), así que se
-  # simula: para NSIS y para el sistema de archivos, una unidad `subst` es
-  # una letra de unidad como cualquier otra. Es justo lo que hace falta
-  # probar: "elegí instalarlo en otro disco, ejemplo el D:".
-  OTRA_UNIDAD: "Z:"
-  OTRA_UNIDAD_CARPETA: "C:\\subst-otra-unidad"
+  # OTRA_UNIDAD no se define acá: la letra de la segunda unidad se descubre
+  # en caliente (paso "Elegir la otra unidad") y se publica por GITHUB_ENV,
+  # así que los pasos de más abajo la leen como $env:OTRA_UNIDAD. Ponerle un
+  # default acá sería tener dos fuentes para el mismo dato.
 
 jobs:
   construir-y-probar:
@@ -461,15 +466,44 @@ jobs:
       # depender de que la página de carpeta se muestre— pero hasta acá
       # nunca se había probado apuntando a una LETRA DE UNIDAD distinta, así
       # que quedaba la duda de si algo en el armado de accesos directos o en
-      # el registro asume "todo vive en C:". `subst` simula esa otra unidad:
-      # ver la nota en el bloque `env` de arriba.
+      # el registro asume "todo vive en C:".
+      #
+      # Acá hubo un intento fallido que conviene dejar anotado para que nadie
+      # lo repita: la primera versión creaba la unidad con `subst`. El `dir`
+      # la veía perfecto, y aun así el instalador falló 5 de 5 (corrida del
+      # 18/8, 23 minutos tirados). El motivo no es el instalador: las
+      # unidades de `subst` son POR SESIÓN DE INICIO, y como el paquete ahora
+      # es per-machine el .exe se eleva — y el token elevado de UAC es otra
+      # sesión, que no ve esa letra. Un `subst` nunca va a servir para probar
+      # un instalador elevado.
+      #
+      # Se usa una unidad DE VERDAD. El runner de Windows trae una D: real
+      # (de hecho el workspace vive ahí: D:\a\Power-bi\Power-bi), que es un
+      # volumen normal y por lo tanto visible para cualquier proceso, elevado
+      # o no. Es además exactamente el caso del pedido: "instalarlo en otro
+      # disco, ejemplo el D:". Se descubre en caliente en vez de hardcodear
+      # la letra, y si algún día la imagen del runner deja de traer una
+      # segunda unidad, el paso falla diciendo eso y no con un misterio.
       # ------------------------------------------------------------------
-      - name: Crear la otra unidad (subst) para la prueba de disco
-        shell: cmd
+      - name: Elegir la otra unidad (real, no subst) para la prueba de disco
+        shell: pwsh
         run: |
-          mkdir "${{ env.OTRA_UNIDAD_CARPETA }}" 2>nul
-          subst ${{ env.OTRA_UNIDAD }} "${{ env.OTRA_UNIDAD_CARPETA }}"
-          dir ${{ env.OTRA_UNIDAD }}\
+          # DriveType 3 = disco fijo local. Se excluye C: y se pide margen de
+          # sobra: la instalación pesa unos 500 MB.
+          $otra = Get-CimInstance Win32_LogicalDisk |
+                  Where-Object { $_.DriveType -eq 3 -and $_.DeviceID -ne "C:" -and
+                                 $_.FreeSpace -gt 2GB } |
+                  Sort-Object -Property FreeSpace -Descending |
+                  Select-Object -First 1
+          if (-not $otra) {
+            Get-CimInstance Win32_LogicalDisk |
+              Format-Table DeviceID, DriveType, @{n="LibresGB";e={[int]($_.FreeSpace/1GB)}}
+            throw "este runner no tiene ninguna unidad fija además de C: con 2 GB libres; " +
+                  "sin eso no se puede probar la instalación en otro disco"
+          }
+          $libres = [int]($otra.FreeSpace / 1GB)
+          Write-Host "otra unidad elegida: $($otra.DeviceID) ($libres GB libres)"
+          "OTRA_UNIDAD=$($otra.DeviceID)" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
 
       - name: Instalar en la otra unidad
         shell: pwsh
@@ -477,7 +511,7 @@ jobs:
         run: |
           $exe = Get-ChildItem dist-instalador -Filter "MV-DAX-Lab-Setup-*.exe" |
                  Select-Object -First 1
-          $destino = "${{ env.OTRA_UNIDAD }}\MV DAX Lab"
+          $destino = "$env:OTRA_UNIDAD\MV DAX Lab"
           $appExe = "$destino\MV DAX Lab.exe"
 
           $INTENTOS = 5
@@ -488,6 +522,12 @@ jobs:
             }
             $p = Start-Process $exe.FullName -PassThru -ArgumentList "/S /NCRC /D=$destino"
             if (-not $p.WaitForExit(300000)) { $p.Kill(); throw "no terminó en 5 minutos" }
+            # El código de salida se imprime siempre: cuando esto falló con
+            # `subst`, el instalador salía 0 y no escribía nada, y sin este
+            # dato costó entender que el problema era que el proceso elevado
+            # no veía la unidad. Un 0 que no deja archivos dice mucho más que
+            # un "no quedó instalado" a secas.
+            Write-Host "intento $intento · salida del instalador: $($p.ExitCode)"
             $espera = if ($p.ExitCode -eq 0) { 60 } else { 5 }
             foreach ($i in 1..$espera) {
               if (Test-Path $appExe) { break }
@@ -498,6 +538,9 @@ jobs:
             if (Test-Path $appExe) { break }
           }
           if (-not (Test-Path $appExe)) {
+            Write-Host "contenido de $env:OTRA_UNIDAD\ :"
+            Get-ChildItem "$env:OTRA_UNIDAD\" -ErrorAction SilentlyContinue |
+              Select-Object Name, Mode | Format-Table
             throw "no quedó instalado en la otra unidad ($destino) tras $INTENTOS intentos"
           }
           Write-Host "instalado en $destino"
@@ -505,8 +548,8 @@ jobs:
       - name: Arrancar desde la otra unidad — confirmar que no es solo un archivo copiado
         shell: pwsh
         run: |
-          $py = "${{ env.OTRA_UNIDAD }}\MV DAX Lab\resources\runtime\python.exe"
-          $app = "${{ env.OTRA_UNIDAD }}\MV DAX Lab\resources\app"
+          $py = "$env:OTRA_UNIDAD\MV DAX Lab\resources\runtime\python.exe"
+          $app = "$env:OTRA_UNIDAD\MV DAX Lab\resources\app"
           if (-not (Test-Path $py)) { throw "falta el runtime en la otra unidad" }
           $proc = Start-Process $py -PassThru -WindowStyle Hidden -ArgumentList `
             "-m", "streamlit", "run", "$app\app\app.py",
@@ -522,7 +565,7 @@ jobs:
               } catch { }
             }
             if (-not $ok) { throw "la app instalada en otra unidad no respondió en 120 s" }
-            Write-Host "respondió 200 corriendo desde ${{ env.OTRA_UNIDAD }}"
+            Write-Host "respondió 200 corriendo desde $env:OTRA_UNIDAD"
           } finally {
             if ($proc -and -not $proc.HasExited) { Stop-Process -Id $proc.Id -Force }
           }
@@ -540,18 +583,18 @@ jobs:
             Get-ChildItem $raiz -ErrorAction SilentlyContinue | ForEach-Object {
               $p = Get-ItemProperty $_.PSPath -ErrorAction SilentlyContinue
               if ($p.DisplayName -eq "MV DAX Lab" -and
-                  $p.InstallLocation -like "${{ env.OTRA_UNIDAD }}*") {
+                  $p.InstallLocation -like "$env:OTRA_UNIDAD*") {
                 $script:encontrada = $true
               }
             }
           }
           if (-not $encontrada) { throw "InstallLocation no apunta a la otra unidad" }
-          Write-Host "OK: el registro apunta a ${{ env.OTRA_UNIDAD }}"
+          Write-Host "OK: el registro apunta a $env:OTRA_UNIDAD"
 
-      - name: Desinstalar de la otra unidad y liberarla
+      - name: Desinstalar de la otra unidad
         shell: pwsh
         run: |
-          $raiz = "${{ env.OTRA_UNIDAD }}\MV DAX Lab"
+          $raiz = "$env:OTRA_UNIDAD\MV DAX Lab"
           $des = Join-Path $raiz "Uninstall MV DAX Lab.exe"
           $p = Start-Process $des -ArgumentList '/S' -PassThru
           [void]$p.WaitForExit(180000)
@@ -559,8 +602,7 @@ jobs:
           if (Test-Path (Join-Path $raiz "MV DAX Lab.exe")) {
             throw "el desinstalador dejó el ejecutable en la otra unidad"
           }
-          subst "${{ env.OTRA_UNIDAD }}" /D
-          Write-Host "desinstalación limpia y unidad liberada"
+          Write-Host "desinstalación limpia en $env:OTRA_UNIDAD"
 
       # ------------------------------------------------------------------
       # La otra mitad de la distribución: el ZIP portable, que no instala
