@@ -6,10 +6,12 @@
 # empaquetado, se comprueba el candado de la edición, se corre
 # Convertir-a-version-dueno.bat y se desinstala.
 #
-# La edición OWNER se construye para verificar que compila, pero NO se sube
-# como artifact: este repositorio es público y cualquiera podría bajarla.
-# Para tenerla: daxlingo/desktop/CONSTRUIR_OWNER.bat en tu máquina, o instalar
-# la de cliente y pasarle Convertir-a-version-dueno.bat.
+# La edición OWNER no va en los artifacts —los de un repo público los baja
+# cualquiera con una cuenta de GitHub— pero sí queda disponible para el dueño
+# en un release BORRADOR (último paso del job): GitHub se los muestra solo a
+# las cuentas con permiso de escritura sobre el repo. Alternativas sin pasar
+# por el CI: daxlingo/desktop/CONSTRUIR_OWNER.bat en tu máquina, o instalar la
+# de cliente y pasarle Convertir-a-version-dueno.bat.
 
 name: Instaladores de Windows
 
@@ -24,8 +26,20 @@ on:
       - "daxlingo/requirements-app.txt"
       - ".github/workflows/instaladores.yml"
 
+# `write` porque el último paso deja el instalador OWNER en un release
+# BORRADOR. Es el permiso mínimo que permite crear releases; no hace falta
+# nada más (ni packages, ni id-token).
 permissions:
-  contents: read
+  contents: write
+
+# Cada push a la misma rama deja obsoleta la corrida anterior, y esta tarda
+# entre 20 y 45 minutos en un runner de Windows. Sin esto quedaban dos o tres
+# corridas viejas terminando en paralelo, gastando runner para responder una
+# pregunta que ya no importa — y ensuciando la lectura de "¿cómo está la rama?"
+# con resultados de commits que ya no existen.
+concurrency:
+  group: instaladores-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   PYTHON_EMBED: "3.11.9"
@@ -34,14 +48,10 @@ env:
   INSTALL_DIR: "C:\\pruebainstal"
   # Desde acá se corre el .bat de owner, lejos de la instalación.
   OWNER_DIR: "C:\\prueba-owner"
-  # Letra de unidad que se crea con `subst` apuntando a una carpeta de C:.
-  # windows-latest ya no trae una D: real con espacio propio (GitHub la
-  # sacó de las imágenes de Windows Server 2025 el 14/7/2025), así que se
-  # simula: para NSIS y para el sistema de archivos, una unidad `subst` es
-  # una letra de unidad como cualquier otra. Es justo lo que hace falta
-  # probar: "elegí instalarlo en otro disco, ejemplo el D:".
-  OTRA_UNIDAD: "Z:"
-  OTRA_UNIDAD_CARPETA: "C:\\subst-otra-unidad"
+  # OTRA_UNIDAD no se define acá: la letra de la segunda unidad se descubre
+  # en caliente (paso "Elegir la otra unidad") y se publica por GITHUB_ENV,
+  # así que los pasos de más abajo la leen como $env:OTRA_UNIDAD. Ponerle un
+  # default acá sería tener dos fuentes para el mismo dato.
 
 jobs:
   construir-y-probar:
@@ -456,24 +466,88 @@ jobs:
       # depender de que la página de carpeta se muestre— pero hasta acá
       # nunca se había probado apuntando a una LETRA DE UNIDAD distinta, así
       # que quedaba la duda de si algo en el armado de accesos directos o en
-      # el registro asume "todo vive en C:". `subst` simula esa otra unidad:
-      # ver la nota en el bloque `env` de arriba.
+      # el registro asume "todo vive en C:".
+      #
+      # Acá hubo un intento fallido que conviene dejar anotado para que nadie
+      # lo repita: la primera versión creaba la unidad con `subst`. El `dir`
+      # la veía perfecto, y aun así el instalador falló 5 de 5 (corrida del
+      # 18/8, 23 minutos tirados). El motivo no es el instalador: las
+      # unidades de `subst` son POR SESIÓN DE INICIO, y como el paquete ahora
+      # es per-machine el .exe se eleva — y el token elevado de UAC es otra
+      # sesión, que no ve esa letra. Un `subst` nunca va a servir para probar
+      # un instalador elevado.
+      #
+      # Se usa una unidad DE VERDAD. El runner de Windows trae una D: real
+      # (de hecho el workspace vive ahí: D:\a\Power-bi\Power-bi), que es un
+      # volumen normal y por lo tanto visible para cualquier proceso, elevado
+      # o no. Es además exactamente el caso del pedido: "instalarlo en otro
+      # disco, ejemplo el D:". Se descubre en caliente en vez de hardcodear
+      # la letra, y si algún día la imagen del runner deja de traer una
+      # segunda unidad, el paso falla diciendo eso y no con un misterio.
       # ------------------------------------------------------------------
-      - name: Crear la otra unidad (subst) para la prueba de disco
-        shell: cmd
+      - name: Elegir la otra unidad (real, no subst) para la prueba de disco
+        shell: pwsh
         run: |
-          mkdir "${{ env.OTRA_UNIDAD_CARPETA }}" 2>nul
-          subst ${{ env.OTRA_UNIDAD }} "${{ env.OTRA_UNIDAD_CARPETA }}"
-          dir ${{ env.OTRA_UNIDAD }}\
+          # DriveType 3 = disco fijo local. Se excluye C: y se pide margen de
+          # sobra: la instalación pesa unos 500 MB.
+          $otra = Get-CimInstance Win32_LogicalDisk |
+                  Where-Object { $_.DriveType -eq 3 -and $_.DeviceID -ne "C:" -and
+                                 $_.FreeSpace -gt 2GB } |
+                  Sort-Object -Property FreeSpace -Descending |
+                  Select-Object -First 1
+          if (-not $otra) {
+            Get-CimInstance Win32_LogicalDisk |
+              Format-Table DeviceID, DriveType, @{n="LibresGB";e={[int]($_.FreeSpace/1GB)}}
+            throw "este runner no tiene ninguna unidad fija además de C: con 2 GB libres; " +
+                  "sin eso no se puede probar la instalación en otro disco"
+          }
+          $libres = [int]($otra.FreeSpace / 1GB)
+          Write-Host "otra unidad elegida: $($otra.DeviceID) ($libres GB libres)"
+          "OTRA_UNIDAD=$($otra.DeviceID)" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
 
+      # ------------------------------------------------------------------
+      # OJO CON EL NOMBRE DE LA CARPETA: va SIN espacios, y no es capricho.
+      #
+      # electron-builder no usa el /D nativo de NSIS para fijar la carpeta:
+      # lo reimplementa en multiUser.nsh:86-90 con
+      # `${StdUtils.GetParameter} $R0 "D" ""`, y StdUtils parte la línea de
+      # comandos estilo argv (su propio header documenta ParameterCnt y
+      # ParameterStr como "similar to argc/argv in main()"). O sea que corta
+      # en el primer espacio.
+      #
+      # Con /D=D:\MV DAX Lab pasaba esto, y se ve entero en la corrida del
+      # 18/8: el /D nativo —que sí toma el resto de la línea— dejaba
+      # $INSTDIR bien y el `SetOutPath $INSTDIR` de installer.nsi:45 creaba
+      # "D:\MV DAX Lab"; después initMultiUser lo pisaba con el valor
+      # recortado de StdUtils y los archivos terminaban en "D:\MV". El log
+      # mostraba las DOS carpetas en D:\ y salida 0 del instalador, cinco
+      # veces seguidas.
+      #
+      # Es una limitación de electron-builder para instalaciones SILENCIOSAS
+      # con /D, no del producto: al usuario que instala a mano no lo toca
+      # (la página de carpeta escribe $INSTDIR directo), y que la ruta lleve
+      # espacios ya está probado en el paso "Reinstalar sin decirle carpeta",
+      # que cae en C:\Program Files\MV DAX Lab y pasa. Acá lo que hay que
+      # aislar es la LETRA DE UNIDAD, así que la carpeta va sin espacios.
+      # ------------------------------------------------------------------
       - name: Instalar en la otra unidad
         shell: pwsh
         working-directory: daxlingo/desktop
         run: |
           $exe = Get-ChildItem dist-instalador -Filter "MV-DAX-Lab-Setup-*.exe" |
                  Select-Object -First 1
-          $destino = "${{ env.OTRA_UNIDAD }}\MV DAX Lab"
+          $destino = "$env:OTRA_UNIDAD\MVDAXLab"
           $appExe = "$destino\MV DAX Lab.exe"
+
+          # Candado contra el bug de arriba: si alguien vuelve a poner un
+          # espacio en $destino, StdUtils lo va a recortar y los archivos van
+          # a caer en la carpeta del primer pedazo. Que falle acá diciendo
+          # exactamente eso, en vez de que el paso siguiente muera con un
+          # "falta el runtime" que no explica nada.
+          if ($destino -match '\s') {
+            throw "el destino de esta prueba no puede llevar espacios: " +
+                  "electron-builder recorta el /D en el primer espacio (ver el comentario del paso)"
+          }
 
           $INTENTOS = 5
           for ($intento = 1; $intento -le $INTENTOS; $intento++) {
@@ -483,6 +557,12 @@ jobs:
             }
             $p = Start-Process $exe.FullName -PassThru -ArgumentList "/S /NCRC /D=$destino"
             if (-not $p.WaitForExit(300000)) { $p.Kill(); throw "no terminó en 5 minutos" }
+            # El código de salida se imprime siempre: cuando esto falló con
+            # `subst`, el instalador salía 0 y no escribía nada, y sin este
+            # dato costó entender que el problema era que el proceso elevado
+            # no veía la unidad. Un 0 que no deja archivos dice mucho más que
+            # un "no quedó instalado" a secas.
+            Write-Host "intento $intento · salida del instalador: $($p.ExitCode)"
             $espera = if ($p.ExitCode -eq 0) { 60 } else { 5 }
             foreach ($i in 1..$espera) {
               if (Test-Path $appExe) { break }
@@ -493,6 +573,9 @@ jobs:
             if (Test-Path $appExe) { break }
           }
           if (-not (Test-Path $appExe)) {
+            Write-Host "contenido de $env:OTRA_UNIDAD\ :"
+            Get-ChildItem "$env:OTRA_UNIDAD\" -ErrorAction SilentlyContinue |
+              Select-Object Name, Mode | Format-Table
             throw "no quedó instalado en la otra unidad ($destino) tras $INTENTOS intentos"
           }
           Write-Host "instalado en $destino"
@@ -500,8 +583,8 @@ jobs:
       - name: Arrancar desde la otra unidad — confirmar que no es solo un archivo copiado
         shell: pwsh
         run: |
-          $py = "${{ env.OTRA_UNIDAD }}\MV DAX Lab\resources\runtime\python.exe"
-          $app = "${{ env.OTRA_UNIDAD }}\MV DAX Lab\resources\app"
+          $py = "$env:OTRA_UNIDAD\MVDAXLab\resources\runtime\python.exe"
+          $app = "$env:OTRA_UNIDAD\MVDAXLab\resources\app"
           if (-not (Test-Path $py)) { throw "falta el runtime en la otra unidad" }
           $proc = Start-Process $py -PassThru -WindowStyle Hidden -ArgumentList `
             "-m", "streamlit", "run", "$app\app\app.py",
@@ -517,7 +600,7 @@ jobs:
               } catch { }
             }
             if (-not $ok) { throw "la app instalada en otra unidad no respondió en 120 s" }
-            Write-Host "respondió 200 corriendo desde ${{ env.OTRA_UNIDAD }}"
+            Write-Host "respondió 200 corriendo desde $env:OTRA_UNIDAD"
           } finally {
             if ($proc -and -not $proc.HasExited) { Stop-Process -Id $proc.Id -Force }
           }
@@ -525,28 +608,48 @@ jobs:
       - name: Comprobar que el registro sabe que está en la otra unidad
         shell: pwsh
         run: |
-          # Es lo que usa Convertir-a-version-dueno.bat para encontrar una
-          # instalación sin que le digan dónde: si esto no queda bien, ese
-          # .bat tampoco la va a encontrar en la máquina de un cliente que
-          # instaló en otro disco.
-          $encontrada = $false
+          # Esto es lo que usa Convertir-a-version-dueno.bat para encontrar
+          # una instalación sin que le digan dónde: si no queda bien, ese
+          # .bat no la va a encontrar en la máquina de un cliente que instaló
+          # en otro disco.
+          #
+          # La primera versión de este paso pedía InstallLocation en la clave
+          # de desinstalación y falló (corrida del 18/8) con la instalación
+          # perfectamente hecha en D:. El motivo: electron-builder NUNCA
+          # escribe InstallLocation ahí. Lo escribe en Software\<GUID>
+          # (include/installer.nsh:104); bajo Uninstall solo pone DisplayName,
+          # UninstallString, DisplayVersion, DisplayIcon y Publisher.
+          #
+          # Por eso el .bat tiene el fallback que tiene, y por eso este paso
+          # ahora replica su cadena real en vez de inventar una propia:
+          # InstallLocation si está, y si no la carpeta del DisplayIcon —que
+          # lo escribe nuestro customInstall apuntando al .exe instalado—.
+          # Se recorren las mismas tres raíces que recorre el .bat.
+          $hallada = $null
           foreach ($raiz in @("HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall",
-                              "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall")) {
-            Get-ChildItem $raiz -ErrorAction SilentlyContinue | ForEach-Object {
-              $p = Get-ItemProperty $_.PSPath -ErrorAction SilentlyContinue
-              if ($p.DisplayName -eq "MV DAX Lab" -and
-                  $p.InstallLocation -like "${{ env.OTRA_UNIDAD }}*") {
-                $script:encontrada = $true
+                              "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall",
+                              "HKLM:\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall")) {
+            foreach ($k in (Get-ChildItem $raiz -ErrorAction SilentlyContinue)) {
+              $p = Get-ItemProperty $k.PSPath -ErrorAction SilentlyContinue
+              if ($p.DisplayName -notlike "*MV DAX Lab*") { continue }
+              $ruta = $p.InstallLocation
+              if (-not $ruta -and $p.DisplayIcon) {
+                $ruta = Split-Path ($p.DisplayIcon -replace ',\d+$', '') -Parent
               }
+              Write-Host "entrada '$($p.DisplayName)' en $raiz -> '$ruta'"
+              if ($ruta -like "$env:OTRA_UNIDAD*") { $hallada = $ruta }
             }
           }
-          if (-not $encontrada) { throw "InstallLocation no apunta a la otra unidad" }
-          Write-Host "OK: el registro apunta a ${{ env.OTRA_UNIDAD }}"
+          if (-not $hallada) {
+            throw "ninguna entrada de desinstalación apunta a $env:OTRA_UNIDAD; " +
+                  "Convertir-a-version-dueno.bat no encontraría esta instalación"
+          }
+          Write-Host "OK: el registro lleva a $hallada"
 
-      - name: Desinstalar de la otra unidad y liberarla
+      - name: Desinstalar de la otra unidad
         shell: pwsh
         run: |
-          $raiz = "${{ env.OTRA_UNIDAD }}\MV DAX Lab"
+          $raiz = "$env:OTRA_UNIDAD\MVDAXLab"
           $des = Join-Path $raiz "Uninstall MV DAX Lab.exe"
           $p = Start-Process $des -ArgumentList '/S' -PassThru
           [void]$p.WaitForExit(180000)
@@ -554,8 +657,7 @@ jobs:
           if (Test-Path (Join-Path $raiz "MV DAX Lab.exe")) {
             throw "el desinstalador dejó el ejecutable en la otra unidad"
           }
-          subst "${{ env.OTRA_UNIDAD }}" /D
-          Write-Host "desinstalación limpia y unidad liberada"
+          Write-Host "desinstalación limpia en $env:OTRA_UNIDAD"
 
       # ------------------------------------------------------------------
       # La otra mitad de la distribución: el ZIP portable, que no instala
@@ -629,3 +731,62 @@ jobs:
             daxlingo/desktop/dist-instalador/MV-DAX-Lab-DEMO-Setup-*.exe
             daxlingo/desktop/dist-portable/MV-DAX-Lab-portable.zip
             daxlingo/desktop/dist-portable/MV-DAX-Lab-DEMO-portable.zip
+
+      # ------------------------------------------------------------------
+      # El instalador OWNER, en un release BORRADOR.
+      #
+      # El pedido es tener siempre un .exe de owner en GitHub para poder
+      # probar el producto entero. El problema es que la edición owner
+      # desbloquea todo sin licencia y sin vencimiento: subirla a un release
+      # normal es regalar el producto a cualquiera que pase por el repo.
+      #
+      # Un release en BORRADOR resuelve las dos cosas a la vez. GitHub los
+      # muestra ÚNICAMENTE a las cuentas con permiso de escritura sobre el
+      # repositorio —o sea, al dueño, ya logueado— y no aparecen ni en la
+      # pestaña Releases ni en la API para un visitante anónimo. Sirve igual
+      # con el repo público (hoy) que privado (después), así que no depende
+      # de acordarse de cambiar nada cuando cambie la visibilidad.
+      #
+      # ⚠️ NO le saques el `--draft`. Es lo único que separa "mi copia para
+      # probar" de "el producto completo, gratis, para cualquiera".
+      # ------------------------------------------------------------------
+      - name: Dejar el instalador OWNER en un release borrador
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $exe = Get-ChildItem daxlingo/desktop/dist-instalador `
+                   -Filter "MV-DAX-Lab-OWNER-Setup-*.exe" |
+                 Select-Object -First 1
+          if (-not $exe) { throw "no se construyó el instalador owner" }
+
+          # Se borra y se recrea en vez de editar: `gh release upload` no
+          # pisa un asset que ya existe con el mismo nombre, y así queda
+          # siempre uno solo y siempre el último build.
+          $ErrorActionPreference = "Continue"
+          gh release view owner-ultimo *> $null
+          if ($LASTEXITCODE -eq 0) { gh release delete owner-ultimo --yes }
+          $global:LASTEXITCODE = 0
+          $ErrorActionPreference = "Stop"
+
+          gh release create owner-ultimo $exe.FullName `
+            --draft `
+            --title "MV DAX Lab OWNER — solo para el dueño" `
+            --notes @"
+          Instalador de la edición **owner**: todo desbloqueado, sin clave y sin vencimiento.
+
+          Este release es un **borrador**: solo lo ve quien tiene permiso de escritura en el repo.
+          Publicarlo regala el producto entero. No lo publiques.
+
+          Build: $($exe.Name) — commit ${{ github.sha }}
+          "@
+
+          # Evidencia, no confianza: si por lo que sea saliera publicado, el
+          # paso tiene que fallar acá y no dejar el .exe expuesto.
+          $esBorrador = (gh release view owner-ultimo --json isDraft --jq .isDraft).Trim()
+          Write-Host "isDraft = $esBorrador"
+          if ($esBorrador -ne "true") {
+            gh release delete owner-ultimo --yes
+            throw "el release de owner NO quedó en borrador — se borró por las dudas"
+          }
+          Write-Host "OK: owner quedó en un release borrador, invisible para el público"

@@ -6,7 +6,7 @@
 # cientos de megas y alarga el build sin darle nada al usuario.
 
 # --- la app ---
-streamlit>=1.36
+streamlit>=1.45
 
 # --- overlay de pantalla (F9), que sí es una función del producto ---
 anthropic>=0.34

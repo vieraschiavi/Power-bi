@@ -101,6 +101,14 @@ transformar, exportar, Fabric y overlay.
 ⚠️ **La edición OWNER no se publica en un release público.** Regala el producto
 entero. Publicá solo `cliente` y `demo`.
 
+Para tenerla siempre a mano sin regalarla, el CI la deja en un **release
+borrador** (`owner-ultimo`): GitHub muestra los borradores únicamente a las
+cuentas con permiso de escritura sobre el repositorio, así que se baja desde
+la pestaña Releases estando logueado como dueño y sigue siendo invisible para
+cualquier visitante — con el repo público o privado. El paso del workflow
+verifica que quedó en borrador y, si no, borra el release antes de terminar.
+**No lo publiques**: publicarlo es exactamente lo que hay que evitar.
+
 ```bash
 cd daxlingo/desktop
 MVDAX_LICENSE_SECRET=... node scripts/build-instaladores.js todos

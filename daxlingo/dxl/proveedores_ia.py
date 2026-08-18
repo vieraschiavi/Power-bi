@@ -245,7 +245,7 @@ def consultar(mensajes: list[dict], sistema: str = "",
     if necesita_clave(proveedor) and not clave:
         cfg = PROVEEDORES[proveedor]
         raise RuntimeError(
-            f"Falta la API key de {cfg['nombre']}. Cargala en ⚙️ "
+            f"Falta la API key de {cfg['nombre']}. Cargala en "
             f"Configuración o exportá {cfg['env']}. Obtenela en {cfg['doc']}.")
 
     principal = modelo or modelo_defecto(proveedor)

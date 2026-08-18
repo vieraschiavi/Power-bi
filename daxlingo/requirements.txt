@@ -4,7 +4,7 @@
 # la app y las herramientas alrededor.
 
 # --- app ---
-streamlit>=1.36
+streamlit>=1.45
 
 # --- tests ---
 pytest>=8.0

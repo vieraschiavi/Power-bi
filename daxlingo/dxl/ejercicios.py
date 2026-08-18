@@ -17,12 +17,17 @@ from pathlib import Path
 
 RUTA_EJERCICIOS = Path(__file__).resolve().parent.parent / "datos" / "ejercicios.json"
 
+# Los nombres van sin emoji a propósito. El huevo/pollito/búho/cerebro/trofeo
+# que había antes es la estética de un juego para chicos, no la de una
+# herramienta que se le muestra a un equipo de datos en la oficina — y encima
+# cada sistema operativo los dibuja distinto. El nivel se entiende por el
+# nombre y por el XP que hace falta, que es la información que importa.
 NIVELES = [
-    (0, "🥚 Novato"),
-    (100, "🐣 Aprendiz"),
-    (250, "🦉 Analista"),
-    (450, "🧠 Modelador"),
-    (700, "🏆 Maestro DAX"),
+    (0, "Novato"),
+    (100, "Aprendiz"),
+    (250, "Analista"),
+    (450, "Modelador"),
+    (700, "Maestro DAX"),
 ]
 
 

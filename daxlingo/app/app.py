@@ -35,8 +35,16 @@ from dxl.i18n import IDIOMAS, NOMBRES_IDIOMA, t  # noqa: E402
 NAVY, NAVY2, AMBAR, TINTA, APAGADO = ("#081527", "#0c2137", "#f2b441",
                                       "#eaf1fb", "#9db0c8")
 
+# El favicon es el icono real del producto, no un emoji: el cuadrado amarillo
+# que había antes lo dibuja cada sistema operativo a su manera y no es la
+# marca. `icono.png` viaja empaquetado (está en el filtro de extraResources),
+# y la ruta resuelve igual en desarrollo que instalado porque en los dos casos
+# cuelga de la misma raíz. Si por lo que sea no estuviera, Streamlit se banca
+# un page_icon=None y usa el suyo — no vale romper la app por un favicon.
+_ICONO = Path(__file__).resolve().parent.parent / "desktop" / "build" / "icono.png"
 st.set_page_config(page_title=f"{MARCA} · DAX + Power BI + Fabric",
-                   page_icon="🟨", layout="wide")
+                   page_icon=str(_ICONO) if _ICONO.exists() else None,
+                   layout="wide")
 
 # Íconos de las 14 pestañas, en el orden de `st.tabs(...)`. Trazo de línea,
 # mismo grosor y misma caja: un sistema, no una bolsa de emojis. Van como
@@ -134,6 +142,22 @@ section[data-testid="stSidebar"] small {{ color:{APAGADO} !important; }}
     border-radius:8px; padding:12px 16px; margin:8px 0; color:{TINTA}; }}
 .dxl-ok {{ border-left-color:#00c896; }}
 .dxl-mal {{ border-left-color:#c1443c; }}
+
+/* --- Puntos de estado y severidad ------------------------------------
+   Mismo criterio que las píldoras de Herramientas, generalizado: donde
+   antes iba un emoji de color (🔴 🟡 🔵 ⚪ ✅) ahora va un punto CSS. Los
+   emojis de círculo los dibuja la fuente del sistema —en Windows son
+   planos, en Mac con brillo, en Android otra cosa— así que el mismo
+   estado se veía distinto en cada máquina, y encima el tamaño no
+   acompaña al texto. Un punto CSS toma el color de la marca, escala con
+   la tipografía y se ve igual en todos lados. */
+.dxl-pt {{ display:inline-block; width:8px; height:8px; border-radius:50%;
+    margin-right:7px; vertical-align:1px; background:{APAGADO}; }}
+.dxl-pt-alta {{ background:#c1443c; }}
+.dxl-pt-media {{ background:{AMBAR}; }}
+.dxl-pt-baja {{ background:#4c8fd4; }}
+.dxl-pt-ok {{ background:#00c896; }}
+.dxl-pt-off {{ background:#3a5573; }}
 
 /* --- Pestaña Herramientas -------------------------------------------
    Tarjetas con ícono SVG y una píldora de estado. Antes cada herramienta
@@ -323,7 +347,7 @@ def gate(funcion: str) -> bool:
     """True si la edición/licencia habilita la función; si no, avisa."""
     if ESTADO_LIC.permite(funcion):
         return True
-    st.markdown(f"<div class='dxl-caja dxl-mal'>🔒 {_('lic_bloqueado')}</div>",
+    st.markdown(f"<div class='dxl-caja dxl-mal'>{_('lic_bloqueado')}</div>",
                 unsafe_allow_html=True)
     return False
 
@@ -332,7 +356,7 @@ def gate(funcion: str) -> bool:
 # Barra lateral: idioma + licencia
 # ==========================================================================
 with st.sidebar:
-    st.markdown(f"### 🟨 {MARCA}")
+    st.markdown(f"### {MARCA}")
     nuevo_idioma = st.selectbox(
         _("idioma"), IDIOMAS, index=IDIOMAS.index(IDIOMA),
         format_func=lambda i: NOMBRES_IDIOMA[i])
@@ -346,14 +370,19 @@ with st.sidebar:
         st.session_state.historial = []
         st.rerun()
 
-    icono = {"owner": "👑", "licencia": "✅", "demo": "🕒",
-             "vencida": "🔒"}[ESTADO_LIC.motivo]
-    st.markdown(f"**{_('lic_edicion')}:** {icono} "
-                f"`{_('edicion_' + ESTADO_LIC.edicion)}`")
+    # El estado de la licencia va con el mismo punto de color que el resto
+    # de la app: corona/candado/reloj eran tres metáforas distintas para una
+    # sola cosa —si está habilitada o no— y encima cada sistema los dibuja
+    # a su manera.
+    punto = {"owner": "dxl-pt-ok", "licencia": "dxl-pt-ok",
+             "demo": "dxl-pt-media", "vencida": "dxl-pt-alta"}[ESTADO_LIC.motivo]
+    st.markdown(f"**{_('lic_edicion')}:** <span class='dxl-pt {punto}'></span>"
+                f"`{_('edicion_' + ESTADO_LIC.edicion)}`",
+                unsafe_allow_html=True)
     if ESTADO_LIC.motivo == "demo":
         st.caption(f"{_('lic_dias')}: **{ESTADO_LIC.dias_restantes}**")
     elif ESTADO_LIC.motivo == "vencida":
-        st.caption("🔒 " + _("lic_vencida"))
+        st.caption(_("lic_vencida"))
     st.caption(f"v{__version__}")
 
 
@@ -364,7 +393,7 @@ _mostrar_flash()
 
 izq, der = st.columns([0.65, 0.35])
 with izq:
-    st.markdown(f"# 🟨 {MARCA} <span class='dxl-badge'>DAX · Power BI · "
+    st.markdown(f"# {MARCA} <span class='dxl-badge'>DAX · Power BI · "
                 f"Fabric</span>", unsafe_allow_html=True)
     st.caption(_("lema"))
 with der:
@@ -389,7 +418,7 @@ with der:
 
 
 # ==========================================================================
-# ❓ Guía
+# Guía
 # ==========================================================================
 with tab_guia:
     st.subheader(_("guia_titulo"))
@@ -399,7 +428,7 @@ with tab_guia:
 
 
 # ==========================================================================
-# 📥 Modelo
+# Modelo
 # ==========================================================================
 with tab_modelo:
     st.subheader(_("cargar_modelo"))
@@ -439,7 +468,7 @@ with tab_modelo:
             r = cat.resumen()
             parcial = f" · {_('catalogo_parcial')}" if r["parcial"] else ""
             st.markdown(
-                f"<div class='dxl-caja dxl-ok'>✅ <b>{cargado['formato']}</b> · "
+                f"<div class='dxl-caja dxl-ok'><b>{cargado['formato']}</b> · "
                 f"{r['tablas']} {_('tablas').lower()} · {r['columnas']} "
                 f"{_('columnas').lower()} · {r['medidas']} "
                 f"{_('medidas').lower()} · {r['relaciones']} "
@@ -448,14 +477,15 @@ with tab_modelo:
             for tb in cat.tablas:
                 if tb["interna"]:
                     continue
-                with st.expander(f"📋 {tb['nombre']} — {len(tb['columnas'])} "
+                with st.expander(f"{tb['nombre']} — {len(tb['columnas'])} "
                                  f"{_('columnas').lower()} · "
-                                 f"{len(tb['medidas'])} {_('medidas').lower()}"):
+                                 f"{len(tb['medidas'])} {_('medidas').lower()}",
+                                 icon=":material/table_chart:"):
                     if tb["columnas"]:
                         st.dataframe(
                             [{_("columna"): c["nombre"], _("tipo"): c["tipo"],
-                              _("oculta"): "✔" if c["oculta"] else "",
-                              _("calculada"): "✔" if c["calculada"] else ""}
+                              _("oculta"): "Sí" if c["oculta"] else "",
+                              _("calculada"): "Sí" if c["calculada"] else ""}
                              for c in tb["columnas"]],
                             width="stretch", hide_index=True)
                     for m in tb["medidas"]:
@@ -469,7 +499,7 @@ with tab_modelo:
 
 
 # ==========================================================================
-# 🕸️ Relaciones
+# Relaciones
 # ==========================================================================
 with tab_rel:
     st.subheader(_("mapa_modelo"))
@@ -509,7 +539,7 @@ with tab_rel:
 
 
 # ==========================================================================
-# 🩺 Analizador
+# Analizador
 # ==========================================================================
 with tab_analisis:
     st.subheader(_("buenas_practicas"))
@@ -524,15 +554,22 @@ with tab_analisis:
         c2.metric(_("hallazgos"), len(hallazgos))
         c3.metric(_("arreglables"), sum(1 for h in hallazgos if h["auto"]))
         for g in grupos:
-            icono = {"alta": "🔴", "media": "🟡", "baja": "🔵"}[g["severidad"]]
+            # El título de un expander no admite HTML, así que acá el ícono
+            # va por el parámetro `icon`: Material Symbols, la misma familia
+            # que ya usa Streamlit, en vez de un emoji que cada sistema
+            # dibuja distinto.
+            icono = {"alta": ":material/error:", "media": ":material/warning:",
+                     "baja": ":material/info:"}[g["severidad"]]
             cuantos = len(g["objetos"])
             sufijo = f" · {cuantos}×" if cuantos > 1 else f" — {g['objetos'][0]}"
             txt = analizador.describir(g, IDIOMA)
-            with st.expander(f"{icono} {txt['titulo']}{sufijo}"):
+            with st.expander(f"{txt['titulo']}{sufijo}", icon=icono):
                 st.markdown(f"**{_('por_que_importa')}:** {txt['detalle']}")
                 st.markdown(f"**{_('como_se_arregla')}:** {txt['arreglo']}")
                 if g["auto"]:
-                    st.markdown(f"✅ *{_('arreglable_auto')}*")
+                    st.markdown(f"<span class='dxl-pt dxl-pt-ok'></span>"
+                                f"*{_('arreglable_auto')}*",
+                                unsafe_allow_html=True)
                 if cuantos > 1:
                     st.code("\n".join(g["objetos"][:40])
                             + ("\n…" if cuantos > 40 else ""))
@@ -563,7 +600,7 @@ with tab_analisis:
 
 
 # ==========================================================================
-# 🤖 Generar DAX
+# Generar DAX
 # ==========================================================================
 with tab_generar:
     st.subheader(_("gen_titulo"))
@@ -605,7 +642,7 @@ with tab_generar:
 
 
 # ==========================================================================
-# 📖 Explicador
+# Explicador
 # ==========================================================================
 with tab_explicar:
     st.subheader(_("exp_titulo"))
@@ -640,7 +677,7 @@ with tab_explicar:
 
 
 # ==========================================================================
-# 🔧 Transformar
+# Transformar
 # ==========================================================================
 with tab_transformar:
     st.subheader(_("tr_titulo"))
@@ -702,7 +739,7 @@ with tab_transformar:
 
 
 # ==========================================================================
-# 📊 Exportar
+# Exportar
 # ==========================================================================
 with tab_exportar:
     st.subheader(_("ex_titulo"))
@@ -758,7 +795,7 @@ with tab_exportar:
 
 
 # ==========================================================================
-# 🟪 Fabric
+# Fabric
 # ==========================================================================
 with tab_fabric:
     st.subheader(_("fab_titulo"))
@@ -781,7 +818,7 @@ with tab_fabric:
                             r = fabric.publicar(
                                 elegido["id"], nombre_fab, cargado["modelo"],
                                 cargado.get("layout"), token)
-                        st.success(f"✅ {r['modelo_semantico']}"
+                        st.success(f"{r['modelo_semantico']}"
                                    + (f" · {r['reporte']}" if r["reporte"]
                                       else ""))
             except Exception as exc:
@@ -790,7 +827,7 @@ with tab_fabric:
 
 
 # ==========================================================================
-# 🖥️ Asistente de pantalla
+# Asistente de pantalla
 # ==========================================================================
 with tab_overlay:
     st.subheader(_("ov_titulo"))
@@ -839,10 +876,12 @@ python daxlingo/overlay/DAX_Overlay.py
     if not items:
         st.caption(_("ov_vacia"))
     for item in reversed(items[-10:]):
-        estado_icono = {"pendiente": "🟡", "aplicado": "✅",
-                        "descartado": "⚪"}.get(item["estado"], "🟡")
-        with st.expander(f"{estado_icono} {item['cuando']} · "
-                         f"{item['pregunta'][:70]}"):
+        estado_icono = {"pendiente": ":material/pending:",
+                        "aplicado": ":material/check_circle:",
+                        "descartado": ":material/cancel:"}.get(
+                            item["estado"], ":material/pending:")
+        with st.expander(f"{item['cuando']} · {item['pregunta'][:70]}",
+                         icon=estado_icono):
             st.markdown(item["respuesta"])
             aplicables = [a for a in item.get("acciones", [])
                           if a["tipo"] in ("medida", "columna_calculada")]
@@ -881,7 +920,7 @@ python daxlingo/overlay/DAX_Overlay.py
 
 
 # ==========================================================================
-# 🎓 Academia DAX
+# Academia DAX
 # ==========================================================================
 with tab_academia:
     st.subheader(_("ac_titulo"))
@@ -906,8 +945,9 @@ with tab_academia:
         st.markdown(f"### {_('ac_nivel')} {nivel}")
         for e in [x for x in banco if x["nivel"] == nivel]:
             hecho = e["id"] in st.session_state.resueltos
-            with st.expander(("✅ " if hecho else "▫️ ")
-                             + f"{e['id']} · {e['titulo']} (+{e['xp']} XP)"):
+            with st.expander(f"{e['id']} · {e['titulo']} (+{e['xp']} XP)",
+                             icon=":material/check_circle:" if hecho
+                             else ":material/radio_button_unchecked:"):
                 st.markdown(e["enunciado"])
                 respuesta = st.text_area(_("ac_tu_dax"), key=f"ej_{e['id']}",
                                          height=80)
@@ -927,7 +967,7 @@ with tab_academia:
 
 
 # ==========================================================================
-# 🛠️ Herramientas
+# Herramientas
 # ==========================================================================
 with tab_tools:
     st.subheader(_("he_titulo"))
@@ -1040,7 +1080,7 @@ with tab_tools:
 
 
 # ==========================================================================
-# 🔑 Licencia
+# Licencia
 # ==========================================================================
 with tab_lic:
     st.subheader(_("lic_titulo"))
@@ -1053,18 +1093,18 @@ with tab_lic:
               is not None else "∞")
 
     if ESTADO_LIC.motivo == "owner":
-        st.markdown(f"<div class='dxl-caja dxl-ok'>👑 {_('lic_owner')}</div>",
+        st.markdown(f"<div class='dxl-caja dxl-ok'>{_('lic_owner')}</div>",
                     unsafe_allow_html=True)
     elif ESTADO_LIC.motivo == "demo":
-        st.markdown(f"<div class='dxl-caja'>🕒 {_('lic_demo_activa')}</div>",
+        st.markdown(f"<div class='dxl-caja'>{_('lic_demo_activa')}</div>",
                     unsafe_allow_html=True)
     elif ESTADO_LIC.motivo == "vencida":
-        st.markdown(f"<div class='dxl-caja dxl-mal'>🔒 "
+        st.markdown(f"<div class='dxl-caja dxl-mal'>"
                     f"{_('lic_demo_vencida')}</div>", unsafe_allow_html=True)
     else:
         email = ESTADO_LIC.payload.get("email") or "—"
         es_mensual = ESTADO_LIC.payload.get("plan") == "mensual"
-        st.markdown(f"<div class='dxl-caja dxl-ok'>✅ "
+        st.markdown(f"<div class='dxl-caja dxl-ok'>"
                     f"{_('lic_activa')} · {email}</div>",
                     unsafe_allow_html=True)
         st.caption(_("lic_mensual") if es_mensual else _("lic_perpetua"))
@@ -1076,7 +1116,8 @@ with tab_lic:
                 f"?preapproval_id={sub}" if sub else "")
             if (ESTADO_LIC.dias_restantes or 99) <= 7:
                 st.warning(_("lic_por_vencer"))
-            st.link_button(f"🔄 {_('lic_renovar')}", url)
+            st.link_button(_("lic_renovar"), url,
+                           icon=":material/autorenew:")
 
     clave = st.text_input(_("lic_pegar"), type="password")
     col_a, col_b = st.columns(2)
@@ -1087,11 +1128,12 @@ with tab_lic:
             st.rerun()
         except ValueError:
             st.error(_("lic_invalida"))
-    col_b.link_button(f"🛒 {_('lic_comprar')}", sitio("/#precios"))
+    col_b.link_button(_("lic_comprar"), sitio("/#precios"),
+                      icon=":material/shopping_cart:")
 
 
 # ==========================================================================
-# ⚙️ Configuración
+# Configuración
 # ==========================================================================
 with tab_config:
     st.subheader(_("cfg_titulo"))
@@ -1135,7 +1177,7 @@ with tab_config:
                 proveedores_ia.probar_conexion(
                     prov, st.session_state.modelo_ia,
                     st.session_state.api_key, st.session_state.endpoint)
-                st.success(f"✅ {_('cfg_ok')}")
+                st.success(_("cfg_ok"))
             except Exception as exc:
                 st.error(str(exc))
     st.caption(_("cfg_nota_ia"))
@@ -1148,7 +1190,7 @@ with tab_config:
         key="mcp_agente_config")
     info_agente = proveedores_ia.AGENTES_MCP[agente_cfg]
     st.code(proveedores_ia.config_mcp_texto(agente_cfg, "."), language="json")
-    st.caption(f"📄 `{info_agente['archivo']}` · {_('cfg_mcp_nota')}")
+    st.caption(f"`{info_agente['archivo']}` · {_('cfg_mcp_nota')}")
 
     st.markdown("---")
     st.markdown(f"**{_('cfg_bandeja')}:** `{asistente.carpeta_bandeja()}`")
