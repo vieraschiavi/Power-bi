@@ -608,23 +608,43 @@ jobs:
       - name: Comprobar que el registro sabe que está en la otra unidad
         shell: pwsh
         run: |
-          # Es lo que usa Convertir-a-version-dueno.bat para encontrar una
-          # instalación sin que le digan dónde: si esto no queda bien, ese
-          # .bat tampoco la va a encontrar en la máquina de un cliente que
-          # instaló en otro disco.
-          $encontrada = $false
+          # Esto es lo que usa Convertir-a-version-dueno.bat para encontrar
+          # una instalación sin que le digan dónde: si no queda bien, ese
+          # .bat no la va a encontrar en la máquina de un cliente que instaló
+          # en otro disco.
+          #
+          # La primera versión de este paso pedía InstallLocation en la clave
+          # de desinstalación y falló (corrida del 18/8) con la instalación
+          # perfectamente hecha en D:. El motivo: electron-builder NUNCA
+          # escribe InstallLocation ahí. Lo escribe en Software\<GUID>
+          # (include/installer.nsh:104); bajo Uninstall solo pone DisplayName,
+          # UninstallString, DisplayVersion, DisplayIcon y Publisher.
+          #
+          # Por eso el .bat tiene el fallback que tiene, y por eso este paso
+          # ahora replica su cadena real en vez de inventar una propia:
+          # InstallLocation si está, y si no la carpeta del DisplayIcon —que
+          # lo escribe nuestro customInstall apuntando al .exe instalado—.
+          # Se recorren las mismas tres raíces que recorre el .bat.
+          $hallada = $null
           foreach ($raiz in @("HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall",
-                              "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall")) {
-            Get-ChildItem $raiz -ErrorAction SilentlyContinue | ForEach-Object {
-              $p = Get-ItemProperty $_.PSPath -ErrorAction SilentlyContinue
-              if ($p.DisplayName -eq "MV DAX Lab" -and
-                  $p.InstallLocation -like "$env:OTRA_UNIDAD*") {
-                $script:encontrada = $true
+                              "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall",
+                              "HKLM:\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall")) {
+            foreach ($k in (Get-ChildItem $raiz -ErrorAction SilentlyContinue)) {
+              $p = Get-ItemProperty $k.PSPath -ErrorAction SilentlyContinue
+              if ($p.DisplayName -notlike "*MV DAX Lab*") { continue }
+              $ruta = $p.InstallLocation
+              if (-not $ruta -and $p.DisplayIcon) {
+                $ruta = Split-Path ($p.DisplayIcon -replace ',\d+$', '') -Parent
               }
+              Write-Host "entrada '$($p.DisplayName)' en $raiz -> '$ruta'"
+              if ($ruta -like "$env:OTRA_UNIDAD*") { $hallada = $ruta }
             }
           }
-          if (-not $encontrada) { throw "InstallLocation no apunta a la otra unidad" }
-          Write-Host "OK: el registro apunta a $env:OTRA_UNIDAD"
+          if (-not $hallada) {
+            throw "ninguna entrada de desinstalación apunta a $env:OTRA_UNIDAD; " +
+                  "Convertir-a-version-dueno.bat no encontraría esta instalación"
+          }
+          Write-Host "OK: el registro lleva a $hallada"
 
       - name: Desinstalar de la otra unidad
         shell: pwsh
