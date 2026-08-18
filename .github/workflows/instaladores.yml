@@ -505,14 +505,49 @@ jobs:
           Write-Host "otra unidad elegida: $($otra.DeviceID) ($libres GB libres)"
           "OTRA_UNIDAD=$($otra.DeviceID)" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
 
+      # ------------------------------------------------------------------
+      # OJO CON EL NOMBRE DE LA CARPETA: va SIN espacios, y no es capricho.
+      #
+      # electron-builder no usa el /D nativo de NSIS para fijar la carpeta:
+      # lo reimplementa en multiUser.nsh:86-90 con
+      # `${StdUtils.GetParameter} $R0 "D" ""`, y StdUtils parte la línea de
+      # comandos estilo argv (su propio header documenta ParameterCnt y
+      # ParameterStr como "similar to argc/argv in main()"). O sea que corta
+      # en el primer espacio.
+      #
+      # Con /D=D:\MV DAX Lab pasaba esto, y se ve entero en la corrida del
+      # 18/8: el /D nativo —que sí toma el resto de la línea— dejaba
+      # $INSTDIR bien y el `SetOutPath $INSTDIR` de installer.nsi:45 creaba
+      # "D:\MV DAX Lab"; después initMultiUser lo pisaba con el valor
+      # recortado de StdUtils y los archivos terminaban en "D:\MV". El log
+      # mostraba las DOS carpetas en D:\ y salida 0 del instalador, cinco
+      # veces seguidas.
+      #
+      # Es una limitación de electron-builder para instalaciones SILENCIOSAS
+      # con /D, no del producto: al usuario que instala a mano no lo toca
+      # (la página de carpeta escribe $INSTDIR directo), y que la ruta lleve
+      # espacios ya está probado en el paso "Reinstalar sin decirle carpeta",
+      # que cae en C:\Program Files\MV DAX Lab y pasa. Acá lo que hay que
+      # aislar es la LETRA DE UNIDAD, así que la carpeta va sin espacios.
+      # ------------------------------------------------------------------
       - name: Instalar en la otra unidad
         shell: pwsh
         working-directory: daxlingo/desktop
         run: |
           $exe = Get-ChildItem dist-instalador -Filter "MV-DAX-Lab-Setup-*.exe" |
                  Select-Object -First 1
-          $destino = "$env:OTRA_UNIDAD\MV DAX Lab"
+          $destino = "$env:OTRA_UNIDAD\MVDAXLab"
           $appExe = "$destino\MV DAX Lab.exe"
+
+          # Candado contra el bug de arriba: si alguien vuelve a poner un
+          # espacio en $destino, StdUtils lo va a recortar y los archivos van
+          # a caer en la carpeta del primer pedazo. Que falle acá diciendo
+          # exactamente eso, en vez de que el paso siguiente muera con un
+          # "falta el runtime" que no explica nada.
+          if ($destino -match '\s') {
+            throw "el destino de esta prueba no puede llevar espacios: " +
+                  "electron-builder recorta el /D en el primer espacio (ver el comentario del paso)"
+          }
 
           $INTENTOS = 5
           for ($intento = 1; $intento -le $INTENTOS; $intento++) {
@@ -548,8 +583,8 @@ jobs:
       - name: Arrancar desde la otra unidad — confirmar que no es solo un archivo copiado
         shell: pwsh
         run: |
-          $py = "$env:OTRA_UNIDAD\MV DAX Lab\resources\runtime\python.exe"
-          $app = "$env:OTRA_UNIDAD\MV DAX Lab\resources\app"
+          $py = "$env:OTRA_UNIDAD\MVDAXLab\resources\runtime\python.exe"
+          $app = "$env:OTRA_UNIDAD\MVDAXLab\resources\app"
           if (-not (Test-Path $py)) { throw "falta el runtime en la otra unidad" }
           $proc = Start-Process $py -PassThru -WindowStyle Hidden -ArgumentList `
             "-m", "streamlit", "run", "$app\app\app.py",
@@ -594,7 +629,7 @@ jobs:
       - name: Desinstalar de la otra unidad
         shell: pwsh
         run: |
-          $raiz = "$env:OTRA_UNIDAD\MV DAX Lab"
+          $raiz = "$env:OTRA_UNIDAD\MVDAXLab"
           $des = Join-Path $raiz "Uninstall MV DAX Lab.exe"
           $p = Start-Process $des -ArgumentList '/S' -PassThru
           [void]$p.WaitForExit(180000)
