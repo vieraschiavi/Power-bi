@@ -132,14 +132,22 @@ jobs:
           #
           #   /S           silencioso
           #   /NCRC        saltea el chequeo CRC del .exe (son 176 MB)
-          #   /currentuser fuerza el modo por usuario. Desde que
-          #                nsis.perMachine pasó a true, el paquete YA NO usa
-          #                esto por defecto (ver el paso "Reinstalar sin
-          #                decirle carpeta" más abajo, que prueba justo el
-          #                default nuevo) — se deja acá a propósito, para
-          #                seguir cubriendo que el modo por usuario, con
-          #                carpeta a mano, sigue andando como alternativa.
           #   /D=          carpeta destino
+          #
+          # SIN /currentuser a propósito, aunque antes estaba. Se probó acá
+          # (corrida del 17/8) y con nsis.perMachine:true rompe el acceso del
+          # menú Inicio: el .exe queda manifestado
+          # RequestExecutionLevel=admin —eso lo decide perMachine en tiempo
+          # de BUILD, ninguna bandera de línea de comandos lo cambia— así que
+          # Windows lo eleva ANTES de que NSIS llegue a leer /currentuser, y
+          # esa combinación (proceso elevado + "actuá como si fueras
+          # per-user") no está bien soportada. No hace falta forzarla: lo que
+          # hay que probar —que /D elige la carpeta— ya queda cubierto acá
+          # sin la bandera, y el modo por default (ahora per-machine) tiene
+          # su propia prueba dedicada más abajo ("Reinstalar sin decirle
+          # carpeta"). Si en algún momento hace falta cobertura del modo
+          # per-user puro, que sea con un .exe pensado para eso
+          # (perMachine:false), no mezclado con este.
           #
           # Sin -Wait, y con espera acotada a mano: el paquete tiene
           # `nsis.runAfterFinish: true`, así que al terminar el instalador
@@ -176,7 +184,7 @@ jobs:
             }
 
             $p = Start-Process $exe.FullName -PassThru `
-                   -ArgumentList "/S /NCRC /currentuser /D=$destino"
+                   -ArgumentList "/S /NCRC /D=$destino"
             if (-not $p.WaitForExit(300000)) {
               $p.Kill()
               throw "el instalador no terminó en 5 minutos"
@@ -246,9 +254,18 @@ jobs:
       - name: Comprobar los accesos directos (escritorio y menú Inicio)
         shell: pwsh
         run: |
+          # El de escritorio ya miraba las dos ubicaciones posibles (la del
+          # usuario y la de "todos los usuarios", $env:PUBLIC\Desktop) — el
+          # de menú Inicio SOLO miraba la de usuario. Con nsis.perMachine
+          # ahora en true, el acceso del menú Inicio va legítimamente a la
+          # carpeta común ($env:ProgramData\...), así que faltaba mirar ahí:
+          # sin esto, hasta una instalación per-machine perfecta salía
+          # "FALTA" — no porque el instalador estuviera mal, sino porque el
+          # chequeo miraba un solo lugar de los dos posibles.
           $enEscritorio = Get-ChildItem ([Environment]::GetFolderPath('Desktop')),
                                         "$env:PUBLIC\Desktop" -Filter "MV DAX Lab.lnk" -ErrorAction SilentlyContinue
-          $enMenu = Get-ChildItem "$env:APPDATA\Microsoft\Windows\Start Menu\Programs" `
+          $enMenu = Get-ChildItem "$env:APPDATA\Microsoft\Windows\Start Menu\Programs",
+                                  "$env:ProgramData\Microsoft\Windows\Start Menu\Programs" `
                                   -Recurse -Filter "MV DAX Lab.lnk" -ErrorAction SilentlyContinue
           Write-Host "escritorio : $(if ($enEscritorio) { $enEscritorio[0].FullName } else { 'NO' })"
           Write-Host "menú Inicio: $(if ($enMenu) { $enMenu[0].FullName } else { 'NO' })"
