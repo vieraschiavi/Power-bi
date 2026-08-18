@@ -40,7 +40,29 @@
 ; una actualización": el chequeo es `¿existe el .exe ahí?`, no una fecha ni
 ; una versión.
 
+; --- Y por qué preInit empieza con SetRegView --------------------------------
+;
+; Esta parte costó una corrida entera de CI (18/8): la limpieza de abajo
+; estaba bien pensada y aun así el instalador reinstaló 5 de 5 veces en la
+; carpeta vieja y borrada. El motivo no era la lógica, era DÓNDE miraba.
+;
+; installer.nsi llama a preInit en la línea 49 y a check64BitAndSetRegView
+; recién en la 60 — y ese segundo macro es el que hace `SetRegView 64` en los
+; builds x64. O sea que preInit corre con la vista de 32 bits todavía puesta,
+; y ahí HKLM\Software está redirigido por WOW64 a HKLM\Software\WOW6432Node.
+; initMultiUser (línea 70, ya con la vista en 64) lee la de verdad. Resultado:
+; se leía y se borraba en un lugar donde nunca hubo nada, y la marca fantasma
+; sobrevivía intacta a la limpieza.
+;
+; Por eso el SetRegView explícito acá arriba. Se restaura al salir: dos líneas
+; después check64BitAndSetRegView la vuelve a poner en 64 igual, pero un hook
+; no tiene por qué dejar efectos colaterales sobre el resto del script.
+
 !macro preInit
+  ${if} ${RunningX64}
+    SetRegView 64
+  ${endIf}
+
   ReadRegStr $0 HKCU "Software\${APP_GUID}" "InstallLocation"
   ${if} $0 != ""
     ${ifNot} ${FileExists} "$0\${APP_EXECUTABLE_FILENAME}"
@@ -48,17 +70,20 @@
     ${endIf}
   ${endIf}
 
-  ; HKLM necesita permisos de administrador para escribir: a esta altura
-  ; (antes de que se elija el modo) el proceso puede no estar elevado
-  ; todavía, y un DeleteRegValue sin permisos no hace nada — no falla, pero
-  ; tampoco limpia. Igual vale la pena intentarlo: si el usuario ya venía
-  ; elevado (por ejemplo, clic derecho → Ejecutar como administrador), esto
-  ; sí limpia una marca fantasma de una instalación per-machine anterior.
+  ; Borrar en HKLM pide permisos de administrador. Con nsis.perMachine en
+  ; true el .exe ya viene manifestado RequestExecutionLevel=admin, así que a
+  ; esta altura el proceso está elevado y el borrado sí se aplica. Si algún
+  ; día se volviera a perMachine:false, esto pasaría a ser best-effort: sin
+  ; permisos DeleteRegValue no falla, simplemente no hace nada.
   ReadRegStr $0 HKLM "Software\${APP_GUID}" "InstallLocation"
   ${if} $0 != ""
     ${ifNot} ${FileExists} "$0\${APP_EXECUTABLE_FILENAME}"
       DeleteRegValue HKLM "Software\${APP_GUID}" "InstallLocation"
     ${endIf}
+  ${endIf}
+
+  ${if} ${RunningX64}
+    SetRegView Default
   ${endIf}
 !macroend
 
