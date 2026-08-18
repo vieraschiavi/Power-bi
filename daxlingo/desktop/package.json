@@ -84,12 +84,11 @@
     },
     "nsis": {
       "oneClick": false,
-      "perMachine": false,
+      "perMachine": true,
       "allowToChangeInstallationDirectory": true,
       "allowElevation": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "menuCategory": "MV DAX Lab",
       "shortcutName": "MV DAX Lab",
       "runAfterFinish": true,
       "deleteAppDataOnUninstall": false,

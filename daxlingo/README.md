@@ -108,12 +108,23 @@ MVDAX_LICENSE_SECRET=... node scripts/build-instaladores.js todos
 
 ## Instalador de Windows
 
-`npm run dist` genera un NSIS que **deja elegir la carpeta**, crea acceso en
-**escritorio, barra de tareas y menú Inicio** con el icono del producto, se
-registra en **Agregar o quitar programas** y trae **desinstalador** que
-pregunta antes de borrar tus datos (licencia y preferencias sobreviven a una
-reinstalación). El runtime de Python va embebido: el cliente **no instala
-Python** — ver `desktop/runtime/LEEME.md`.
+`npm run dist` genera un NSIS que **deja elegir la carpeta y el disco**
+(`allowToChangeInstallationDirectory` + `perMachine: true`; ver el comentario
+de `preInit` en `desktop/build/instalador.nsh` para el porqué de `perMachine`),
+crea acceso en **escritorio, barra de tareas y menú Inicio** con el icono del
+producto, se registra en **Agregar o quitar programas** y trae
+**desinstalador** que pregunta antes de borrar tus datos (licencia y
+preferencias sobreviven a una reinstalación). El runtime de Python va
+embebido: el cliente **no instala Python** — ver `desktop/runtime/LEEME.md`.
+
+> Si ya lo instalaste antes en esta PC (aunque haya sido a medias, con el
+> disco lleno) y ahora el instalador no te pregunta dónde ponerlo: es
+> esperado que reutilice la carpeta anterior si sigue estando — es lo mismo
+> que hace cualquier instalador al actualizar. Si esa carpeta ya no existe, el
+> instalador la detecta y vuelve a preguntar solo; si por lo que sea no lo
+> hace, desinstalar primero (o borrar la entrada `MV DAX Lab` de "Agregar o
+> quitar programas") deja el terreno limpio para que la próxima instalación
+> pregunte de nuevo.
 
 ## Precio: uno solo, dos formas de pagarlo
 
