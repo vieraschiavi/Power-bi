@@ -31,8 +31,13 @@ nav{position:sticky;top:0;z-index:60;background:rgba(8,21,39,.88);
 nav .wrap{display:flex;align-items:center;gap:20px;height:60px}
 .marca{font-weight:800;font-size:1.05rem;color:var(--ink);white-space:nowrap}
 .marca b{color:var(--amber)}
-.marca-cuadro{display:inline-block;width:14px;height:14px;border-radius:3px;
-  background:var(--amber);margin-right:7px;vertical-align:-1px}
+/* El logo MV, el mismo archivo que el favicon y que el icono del programa.
+   Antes acá había un cuadrado ámbar liso: no era la marca de nada, y en la
+   barra de tareas o en una pestaña no se distinguía de cualquier otra cosa.
+   Va a 18px y no a 14: ahora lleva dos letras adentro y a 14 no se leen.
+   Sin border-radius propio — las esquinas redondeadas ya vienen en el SVG. */
+.marca-cuadro{display:inline-block;width:18px;height:18px;margin-right:7px;
+  background:url(../logo-mv.svg) center/contain no-repeat;vertical-align:-4px}
 nav a.lnk{color:var(--muted);font-size:.9rem;white-space:nowrap}
 nav a.lnk:hover{color:var(--ink)}
 .idiomas{margin-left:auto;display:flex;gap:4px;
