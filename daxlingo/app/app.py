@@ -27,6 +27,7 @@ sys.path.insert(0, str(RAIZ))
 from dxl import MARCA, __version__, sitio  # noqa: E402
 from dxl import analizador, asistente, catalogo, ejercicios  # noqa: E402
 from dxl import explicador, fabric, generador, herramientas, ia  # noqa: E402
+from dxl import iconos  # noqa: E402
 from dxl import licencia as lic  # noqa: E402
 from dxl import modelo as modmod  # noqa: E402
 from dxl import proveedores_ia, tablero, transformador  # noqa: E402
@@ -46,49 +47,22 @@ st.set_page_config(page_title=f"{MARCA} · DAX + Power BI + Fabric",
                    page_icon=str(_ICONO) if _ICONO.exists() else None,
                    layout="wide")
 
-# Íconos de las 14 pestañas, en el orden de `st.tabs(...)`. Trazo de línea,
-# mismo grosor y misma caja: un sistema, no una bolsa de emojis. Van como
-# máscara CSS —ver el bloque de estilos— así el color lo pone la hoja de
-# estilos y no la fuente de emojis del sistema operativo.
-def _svg(cuerpo: str) -> str:
-    """Un SVG de línea listo para embeber como máscara en CSS.
+# El mismo archivo, embebido, para poder poner la marca ADENTRO del título.
+# Streamlit no sirve archivos sueltos —no hay una carpeta estática que se
+# pueda linkear desde el HTML—, así que la vía es un data URI. Son 21 KB en
+# base64 y se arma una vez por recarga: irrelevante al lado de lo que tarda
+# cualquier pestaña. Si el archivo no está, `_LOGO` queda vacío y el título
+# sale solo con texto, sin romperse.
+_LOGO = ""
+if _ICONO.exists():
+    import base64
+    _LOGO = ("<img class='dxl-logo' alt='' src='data:image/png;base64,"
+             + base64.b64encode(_ICONO.read_bytes()).decode() + "'>")
 
-    Se usan comillas simples adentro y se escapan `<`, `>` y `#`: dentro de
-    un `url("data:image/svg+xml;utf8,...")` esos caracteres cortan el valor y
-    la regla entera se descarta en silencio.
-    """
-    svg = ("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' "
-           "fill='none' stroke='black' stroke-width='2' "
-           f"stroke-linecap='round' stroke-linejoin='round'>{cuerpo}</svg>")
-    return svg.replace("<", "%3C").replace(">", "%3E").replace("#", "%23")
-
-
-ICONOS_TABS = [
-    _svg("<circle cx='12' cy='12' r='9'/><path d='M9.1 9a3 3 0 015.8 1c0 2-3 "
-         "2.5-3 4'/><path d='M12 17.5v.01'/>"),                   # Guía
-    _svg("<path d='M12 3v12M7 11l5 5 5-5M4 21h16'/>"),            # Modelo
-    _svg("<circle cx='6' cy='6' r='2.5'/><circle cx='18' cy='6' r='2.5'/>"
-         "<circle cx='12' cy='18' r='2.5'/><path d='M8 7.5l3 8M16 7.5l-3 8'/>"),
-    _svg("<path d='M3 12h4l2.5-7 4 14L16 12h5'/>"),               # Analizador
-    _svg("<path d='M12 3l1.9 4.6 4.6 1.9-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6"
-         "-1.9z'/><path d='M18 16l.9 2.1 2.1.9-2.1.9L18 22l-.9-2.1-2.1-.9 "
-         "2.1-.9z'/>"),                                           # Generar DAX
-    _svg("<path d='M4 5h6a2 2 0 012 2v12a2 2 0 00-2-2H4zM20 5h-6a2 2 0 "
-         "00-2 2v12a2 2 0 012-2h6z'/>"),                          # Explicador
-    _svg("<path d='M4 8h11M4 16h7'/><path d='M17 5l4 3-4 3M13 13l4 3-4 3'/>"),
-    _svg("<path d='M4 20V10M10 20V4M16 20v-7M22 20H2'/>"),        # Exportar
-    _svg("<path d='M12 3l8 4.5v9L12 21l-8-4.5v-9z'/><path d='M12 12l8-4.5M12 "
-         "12v9M12 12L4 7.5'/>"),                                  # Fabric
-    _svg("<rect x='3' y='4' width='18' height='13' rx='2'/><path d='M8 21h8'/>"
-         "<path d='M9 10.5l2 2 4-4'/>"),                          # Asistente
-    _svg("<path d='M12 4L2 9l10 5 10-5z'/><path d='M6 11.5V17c0 1.7 2.7 3 6 "
-         "3s6-1.3 6-3v-5.5'/>"),                                  # Academia
-    _svg("<path d='M14.5 6.5a4 4 0 105 5L21 13l-8 8-4-4 8-8z'/>"
-         "<path d='M7 13l-4 4 4 4 2-2'/>"),                       # Herramientas
-    _svg("<circle cx='8' cy='12' r='4'/><path d='M12 12h9M18 12v3M15 12v2'/>"),
-    _svg("<circle cx='12' cy='12' r='3'/><path d='M12 2v3M12 19v3M2 12h3M19 "
-         "12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2'/>"),        # Configuración
-]
+# Los íconos de las 14 pestañas viven en `dxl/iconos.py`, junto con los
+# que usa la landing: un solo set para todo el producto, así la web y el
+# programa no se van desincronizando cada vez que se toca uno.
+ICONOS_TABS = [iconos.svg(n) for n in iconos.PESTANAS]
 
 # El CSS pinta el fondo oscuro sí o sí, así que TAMBIÉN tiene que pintar cada
 # color de texto. Streamlit solo lee `.streamlit/config.toml` desde el
@@ -135,6 +109,12 @@ section[data-testid="stSidebar"] small {{ color:{APAGADO} !important; }}
 .stFormSubmitButton > button[kind="primary"] {{
     background:{AMBAR}; color:#1c1305; border:0; }}
 .stButton > button[kind="primary"]:hover {{ background:#ffc95c; color:#1c1305; }}
+
+/* La marca al lado del título. Va en `em` para que acompañe al tamaño del
+   texto que la rodea: el mismo bloque sirve para el <h1> del encabezado y
+   para el <h3> de la barra lateral, sin dos reglas distintas. */
+.dxl-logo {{ height:1em; width:1em; border-radius:.22em; margin-right:.3em;
+    vertical-align:-.14em; }}
 
 .dxl-badge {{ background:{AMBAR}; color:#1c1305; border-radius:20px;
     padding:2px 12px; font-weight:700; font-size:0.8rem; }}
@@ -356,7 +336,7 @@ def gate(funcion: str) -> bool:
 # Barra lateral: idioma + licencia
 # ==========================================================================
 with st.sidebar:
-    st.markdown(f"### {MARCA}")
+    st.markdown(f"### {_LOGO}{MARCA}", unsafe_allow_html=True)
     nuevo_idioma = st.selectbox(
         _("idioma"), IDIOMAS, index=IDIOMAS.index(IDIOMA),
         format_func=lambda i: NOMBRES_IDIOMA[i])
@@ -393,7 +373,7 @@ _mostrar_flash()
 
 izq, der = st.columns([0.65, 0.35])
 with izq:
-    st.markdown(f"# {MARCA} <span class='dxl-badge'>DAX · Power BI · "
+    st.markdown(f"# {_LOGO}{MARCA} <span class='dxl-badge'>DAX · Power BI · "
                 f"Fabric</span>", unsafe_allow_html=True)
     st.caption(_("lema"))
 with der:

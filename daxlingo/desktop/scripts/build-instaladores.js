@@ -86,8 +86,30 @@ function construir(nombre) {
   // ejemplo escrito en el repo.
   const secreto = process.env.MVDAX_LICENSE_SECRET || "";
   if (nombre === "cliente" && !secreto) {
-    console.warn("⚠️  MVDAX_LICENSE_SECRET no está definido: la edición " +
-                 "cliente no va a poder validar las licencias que emitís.");
+    // Antes esto era un console.warn y el build seguía. El resultado era el
+    // peor de los dos mundos: un instalador de la edición que se VENDE,
+    // horneado sin secreto, que rechaza absolutamente toda licencia que
+    // emita la web. Y no se notaba en el build ni en los tests — se notaba
+    // cuando un cliente pagaba y la clave no le entraba.
+    //
+    // La demo no lo necesita (es por fecha, no por clave) y owner tampoco
+    // (viene desbloqueada), así que el corte es solo para `cliente`.
+    if (process.env.MVDAX_PERMITIR_SIN_SECRETO !== "1") {
+      console.error(
+        "\n✗ MVDAX_LICENSE_SECRET está vacío y estás construyendo la edición\n" +
+        "  «cliente», que es la que se vende. Sin secreto, el instalador no\n" +
+        "  puede validar NINGUNA licencia emitida por la web: el cliente\n" +
+        "  paga, recibe la clave y el programa se la rechaza.\n\n" +
+        "  Tiene que ser EXACTAMENTE el mismo valor que la variable\n" +
+        "  MVDAX_LICENSE_SECRET del proyecto en Vercel — la web firma con\n" +
+        "  ese secreto y el programa verifica con este.\n\n" +
+        "  Para construir igual, a sabiendas (una prueba local, sin vender):\n" +
+        "      MVDAX_PERMITIR_SIN_SECRETO=1 node scripts/build-instaladores.js cliente\n");
+      process.exit(1);
+    }
+    console.warn("⚠️  Construyendo «cliente» SIN secreto porque " +
+                 "MVDAX_PERMITIR_SIN_SECRETO=1. Esta copia no valida " +
+                 "licencias: no la distribuyas.");
   }
 
   const paqueteOriginal = fs.readFileSync(PAQUETE, "utf8");
@@ -143,6 +165,23 @@ function compilarFront() {
 }
 
 const pedido = (process.argv[2] || "cliente").toLowerCase();
+
+// El chequeo del secreto va ANTES de preparar la caché y compilar el front:
+// esos dos pasos tardan minutos, y no tiene sentido gastarlos para después
+// cortar. `construir()` lo vuelve a mirar por edición —es el que sabe cuál
+// está armando— pero acá se atajan de una los dos casos que lo necesitan.
+if ((pedido === "cliente" || pedido === "todos")
+    && !process.env.MVDAX_LICENSE_SECRET
+    && process.env.MVDAX_PERMITIR_SIN_SECRETO !== "1") {
+  console.error(
+    "\n✗ Falta MVDAX_LICENSE_SECRET y vas a construir la edición «cliente».\n" +
+    "  Es la que se vende: sin ese secreto el instalador rechaza todas las\n" +
+    "  licencias que emita la web. Tiene que ser el MISMO valor que la\n" +
+    "  variable MVDAX_LICENSE_SECRET del proyecto en Vercel.\n\n" +
+    "  Prueba local, sin distribuir:\n" +
+    `      MVDAX_PERMITIR_SIN_SECRETO=1 node scripts/build-instaladores.js ${pedido}\n`);
+  process.exit(1);
+}
 
 // La caché va primero: elige el disco, comprueba que haya lugar y deja
 // winCodeSign descomprimido sin los symlinks de macOS, que en Windows exigen
