@@ -355,7 +355,8 @@ with st.sidebar:
     # sola cosa —si está habilitada o no— y encima cada sistema los dibuja
     # a su manera.
     punto = {"owner": "dxl-pt-ok", "licencia": "dxl-pt-ok",
-             "demo": "dxl-pt-media", "vencida": "dxl-pt-alta"}[ESTADO_LIC.motivo]
+             "demo": "dxl-pt-media", "vencida": "dxl-pt-alta",
+             "sin_licencia": "dxl-pt-alta"}.get(ESTADO_LIC.motivo, "dxl-pt-off")
     st.markdown(f"**{_('lic_edicion')}:** <span class='dxl-pt {punto}'></span>"
                 f"`{_('edicion_' + ESTADO_LIC.edicion)}`",
                 unsafe_allow_html=True)
@@ -363,6 +364,8 @@ with st.sidebar:
         st.caption(f"{_('lic_dias')}: **{ESTADO_LIC.dias_restantes}**")
     elif ESTADO_LIC.motivo == "vencida":
         st.caption(_("lic_vencida"))
+    elif ESTADO_LIC.motivo == "sin_licencia":
+        st.caption(_("lic_sin_licencia_corto"))
     st.caption(f"v{__version__}")
 
 
@@ -1081,6 +1084,9 @@ with tab_lic:
     elif ESTADO_LIC.motivo == "vencida":
         st.markdown(f"<div class='dxl-caja dxl-mal'>"
                     f"{_('lic_demo_vencida')}</div>", unsafe_allow_html=True)
+    elif ESTADO_LIC.motivo == "sin_licencia":
+        st.markdown(f"<div class='dxl-caja dxl-mal'>"
+                    f"{_('lic_sin_licencia')}</div>", unsafe_allow_html=True)
     else:
         email = ESTADO_LIC.payload.get("email") or "—"
         es_mensual = ESTADO_LIC.payload.get("plan") == "mensual"

@@ -6,10 +6,11 @@
 # empaquetado, se comprueba el candado de la edición, se corre
 # Convertir-a-version-dueno.bat y se desinstala.
 #
-# La edición OWNER no va en los artifacts —los de un repo público los baja
-# cualquiera con una cuenta de GitHub— pero sí queda disponible para el dueño
-# en un release BORRADOR (último paso del job): GitHub se los muestra solo a
-# las cuentas con permiso de escritura sobre el repo. Alternativas sin pasar
+# Las ediciones OWNER y DEMO no van en los artifacts —los de un repo público
+# los baja cualquiera con una cuenta de GitHub— pero sí quedan disponibles para
+# el dueño en un release BORRADOR (último paso del job): GitHub se los muestra
+# solo a las cuentas con permiso de escritura sobre el repo. La demo se entrega
+# a pedido, en una reunión 1:1, no se descarga sola. Alternativas sin pasar
 # por el CI: daxlingo/desktop/CONSTRUIR_OWNER.bat en tu máquina, o instalar la
 # de cliente y pasarle Convertir-a-version-dueno.bat.
 
@@ -720,7 +721,11 @@ jobs:
       # ------------------------------------------------------------------
       # Solo cliente y demo. La owner NO se sube: repo público.
       # ------------------------------------------------------------------
-      - name: Publicar los instaladores de cliente y demo
+      # La edición CLIENTE sí puede publicarse: desde que la prueba de 7 días
+      # es exclusiva de la edición demo (ver dxl/licencia.py), este instalador
+      # sin licencia válida no desbloquea nada. Sirve para que el que compró
+      # lo baje solo, y no le sirve a nadie más.
+      - name: Publicar el instalador de cliente
         uses: actions/upload-artifact@v4
         with:
           name: instaladores-windows
@@ -728,9 +733,7 @@ jobs:
           if-no-files-found: error
           path: |
             daxlingo/desktop/dist-instalador/MV-DAX-Lab-Setup-*.exe
-            daxlingo/desktop/dist-instalador/MV-DAX-Lab-DEMO-Setup-*.exe
             daxlingo/desktop/dist-portable/MV-DAX-Lab-portable.zip
-            daxlingo/desktop/dist-portable/MV-DAX-Lab-DEMO-portable.zip
 
       # ------------------------------------------------------------------
       # El instalador OWNER, en un release BORRADOR.
@@ -760,6 +763,14 @@ jobs:
                  Select-Object -First 1
           if (-not $exe) { throw "no se construyó el instalador owner" }
 
+          # La DEMO va acá también, no en los artifacts. Desde que se entrega
+          # a pedido en una reunión 1:1, publicarla sería contradecir la
+          # decisión: cualquiera con una cuenta de GitHub se la bajaría.
+          $demo = Get-ChildItem daxlingo/desktop/dist-instalador `
+                    -Filter "MV-DAX-Lab-DEMO-Setup-*.exe" |
+                  Select-Object -First 1
+          if (-not $demo) { throw "no se construyó el instalador demo" }
+
           # Se borra y se recrea en vez de editar: `gh release upload` no
           # pisa un asset que ya existe con el mismo nombre, y así queda
           # siempre uno solo y siempre el último build.
@@ -769,11 +780,17 @@ jobs:
           $global:LASTEXITCODE = 0
           $ErrorActionPreference = "Stop"
 
-          gh release create owner-ultimo $exe.FullName `
+          gh release create owner-ultimo $exe.FullName $demo.FullName `
             --draft `
             --title "MV DAX Lab OWNER — solo para el dueño" `
             --notes @"
-          Instalador de la edición **owner**: todo desbloqueado, sin clave y sin vencimiento.
+          Dos instaladores, los dos privados:
+
+          - **OWNER** — todo desbloqueado, sin clave y sin vencimiento. Para probar el producto entero.
+          - **DEMO** — 7 días con todo. Es el que le mandás a quien pide una demo por el formulario.
+
+          La edición que se vende (`cliente`) no está acá: esa se publica en los artifacts, y sin
+          licencia válida no desbloquea nada, así que no hay nada que regalar.
 
           Este release es un **borrador**: solo lo ve quien tiene permiso de escritura en el repo.
           Publicarlo regala el producto entero. No lo publiques.

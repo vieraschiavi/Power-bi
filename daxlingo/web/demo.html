@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MV DAX Lab — Pedir una demo</title>
+<link rel="icon" href="logo-mv.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="logo-mv.svg">
+<link rel="stylesheet" href="assets/estilos.css">
+<link rel="stylesheet" href="assets/iconos.css">
+<style>
+  .caja{background:var(--navy2);border:1px solid var(--line);border-radius:16px;
+        padding:26px;margin-top:22px}
+  .campo{margin:16px 0}
+  .campo label{display:block;font-size:.85rem;font-weight:600;margin-bottom:6px}
+  .campo input,.campo textarea{width:100%;background:#12294a;color:var(--ink);
+        border:1px solid var(--line2);border-radius:10px;padding:11px 13px;
+        font:inherit;font-size:.92rem;box-sizing:border-box}
+  .campo input:focus,.campo textarea:focus{outline:none;border-color:var(--amber)}
+  .campo textarea{min-height:88px;resize:vertical}
+  .req{color:var(--amber)}
+  .aviso{border-radius:10px;padding:13px 15px;margin-top:18px;font-size:.9rem;
+         display:none}
+  .aviso.ok{background:#0d3b2e;border:1px solid #1c5745;color:#7fe3c4;display:block}
+  .aviso.mal{background:#3b1614;border:1px solid #6b2a26;color:#f0a9a4;display:block}
+  .porque{list-style:none;padding:0;margin:18px 0 0}
+  .porque li{display:flex;gap:11px;margin:11px 0;font-size:.9rem;
+             color:var(--muted);align-items:flex-start}
+  .porque i{flex:0 0 1.15rem;margin-top:.1rem}
+</style>
+</head>
+<body>
+
+<nav><div class="wrap">
+  <a class="marca" href="index.html"><i class="marca-cuadro"></i>MV <b>DAX Lab</b></a>
+  <div class="idiomas" role="group" aria-label="Idioma" style="margin-left:auto">
+    <button data-lang="es" aria-pressed="true">ES</button>
+    <button data-lang="en" aria-pressed="false">EN</button>
+    <button data-lang="pt" aria-pressed="false">PT</button>
+  </div>
+</div></nav>
+
+<section><div class="wrap" style="max-width:720px">
+
+  <h2 id="titulo">Pedí una demo</h2>
+  <p class="lead" id="bajada">
+    La demo es en vivo, uno a uno, sobre tu propio modelo si querés. No es un
+    instalador que se baja: son 30 minutos donde ves el producto trabajando y
+    preguntás lo que quieras.
+  </p>
+
+  <div class="caja">
+    <form id="form" novalidate>
+      <div class="campo">
+        <label for="nombre" id="l-nombre">Nombre y apellido <span class="req">*</span></label>
+        <input id="nombre" name="nombre" autocomplete="name" required>
+      </div>
+      <div class="campo">
+        <label for="email" id="l-email">Email de trabajo <span class="req">*</span></label>
+        <input id="email" name="email" type="email" autocomplete="email" required>
+      </div>
+      <div class="campo">
+        <label for="empresa" id="l-empresa">Empresa <span class="req">*</span></label>
+        <input id="empresa" name="empresa" autocomplete="organization" required>
+      </div>
+      <div class="campo">
+        <label for="pais" id="l-pais">País <span class="req">*</span></label>
+        <input id="pais" name="pais" autocomplete="country-name" required>
+      </div>
+      <div class="campo">
+        <label for="mensaje" id="l-mensaje">¿Qué querés resolver? (opcional)</label>
+        <textarea id="mensaje" name="mensaje"></textarea>
+      </div>
+      <button class="btn-a" type="submit" id="enviar">Pedir la demo</button>
+      <div class="aviso" id="aviso" role="status" aria-live="polite"></div>
+    </form>
+  </div>
+
+  <div class="caja">
+    <h3 style="margin-bottom:4px" id="t-porque">Por qué a pedido y no descargable</h3>
+    <ul class="porque">
+      <li><i class="ico ico-verificado ico-ok"></i><span id="p1">Te muestro el
+        producto resolviendo un caso real, que es lo que se entiende. Un
+        instalador suelto se abre, no se entiende y se cierra.</span></li>
+      <li><i class="ico ico-verificado ico-ok"></i><span id="p2">Podés traer tu
+        propio modelo y ver qué encuentra el analizador ahí, no en un ejemplo
+        armado.</span></li>
+      <li><i class="ico ico-verificado ico-ok"></i><span id="p3">Preguntás en el
+        momento. La mayoría de las dudas se responden en dos minutos hablando y
+        no se responden nunca leyendo.</span></li>
+    </ul>
+  </div>
+
+  <p style="color:var(--muted);font-size:.85rem;margin-top:22px" id="pie">
+    ¿Ya compraste? Tu clave de licencia está en
+    <a href="descarga.html">la página de descarga</a>.
+  </p>
+
+</div></section>
+
+<script src="assets/i18n.js"></script>
+<script>
+(function () {
+  var form = document.getElementById("form");
+  var aviso = document.getElementById("aviso");
+  var boton = document.getElementById("enviar");
+
+  function mostrar(clase, texto) {
+    aviso.className = "aviso " + clase;
+    aviso.textContent = texto;
+  }
+
+  // Si la función de correo no está configurada del lado del servidor, el
+  // pedido no se pierde: se arma un mailto con los mismos datos. Es peor UX
+  // que el envío directo, pero infinitamente mejor que un formulario que
+  // parece funcionar y tira los datos a la basura.
+  function porMail(d) {
+    var cuerpo = "Nombre: " + d.nombre + "\nEmail: " + d.email +
+                 "\nEmpresa: " + d.empresa + "\nPaís: " + d.pais +
+                 (d.mensaje ? "\n\n" + d.mensaje : "");
+    return "mailto:vieraschiavi@gmail.com" +
+           "?subject=" + encodeURIComponent("Demo MV DAX Lab — " + d.nombre) +
+           "&body=" + encodeURIComponent(cuerpo);
+  }
+
+  form.addEventListener("submit", async function (e) {
+    e.preventDefault();
+    var d = {
+      nombre: form.nombre.value.trim(), email: form.email.value.trim(),
+      empresa: form.empresa.value.trim(), pais: form.pais.value.trim(),
+      mensaje: form.mensaje.value.trim(),
+    };
+    if (!d.nombre || !d.email || !d.empresa || !d.pais) {
+      mostrar("mal", "Faltan datos: nombre, email, empresa y país son obligatorios.");
+      return;
+    }
+    boton.disabled = true;
+    var textoOriginal = boton.textContent;
+    boton.textContent = "Enviando…";
+    try {
+      var r = await fetch("/api/solicitar-demo", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(d),
+      });
+      var j = await r.json().catch(function () { return {}; });
+      if (r.ok) {
+        form.style.display = "none";
+        mostrar("ok", "Listo. Te escribo a " + d.email +
+                      " para coordinar el horario, normalmente dentro de las 24 horas.");
+        return;
+      }
+      if (j.error === "correo_no_configurado") {
+        mostrar("mal", "El envío automático no está disponible. Abrí tu correo " +
+                       "y mandame el pedido — te preparé el mail con los datos.");
+        window.location.href = porMail(d);
+      } else if (j.error === "email_invalido") {
+        mostrar("mal", "Revisá el email: no parece una dirección a la que pueda contestarte.");
+      } else {
+        mostrar("mal", "No se pudo enviar. Escribime a vieraschiavi@gmail.com y lo vemos.");
+      }
+    } catch (err) {
+      mostrar("mal", "No se pudo enviar. Escribime a vieraschiavi@gmail.com y lo vemos.");
+    } finally {
+      boton.disabled = false;
+      boton.textContent = textoOriginal;
+    }
+  });
+
+  document.querySelectorAll(".idiomas button").forEach(function (b) {
+    b.setAttribute("aria-pressed", String(b.dataset.lang === idioma()));
+    b.addEventListener("click", function () {
+      localStorage.setItem("mvdaxlab.idioma", b.dataset.lang);
+      location.reload();
+    });
+  });
+})();
+</script>
+</body>
+</html>
