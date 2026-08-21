@@ -41,7 +41,7 @@ AQUI = Path(__file__).resolve().parent
 AZUL_ARRIBA = (28, 63, 99)     # #1c3f63
 AZUL_ABAJO = (13, 36, 64)      # #0d2440
 BLANCO = (255, 255, 255, 255)  # la M
-VERDE = (92, 181, 49, 255)     # #5cb531 — la V
+VERDE = (130, 197, 68, 255)    # #82C544 — la V
 
 # El SVG trabaja sobre un lienzo de 1024 con 6 px de margen y esquinas de
 # radio 230. Se guardan como proporción para poder dibujar a cualquier lado.
@@ -110,11 +110,21 @@ def main() -> None:
     png = AQUI / "icono.png"
     grande.resize((512, 512), Image.LANCZOS).save(png)
 
-    # El .ico lleva todos los tamaños que pide Windows: 16 para la barra de
-    # título, 32/48 para el explorador, 256 para vistas grandes.
+    # El .ico lleva los tamaños que pide Windows: 16 para la barra de título,
+    # 32/48 para el explorador, 256 para vistas grandes.
+    #
+    # La lista es EXACTAMENTE la del icono.ico que está commiteado y sirviendo
+    # en producción. No es un detalle estético: si el generador produjera otro
+    # juego de capas, correr este script dejaría el repo sucio con un binario
+    # distinto al que se verificó, y nadie sabría cuál de los dos vale.
+    #
+    # Ojo con una trampa de PIL acá: `save(format="ICO", sizes=[...])` descarta
+    # EN SILENCIO todo tamaño mayor que la imagen que recibe. Por eso se parte
+    # del render de 1024 y se baja — pasarle una imagen chica deja un .ico de
+    # una sola capa sin avisar.
     ico = AQUI / "icono.ico"
     grande.save(ico, format="ICO",
-                sizes=[(16, 16), (24, 24), (32, 32), (48, 48), (64, 64),
+                sizes=[(16, 16), (32, 32), (48, 48), (64, 64),
                        (128, 128), (256, 256)])
     print(f"✓ {png.name} ({png.stat().st_size // 1024} KB)")
     print(f"✓ {ico.name} ({ico.stat().st_size // 1024} KB)")
