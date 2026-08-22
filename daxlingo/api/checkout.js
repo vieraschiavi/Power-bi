@@ -93,6 +93,12 @@ function peticionPagoUnico(plan, p, base) {
         pending: base + "/descarga.html",
         failure: base + "/#precios",
       },
+      // Sin esto, la venta depende de que el cliente vuelva al sitio: si
+      // cerró el navegador en la pantalla de MercadoPago, pagó y nunca
+      // recibió la clave. El webhook llega igual, aunque no vuelva nadie —
+      // emite la licencia, la manda por mail con el enlace de descarga, y
+      // deja la venta registrada para el monitor.
+      notification_url: base + "/api/webhook-mp",
       auto_return: "approved",
       statement_descriptor: "MVDAXLAB",
     },
@@ -114,6 +120,7 @@ function peticionSuscripcion(plan, p, base) {
         currency_id: MONEDA,
       },
       back_url: base + "/descarga.html",
+      notification_url: base + "/api/webhook-mp",
       status: "pending",
     },
   };

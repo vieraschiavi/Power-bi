@@ -58,6 +58,10 @@ En *Settings → Environment Variables*, para Production y Preview:
 | `MP_TASA_UYU` | Cotización de referencia USD→UYU (por defecto 40) | — |
 | `MVDAXLAB_SITIO` | Dominio público, solo como respaldo | Las URLs de retorno igual salen del header `Host` |
 | `GITHUB_TOKEN` | Token de GitHub con permiso de lectura de contenido. **Solo hace falta cuando el repositorio pase a privado**: con él, `/api/descargar` pide una URL firmada en vez del enlace público del release | Con el repo público, no pasa nada: cae al enlace público. Con el repo privado, la descarga del cliente deja de funcionar |
+| `MP_WEBHOOK_SECRET` | Clave de firma de las notificaciones de MercadoPago | El webhook igual no se puede engañar (siempre re-consulta el pago contra la API), pero se pierde el primer filtro |
+| `MVDAX_OWNER_TOKEN` | Contraseña del monitor de ventas (`/monitor.html`). Generala con `openssl rand -base64 24` | El monitor queda **cerrado**, no abierto: sin token configurado devuelve 401 siempre |
+| `KV_REST_API_URL` + `KV_REST_API_TOKEN` | Base Redis donde se registran ventas y descargas. Los pone solos la integración de Upstash en el Marketplace de Vercel | Se cobra y se entrega igual, pero no queda registro: el monitor avisa que falta la base en vez de mostrar ceros |
+| `MVDAX_COMISION_PCT` | Comisión de MercadoPago para el neto estimado del monitor (por defecto `7.31` = 5,99% + IVA) | Usa el default |
 
 ⚠️ **`MVDAX_LICENSE_SECRET` no se cambia a la ligera**: las claves ya emitidas
 se validan contra ella, así que cambiarla invalida todas las licencias vendidas.
@@ -201,6 +205,51 @@ Y una compra de punta a punta con las credenciales de **prueba**: comprar,
 recibir la clave, pegarla en la pestaña Licencia del programa y ver que
 desbloquea. Es el único paso que no se puede automatizar desde acá, porque
 necesita el checkout real de MercadoPago.
+
+## El webhook, y por qué la venta ya no depende del navegador
+
+Antes, la licencia se emitía cuando el cliente volvía a `/descarga.html` y la
+página preguntaba «¿está aprobado?». Si cerraba el navegador en la pantalla de
+MercadoPago —o si el pago se acreditaba veinte minutos después, que con
+transferencia y efectivo es lo normal— pagaba y no recibía nada.
+
+`/api/webhook-mp` recibe el aviso de MercadoPago aunque no vuelva nadie: emite
+la licencia, **se la manda por mail con el enlace de descarga**, y registra la
+venta. El `notification_url` ya viaja en la preferencia (`api/checkout.js`), así
+que no hay que configurar nada en el panel de MercadoPago.
+
+Dos candados, y el segundo es el que importa:
+
+1. **Firma** (`MP_WEBHOOK_SECRET`): se verifica el HMAC del aviso.
+2. **Nunca se le cree al cuerpo del aviso.** Del POST solo sale el ID; el
+   estado, el monto y el pagador se vuelven a pedir a la API de MercadoPago con
+   el access token. Por eso, aun sin la firma configurada, un aviso falso no
+   puede inventar una venta: tendría que nombrar un pago real y aprobado.
+
+El endpoint responde 200 siempre (salvo firma inválida): un 500 haría que
+MercadoPago reintente en bucle, y un error nuestro —el mail, la base— no es
+motivo para reintentar un pago que ya está bien.
+
+Para activar la firma: panel de MercadoPago → *Webhooks* → generar la clave
+secreta → pegarla en Vercel como `MP_WEBHOOK_SECRET`.
+
+## El monitor de ventas
+
+`https://<tu-sitio>/monitor.html` — pide el `MVDAX_OWNER_TOKEN` y muestra
+clientes, ventas, descargas, facturado bruto y neto estimado, más el detalle de
+las últimas 50 ventas con el mail de cada cliente.
+
+El token no viaja en la URL (terminaría en el historial y en cualquier captura):
+se pega en un campo y queda en la pestaña hasta cerrarla.
+
+Necesita la base Redis. La forma más rápida: en el proyecto de Vercel →
+*Storage* → **Upstash for Redis** → crear la base. Vercel inyecta
+`KV_REST_API_URL` y `KV_REST_API_TOKEN` solo. Capa gratuita, sin tarjeta.
+
+> El **neto** es una estimación y la página lo dice: descuenta la comisión de
+> MercadoPago (5,99% + 22% de IVA sobre esa comisión = 7,31% efectivo para
+> acreditación inmediata en Uruguay), no impuestos a la renta. El bruto sí es
+> un dato.
 
 ## Cómo llega el instalador al que compró
 

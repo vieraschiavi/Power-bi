@@ -30,6 +30,7 @@
 
 const { limitar } = require("./_limitador");
 const { PLANES } = require("./_planes");
+const almacen = require("./_almacen");
 
 const REPO = process.env.GITHUB_REPO || "vieraschiavi/Power-bi";
 const TAG = process.env.MVDAX_TAG_RELEASE || "programa-ultimo";
@@ -153,6 +154,12 @@ module.exports = async (req, res) => {
   if (!destino) {
     destino = `https://github.com/${REPO}/releases/download/${TAG}/${ARCHIVO}`;
   }
+
+  // Se cuenta la descarga, pero NO se espera a que termine de guardarse: si
+  // el almacén está lento o caído, el cliente igual se lleva su instalador.
+  // La estadística es lo prescindible acá, no la descarga.
+  const q = req.query || {};
+  almacen.contarDescarga(q.payment_id || q.preapproval_id);
 
   res.setHeader("Cache-Control", "no-store");
   res.statusCode = 302;
