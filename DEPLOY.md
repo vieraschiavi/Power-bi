@@ -57,6 +57,7 @@ En *Settings → Environment Variables*, para Production y Preview:
 | `MP_CURRENCY` | Moneda del cobro (por defecto `UYU`) | — |
 | `MP_TASA_UYU` | Cotización de referencia USD→UYU (por defecto 40) | — |
 | `MVDAXLAB_SITIO` | Dominio público, solo como respaldo | Las URLs de retorno igual salen del header `Host` |
+| `GITHUB_TOKEN` | Token de GitHub con permiso de lectura de contenido. **Solo hace falta cuando el repositorio pase a privado**: con él, `/api/descargar` pide una URL firmada en vez del enlace público del release | Con el repo público, no pasa nada: cae al enlace público. Con el repo privado, la descarga del cliente deja de funcionar |
 
 ⚠️ **`MVDAX_LICENSE_SECRET` no se cambia a la ligera**: las claves ya emitidas
 se validan contra ella, así que cambiarla invalida todas las licencias vendidas.
@@ -200,6 +201,26 @@ Y una compra de punta a punta con las credenciales de **prueba**: comprar,
 recibir la clave, pegarla en la pestaña Licencia del programa y ver que
 desbloquea. Es el único paso que no se puede automatizar desde acá, porque
 necesita el checkout real de MercadoPago.
+
+## Cómo llega el instalador al que compró
+
+Tres piezas, y ninguna se puede saltear:
+
+1. El workflow **Instaladores de Windows** publica la edición `cliente` en un
+   release con tag fijo `programa-ultimo` y nombre de archivo fijo
+   `MV-DAX-Lab-Setup.exe`. Solo lo hace si `MVDAX_LICENSE_SECRET` está
+   configurado — con una clave descartable el instalador rechazaría las
+   licencias reales, así que no se publica.
+2. `/api/descargar` recibe el `payment_id` (o el `preapproval_id`), **vuelve a
+   preguntarle a MercadoPago si ese pago está aprobado** y recién entonces
+   redirige al archivo. Armar la URL a mano no sirve.
+3. La página de descarga muestra el botón junto a la clave, ya con el id del
+   pago que el servidor acaba de validar.
+
+Que el release sea público no regala nada: sin licencia válida esa copia no
+desbloquea generar, transformar, exportar, Fabric ni overlay. Y cuando el
+repositorio pase a privado, el enlace sigue andando **si** cargaste
+`GITHUB_TOKEN` en Vercel (ver la tabla de variables).
 
 ## Qué NO necesita configuración
 

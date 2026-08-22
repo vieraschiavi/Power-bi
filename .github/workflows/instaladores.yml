@@ -796,6 +796,69 @@ jobs:
             daxlingo/desktop/dist-portable/MV-DAX-Lab-portable.zip
 
       # ------------------------------------------------------------------
+      # El instalador de CLIENTE, en un release publicado y con nombre fijo.
+      #
+      # Antes vivía solo como artifact, y eso dejaba al que pagaba sin nada:
+      # los artifacts caducan a los 30 días, piden una cuenta de GitHub y en
+      # un repo público los baja cualquiera. Inaccesible para el cliente y
+      # accesible para el resto — al revés de lo que hace falta.
+      #
+      # Ahora va a un release con tag fijo (`programa-ultimo`) y nombre de
+      # archivo SIN versión, para que la URL no cambie nunca: es la que
+      # resuelve `api/descargar.js` después de comprobar el pago contra
+      # MercadoPago. El artifact sigue existiendo para depurar.
+      #
+      # Que el release sea público no regala nada: desde que la prueba de 7
+      # días es exclusiva de la edición demo (dxl/licencia.py), esta copia
+      # sin licencia válida no desbloquea generar, transformar, exportar,
+      # Fabric ni overlay. Y cuando el repositorio pase a privado, el enlace
+      # sigue andando: `api/descargar.js` pide una URL firmada con
+      # GITHUB_TOKEN.
+      # ------------------------------------------------------------------
+      - name: Publicar el instalador de cliente en un release
+        if: env.SECRETO_REAL == 'si'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $exe = Get-ChildItem daxlingo/desktop/dist-instalador `
+                   -Filter "MV-DAX-Lab-Setup-*.exe" | Select-Object -First 1
+          if (-not $exe) { throw "no se construyó el instalador de cliente" }
+
+          # Nombre estable: la URL de descarga no puede cambiar con cada
+          # versión, porque está horneada en el endpoint y en la página.
+          $fijo = Join-Path $env:RUNNER_TEMP "MV-DAX-Lab-Setup.exe"
+          Copy-Item $exe.FullName $fijo -Force
+
+          $ErrorActionPreference = "Continue"
+          gh release view programa-ultimo *> $null
+          if ($LASTEXITCODE -eq 0) { gh release delete programa-ultimo --yes }
+          $global:LASTEXITCODE = 0
+          $ErrorActionPreference = "Stop"
+
+          gh release create programa-ultimo $fijo `
+            --title "MV DAX Lab — instalador de Windows" `
+            --notes @"
+          Instalador de la edición que se vende. **Necesita una clave de licencia**: sin ella no
+          desbloquea generar, transformar, exportar, Fabric ni overlay.
+
+          Si compraste, la clave y el enlace de descarga salen en la página de descarga del sitio
+          después de que MercadoPago confirma el pago. Si no compraste, esto no te sirve de nada
+          — la demo se pide en https://power-bi-mv13.vercel.app/demo
+
+          Build: $($exe.Name) — commit ${{ github.sha }}
+          "@
+
+          # Evidencia: el endpoint de descarga apunta a este nombre exacto.
+          # Si el asset no quedó así, la descarga del cliente da 404.
+          $assets = gh release view programa-ultimo --json assets --jq '.assets[].name'
+          Write-Host "assets publicados: $assets"
+          if ($assets -notcontains "MV-DAX-Lab-Setup.exe") {
+            throw "el asset no quedó con el nombre fijo que espera api/descargar.js"
+          }
+          Write-Host "OK: descargable en releases/download/programa-ultimo/MV-DAX-Lab-Setup.exe"
+
+      # ------------------------------------------------------------------
       # El instalador OWNER, en un release BORRADOR.
       #
       # El pedido es tener siempre un .exe de owner en GitHub para poder

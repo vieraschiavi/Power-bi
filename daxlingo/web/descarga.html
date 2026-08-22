@@ -66,6 +66,14 @@
     <h3 id="lic-titulo"><i class="ico ico-licencia"></i>Tu licencia</h3>
     <p id="lic-estado" style="color:var(--muted);font-size:.9rem"></p>
     <div class="clave" id="lic-clave"></div>
+
+    <!-- El instalador sale de /api/descargar, que vuelve a comprobar el pago
+         contra MercadoPago antes de redirigir: el enlace no se puede armar a
+         mano. Antes de esto, el que compraba recibía la clave y no tenía de
+         dónde bajar el programa. -->
+    <a class="btn-a" id="btn-descargar" style="display:none;margin:6px 0 18px"
+       href="#"><span id="txt-descargar">Descargar el instalador para Windows</span></a>
+
     <div class="paso"><span class="n">1</span>
       <span>Abrí MV DAX Lab e id a la pestaña <b>Licencia</b>.</span></div>
     <div class="paso"><span class="n">2</span>
@@ -108,19 +116,22 @@
           pendiente: "El pago figura como «{estado}». Cuando MercadoPago lo " +
                      "acredite, recargá esta página y la clave aparece acá.",
           error: "No pudimos verificar el pago automáticamente.",
-          copiado: "Clave copiada" },
+          copiado: "Clave copiada",
+          descargar: "Descargar el instalador para Windows" },
     en: { esperando: "Confirming the payment with MercadoPago…",
           aprobado: "Payment confirmed. Here is your key:",
           pendiente: "The payment shows as “{estado}”. Once MercadoPago " +
                      "clears it, reload this page and the key will be here.",
           error: "We could not verify the payment automatically.",
-          copiado: "Key copied" },
+          copiado: "Key copied",
+          descargar: "Download the Windows installer" },
     pt: { esperando: "Confirmando o pagamento com o MercadoPago…",
           aprobado: "Pagamento confirmado. Esta é a sua chave:",
           pendiente: "O pagamento está como “{estado}”. Quando o MercadoPago " +
                      "liberar, recarregue esta página e a chave aparece aqui.",
           error: "Não conseguimos verificar o pagamento automaticamente.",
-          copiado: "Chave copiada" },
+          copiado: "Chave copiada",
+          descargar: "Baixar o instalador para Windows" },
   };
 
   function idioma() {
@@ -128,6 +139,7 @@
     return TXT[g] ? g : "es";
   }
   var t = TXT[idioma()];
+  document.getElementById("txt-descargar").textContent = t.descargar;
 
   var params = new URLSearchParams(location.search);
   var idPago = params.get("payment_id") || params.get("collection_id");
@@ -166,6 +178,15 @@
           estado.textContent = t.aprobado;
           claveNodo.style.display = "";
           claveNodo.textContent = d.licencia;
+
+          // El botón de descarga aparece recién acá, con el mismo id de pago
+          // que acaba de validar el servidor. /api/descargar lo vuelve a
+          // comprobar del otro lado: esto es comodidad, no es el candado.
+          var bajar = document.getElementById("btn-descargar");
+          bajar.href = "/api/descargar?" +
+            (consulta.recurrente ? "preapproval_id=" : "payment_id=") +
+            encodeURIComponent(consulta.id);
+          bajar.style.display = "";
           if (consulta.recurrente) {
             // La licencia mensual vence: el cliente necesita saber dónde
             // volver a buscar la siguiente. Sin esto, el mes que viene se
