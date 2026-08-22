@@ -588,6 +588,16 @@ T: dict[str, dict[str, str]] = {
               "seguem abertos; gerar DAX, transformar, exportar e publicar "
               "exigem uma licença.",
     },
+    "lic_sin_licencia": {
+        "es": "Esta copia necesita una licencia para funcionar. Comprala en "
+              "la web y pegá la clave acá abajo.",
+        "en": "This copy needs a license to run. Buy one on the site and "
+              "paste the key below.",
+        "pt": "Esta cópia precisa de uma licença para funcionar. Compre no "
+              "site e cole a chave abaixo.",
+    },
+    "lic_sin_licencia_corto": {
+        "es": "sin licencia", "en": "no license", "pt": "sem licença"},
     "lic_bloqueado": {
         "es": "Esta función necesita una licencia activa. Miralo en Licencia.",
         "en": "This feature needs an active license. See License.",

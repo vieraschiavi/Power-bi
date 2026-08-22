@@ -271,10 +271,25 @@ def evaluar(clave: str | None = None, ahora: float | None = None) -> Estado:
             dias = (int((float(exp) - ahora) / 86400) + 1) if exp else None
             return Estado("profesional", True, dias, "licencia", payload)
 
-    dias = dias_demo_restantes(ahora)
-    if dias > 0:
-        return Estado("demo", True, dias, "demo")
-    return Estado("demo", False, 0, "vencida")
+    # La prueba de 7 días es de la edición DEMO y de nadie más.
+    #
+    # Antes caía acá cualquier edición sin clave, incluida `profesional` — la
+    # que se vende. O sea que el instalador del producto pago le regalaba una
+    # semana entera a cualquiera que lo consiguiera, sin pasar por la caja y
+    # sin dejar rastro. Con la demo abierta al público eso daba más o menos
+    # igual; con la demo entregada a pedido, era la puerta que dejaba sin
+    # sentido cerrar la otra.
+    #
+    # Ahora la edición vendida sin licencia válida no desbloquea nada. Eso
+    # permite publicar su instalador sin regalar el producto: sirve para que
+    # el que compró lo baje solo, y no le sirve a nadie más.
+    if edicion == "demo":
+        dias = dias_demo_restantes(ahora)
+        if dias > 0:
+            return Estado("demo", True, dias, "demo")
+        return Estado("demo", False, 0, "vencida")
+
+    return Estado(edicion, False, 0, "sin_licencia")
 
 
 def activar(clave: str) -> Estado:

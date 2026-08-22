@@ -52,6 +52,8 @@ En *Settings → Environment Variables*, para Production y Preview:
 |---|---|---|
 | `MP_ACCESS_TOKEN` | Access Token de MercadoPago | Los botones de compra responden `medio_pago_no_configurado` |
 | `MVDAX_LICENSE_SECRET` | Clave que firma las licencias. Generala con `openssl rand -base64 48` | El pago se aprueba pero no se emite ninguna clave |
+| `RESEND_API_KEY` | Clave de Resend, para que el formulario de demo te mande el pedido por mail | El formulario avisa y cae a un `mailto:` — el pedido no se pierde, pero es peor experiencia |
+| `RESEND_FROM` | Remitente (opcional). Sin dominio propio dejá el default `onboarding@resend.dev`, que solo puede escribirte a vos mismo — justo lo que hace falta | Usa el default |
 | `MP_CURRENCY` | Moneda del cobro (por defecto `UYU`) | — |
 | `MP_TASA_UYU` | Cotización de referencia USD→UYU (por defecto 40) | — |
 | `MVDAXLAB_SITIO` | Dominio público, solo como respaldo | Las URLs de retorno igual salen del header `Host` |
@@ -119,7 +121,7 @@ python3 daxlingo/media/build_video.py   # el cierre del video toma el dominio re
 
 ## Checklist de producción — de cero a vender
 
-Cinco cosas. Ninguna necesita tocar código.
+Seis cosas. Ninguna necesita tocar código.
 
 ### 1. Credenciales de MercadoPago
 
@@ -154,12 +156,26 @@ nuevas que las copias ya instaladas acepten.
 | `MP_CURRENCY` | `UYU` (solo si cobrás en otra moneda hace falta cambiarlo) |
 | `MP_TASA_UYU` | `40` (cotización de referencia USD→UYU) |
 
-### 4. El secreto en GitHub
+### 4. Resend, para el formulario de demo (gratis)
+
+<https://resend.com/signup> — capa gratuita de 3.000 mails al mes, sin tarjeta.
+Creá una API key en *API Keys → Create* y pegala en Vercel como
+`RESEND_API_KEY`.
+
+Mientras no tengas dominio propio no hace falta verificar nada: el remitente
+por defecto (`onboarding@resend.dev`) solo puede mandarte mails **a vos
+mismo**, que es exactamente lo que este formulario necesita.
+
+Sin esta clave el formulario no se rompe: avisa y abre el correo del visitante
+con los datos ya cargados. Pero perdés a los que no tienen cliente de correo
+configurado, así que conviene ponerla.
+
+### 5. El secreto en GitHub
 
 <https://github.com/vieraschiavi/Power-bi/settings/secrets/actions> → **New
 repository secret** → nombre `MVDAX_LICENSE_SECRET`, valor **el mismo del paso 2**.
 
-### 5. Comprobar que quedó andando
+### 6. Comprobar que quedó andando
 
 ```bash
 # la landing responde
