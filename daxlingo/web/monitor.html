@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MV DAX Lab — Monitor de ventas</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="logo-mv.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/estilos.css">
+<link rel="stylesheet" href="assets/iconos.css">
+<style>
+  .caja{background:var(--navy2);border:1px solid var(--line);border-radius:16px;
+        padding:24px;margin-top:20px}
+  .tarjetas{display:grid;gap:14px;margin-top:20px;
+            grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+  .tarjeta{background:var(--navy2);border:1px solid var(--line);
+           border-radius:14px;padding:18px 20px}
+  .tarjeta .n{font-size:1.9rem;font-weight:800;color:var(--amber);
+              line-height:1.1;font-variant-numeric:tabular-nums}
+  .tarjeta .r{font-size:.8rem;color:var(--muted);margin-top:6px}
+  .tarjeta .p{font-size:.75rem;color:var(--faint);margin-top:3px}
+  table{width:100%;border-collapse:collapse;font-size:.86rem;margin-top:8px}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line)}
+  th{color:var(--muted);font-weight:600;font-size:.78rem;
+     text-transform:uppercase;letter-spacing:.04em}
+  td.num{text-align:right;font-variant-numeric:tabular-nums}
+  .envoltorio{overflow-x:auto}
+  input[type=password]{background:#12294a;color:var(--ink);
+        border:1px solid var(--line2);border-radius:10px;padding:11px 13px;
+        font:inherit;width:100%;max-width:340px;box-sizing:border-box}
+  .aviso{border-radius:10px;padding:13px 15px;margin-top:16px;font-size:.9rem;
+         background:#3b1614;border:1px solid #6b2a26;color:#f0a9a4;display:none}
+  .nota{color:var(--faint);font-size:.8rem;margin-top:10px}
+  .oculto{display:none}
+</style>
+</head>
+<body>
+
+<nav><div class="wrap">
+  <a class="marca" href="index.html"><i class="marca-cuadro"></i>MV <b>DAX Lab</b></a>
+  <span style="margin-left:auto;color:var(--muted);font-size:.85rem">Monitor</span>
+</div></nav>
+
+<section><div class="wrap" style="max-width:940px">
+
+  <h2>Monitor de ventas</h2>
+
+  <!-- Sin token no se ve nada. El token no viaja en la URL a propósito:
+       terminaría en el historial del navegador y en cualquier captura. -->
+  <div class="caja" id="caja-entrar">
+    <p style="color:var(--muted);font-size:.9rem;margin-top:0">
+      Pegá tu <code>MVDAX_OWNER_TOKEN</code>. Queda en esta pestaña nada más:
+      al cerrarla se olvida.
+    </p>
+    <form id="form-entrar" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <input type="password" id="token" autocomplete="current-password"
+             placeholder="Token del dueño" required>
+      <button class="btn-a" type="submit">Entrar</button>
+    </form>
+    <div class="aviso" id="aviso"></div>
+  </div>
+
+  <div id="panel" class="oculto">
+    <div class="tarjetas" id="tarjetas"></div>
+
+    <div class="caja">
+      <h3 style="margin:0 0 4px">Últimas ventas</h3>
+      <p class="nota" style="margin-top:0">
+        «Clientes» cuenta mails únicos: la misma persona comprando dos veces,
+        o una suscripción que se renueva, no es un cliente nuevo.
+      </p>
+      <div class="envoltorio">
+        <table>
+          <thead><tr>
+            <th>Cuándo</th><th>Plan</th><th>Cliente</th>
+            <th class="num">USD</th><th class="num">Descargas</th>
+          </tr></thead>
+          <tbody id="filas"></tbody>
+        </table>
+      </div>
+      <p class="nota" id="pie-tabla"></p>
+    </div>
+  </div>
+
+</div></section>
+
+<script>
+(function () {
+  "use strict";
+  var form = document.getElementById("form-entrar");
+  var aviso = document.getElementById("aviso");
+
+  function mostrarError(t) { aviso.textContent = t; aviso.style.display = "block"; }
+
+  function fecha(epoch) {
+    if (!epoch) return "—";
+    var d = new Date(epoch * 1000);
+    return d.toLocaleDateString("es-UY", { day: "2-digit", month: "2-digit",
+                                           year: "2-digit" }) +
+           " " + d.toLocaleTimeString("es-UY", { hour: "2-digit", minute: "2-digit" });
+  }
+
+  // Plata siempre con dos decimales y separadores locales: "192,8" al lado
+  // de "7.31%" se lee como dos monedas distintas.
+  function plataUsd(n) {
+    return "US$ " + Number(n).toLocaleString("es-UY",
+      { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function pct(n) {
+    return Number(n).toLocaleString("es-UY", { maximumFractionDigits: 2 }) + "%";
+  }
+
+  function tarjeta(n, rotulo, pie) {
+    return '<div class="tarjeta"><div class="n">' + n + '</div>' +
+           '<div class="r">' + rotulo + '</div>' +
+           (pie ? '<div class="p">' + pie + '</div>' : '') + '</div>';
+  }
+
+  function pintar(d) {
+    var plata = d.dinero;
+    document.getElementById("tarjetas").innerHTML = [
+      tarjeta(d.clientes, "Clientes", d.ventas + " ventas en total"),
+      tarjeta(d.descargas, "Descargas del instalador"),
+      tarjeta(plataUsd(plata.brutoUsd), "Facturado (bruto)"),
+      tarjeta(plataUsd(plata.netoEstimadoUsd), "Neto estimado",
+              "menos " + pct(plata.comisionPct) + " de MercadoPago"),
+    ].join("");
+
+    var filas = (d.ultimas || []).map(function (v) {
+      return "<tr><td>" + fecha(v.cuando) + "</td>" +
+             "<td>" + (v.plan || "?") +
+               (v.tipo === "suscripcion" ? " · mensual" : "") + "</td>" +
+             "<td>" + (v.email || "—") + "</td>" +
+             '<td class="num">' + (v.usd != null ? v.usd : "—") + "</td>" +
+             '<td class="num">' + (v.descargas || 0) + "</td></tr>";
+    }).join("");
+    document.getElementById("filas").innerHTML =
+      filas || '<tr><td colspan="5" style="color:var(--faint)">' +
+               "Todavía no hay ventas registradas.</td></tr>";
+    document.getElementById("pie-tabla").textContent = plata.nota;
+
+    document.getElementById("caja-entrar").classList.add("oculto");
+    document.getElementById("panel").classList.remove("oculto");
+  }
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var token = document.getElementById("token").value.trim();
+    if (!token) return;
+    aviso.style.display = "none";
+
+    fetch("/api/metricas", { headers: { authorization: "Bearer " + token } })
+      .then(function (r) {
+        if (r.status === 401) throw new Error("Token incorrecto.");
+        if (!r.ok) throw new Error("El servidor respondió " + r.status + ".");
+        return r.json();
+      })
+      .then(function (d) {
+        if (!d.configurado) { mostrarError(d.nota); return; }
+        sessionStorage.setItem("mvdaxlab.token", token);
+        pintar(d);
+      })
+      .catch(function (err) { mostrarError(err.message); });
+  });
+
+  // Recargar la pestaña no debería obligar a pegar el token de nuevo.
+  var guardado = sessionStorage.getItem("mvdaxlab.token");
+  if (guardado) {
+    document.getElementById("token").value = guardado;
+    form.dispatchEvent(new Event("submit"));
+  }
+})();
+</script>
+</body>
+</html>

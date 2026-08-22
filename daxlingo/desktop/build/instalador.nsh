@@ -87,6 +87,98 @@
   ${endIf}
 !macroend
 
+; --- customInit: no mandar la instalación a un disco sin lugar ---------------
+;
+; El pedido original fue "me autodirige al disco C y yo no tengo espacio ahí".
+; La mitad grande de eso ya la resuelve preInit (arriba): la marca fantasma
+; que se saltaba la página de carpeta. Con eso, el usuario VE el diálogo y
+; puede elegir D:.
+;
+; Pero el valor que viene propuesto en ese diálogo sigue siendo
+; $PROGRAMFILES64, o sea C:. Si C: está lleno, el que le da "Siguiente" sin
+; mirar —que son casi todos— se choca contra el mismo problema.
+;
+; Acá se cambia SOLO ese valor propuesto, y solo cuando C: de verdad no tiene
+; lugar. Con el disco del sistema sano no pasa nada: la convención de Windows
+; es instalar en Archivos de programa y no hay motivo para romperla.
+;
+; Tres candados, para que esto nunca elija mal:
+;   1. Solo si NO es una actualización (si la app ya está instalada, su
+;      carpeta manda; no se la movemos por abajo).
+;   2. Solo en instalación interactiva. Una silenciosa (/S) es un script, y el
+;      script decide — por eso el CI, que instala con /S, no cambia en nada.
+;   3. Solo unidades FIJAS (${GetDrives} "HDD"): nunca un pendrive, nunca una
+;      unidad de red. Instalar ahí sería peor que quedarse sin espacio.
+;
+; ${GetRoot}, ${DriveSpace} y ${GetDrives} salen de FileFunc.nsh, que ya viene
+; incluido por multiUser.nsh (línea 1) — o sea, disponible acá sin agregar
+; nada.
+
+; OJO CON ESTOS DOS !include: no son de adorno.
+;
+; electron-builder mete este archivo como CABECERA, antes de installer.nsi
+; (NsisTarget.js → computeCommonInstallerScriptHeader). Y installer.nsi es
+; quien incluye common.nsh (LogicLib, vía x64.nsh) y multiUser.nsh
+; (FileFunc.nsh). O sea que acá arriba todavía no existe ni ${if} ni
+; ${DriveSpace}.
+;
+; A los !macro de este archivo no les afecta —un macro se compila donde se
+; INSERTA, y para entonces installer.nsi ya cargó todo—, pero una Function se
+; compila donde se DEFINE. Sin estas dos líneas, mvdaxMirarUnidad no compila
+; y el build del instalador se cae entero.
+;
+; Incluirlos dos veces no molesta: los dos headers traen su propio guard
+; (!ifndef LOGICLIB / FILEFUNC_INCLUDED).
+!include LogicLib.nsh
+!include FileFunc.nsh
+
+!define MVDAX_MB_NECESARIOS 3000   ; el paquete pesa ~500 MB; el resto es aire
+
+Var mvdaxMejorUnidad
+Var mvdaxMejorLibre
+
+; Callback de ${GetDrives}: se queda con la unidad fija que más espacio libre
+; tenga. $9 = letra con barra ("D:\").
+Function mvdaxMirarUnidad
+  Push $R2
+  ${DriveSpace} "$9" "/D=F /S=M" $R2
+  ${if} $R2 > $mvdaxMejorLibre
+    StrCpy $mvdaxMejorLibre $R2
+    StrCpy $mvdaxMejorUnidad "$9"
+  ${endIf}
+  Pop $R2
+  ; Cadena vacía = seguir recorriendo. Va literal y no `Push $0`: $0 podría
+  ; traer cualquier cosa de antes y "StopGetDrives" cortaría el recorrido.
+  Push ""
+FunctionEnd
+
+; Los ${if} van anidados y no con ${andIfNot} a propósito: este archivo ya
+; tiene probado que ${if}/${ifNot}/${endIf} en minúscula compilan (preInit los
+; usa desde siempre), y no vale la pena estrenar una variante nueva de LogicLib
+; en un script que solo se compila en el CI, en Windows.
+!macro customInit
+  ${ifNot} ${Silent}
+    ${ifNot} ${FileExists} "$INSTDIR\${APP_EXECUTABLE_FILENAME}"
+      ${GetRoot} "$INSTDIR" $R0
+      ${DriveSpace} "$R0\" "/D=F /S=M" $R1
+
+      ${if} $R1 < ${MVDAX_MB_NECESARIOS}
+        StrCpy $mvdaxMejorUnidad ""
+        StrCpy $mvdaxMejorLibre $R1      ; hay que SUPERAR a la del sistema
+        ${GetDrives} "HDD" "mvdaxMirarUnidad"
+
+        ${if} $mvdaxMejorUnidad != ""
+          ; $mvdaxMejorUnidad viene como "D:\", y ${APP_FILENAME} es el nombre
+          ; de la carpeta del producto — el mismo que usa electron-builder
+          ; para armar el default en Archivos de programa.
+          StrCpy $INSTDIR "$mvdaxMejorUnidad${APP_FILENAME}"
+          DetailPrint "El disco $R0 tiene $R1 MB libres; se propone $INSTDIR"
+        ${endIf}
+      ${endIf}
+    ${endIf}
+  ${endIf}
+!macroend
+
 !macro customInstall
   ; Anclar a la barra de tareas (best effort: si Windows lo rechaza por
   ; política, la instalación sigue igual).

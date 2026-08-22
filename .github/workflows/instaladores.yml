@@ -109,13 +109,67 @@ jobs:
         run: npm install
 
       # ------------------------------------------------------------------
+      # El secreto que firma las licencias.
+      #
+      # Este job prueba que el instalador de Windows instala, arranca, aguanta
+      # el candado de edición y desinstala. Para eso necesita UN secreto — no
+      # necesita EL secreto de producción. Antes el job moría en el primer
+      # paso cuando el repositorio no tenía configurado
+      # `MVDAX_LICENSE_SECRET`, y con eso se perdían las otras quince
+      # comprobaciones: el check quedaba rojo permanente y dejaba de decir
+      # nada sobre el código.
+      #
+      # Ahora, si el secreto de producción no está, se genera uno AL AZAR
+      # para esta corrida. Todo el resto del job corre igual. Lo único que
+      # cambia es que el instalador de cliente NO se publica —está sellado
+      # con una clave descartable, así que rechazaría las licencias reales—
+      # y el resumen del job lo dice con todas las letras.
+      #
+      # El guard de scripts/build-instaladores.js NO se tocó: sigue
+      # cortando en seco si alguien construye la edición vendida sin secreto.
+      # Lo que cambió es que acá se le pasa uno explícito en vez de dejarlo
+      # sin nada.
+      # ------------------------------------------------------------------
+      - name: Resolver el secreto de licencias
+        shell: pwsh
+        env:
+          SECRETO: ${{ secrets.MVDAX_LICENSE_SECRET }}
+        run: |
+          if ($env:SECRETO) {
+            Write-Host "MVDAX_LICENSE_SECRET está configurado: build publicable"
+            "SECRETO_REAL=si" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+            return
+          }
+
+          # `Create().GetBytes([byte[]])` y no el `::Fill()` estático: Fill
+          # recibe un Span<byte> y la conversión desde un array de PowerShell
+          # no es confiable entre versiones. Esta sobrecarga existe desde
+          # siempre y toma el array tal cual.
+          $bytes = New-Object byte[] 48
+          [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+          $efimero = [Convert]::ToBase64String($bytes)
+          # Que no aparezca en ningún log, aunque sea descartable: si se ve
+          # uno, se aprende a mirar dónde salen los otros.
+          Write-Host "::add-mask::$efimero"
+
+          # Un solo string, sin `+` entre argumentos: `Write-Host "a" + "b"`
+          # no concatena, imprime «a + b» (son tres argumentos del comando,
+          # no una expresión).
+          Write-Host ("::warning::MVDAX_LICENSE_SECRET no está configurado en este " +
+                      "repositorio. Se usa una clave descartable para poder probar el " +
+                      "instalador, y NO se publica el instalador de cliente: sellado con " +
+                      "esa clave rechazaría las licencias que emite la web.")
+          "SECRETO_REAL=no" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+          "MVDAX_SECRETO_EFIMERO=$efimero" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+
+      # ------------------------------------------------------------------
       # Los tres instaladores. build-instaladores.js compila el front una vez
       # y hornea el sello de cada edición.
       # ------------------------------------------------------------------
       - name: Construir los tres instaladores
         working-directory: daxlingo/desktop
         env:
-          MVDAX_LICENSE_SECRET: ${{ secrets.MVDAX_LICENSE_SECRET }}
+          MVDAX_LICENSE_SECRET: ${{ secrets.MVDAX_LICENSE_SECRET || env.MVDAX_SECRETO_EFIMERO }}
         run: node scripts/build-instaladores.js todos
 
       - name: Listar lo construido
@@ -669,7 +723,7 @@ jobs:
         shell: pwsh
         working-directory: daxlingo
         env:
-          MVDAX_LICENSE_SECRET: ${{ secrets.MVDAX_LICENSE_SECRET }}
+          MVDAX_LICENSE_SECRET: ${{ secrets.MVDAX_LICENSE_SECRET || env.MVDAX_SECRETO_EFIMERO }}
         run: |
           .\desktop\runtime\python.exe desktop/scripts/empaquetar-portable.py
           Get-ChildItem desktop/dist-portable -Filter *.zip |
@@ -725,7 +779,13 @@ jobs:
       # es exclusiva de la edición demo (ver dxl/licencia.py), este instalador
       # sin licencia válida no desbloquea nada. Sirve para que el que compró
       # lo baje solo, y no le sirve a nadie más.
+      #
+      # Salvo que esté sellado con la clave descartable de más arriba: en ese
+      # caso rechazaría TODA licencia que emita la web, y el que compró se
+      # encontraría con un producto que no abre. Un instalador que no existe
+      # es mejor que uno que no anda.
       - name: Publicar el instalador de cliente
+        if: env.SECRETO_REAL == 'si'
         uses: actions/upload-artifact@v4
         with:
           name: instaladores-windows
@@ -734,6 +794,69 @@ jobs:
           path: |
             daxlingo/desktop/dist-instalador/MV-DAX-Lab-Setup-*.exe
             daxlingo/desktop/dist-portable/MV-DAX-Lab-portable.zip
+
+      # ------------------------------------------------------------------
+      # El instalador de CLIENTE, en un release publicado y con nombre fijo.
+      #
+      # Antes vivía solo como artifact, y eso dejaba al que pagaba sin nada:
+      # los artifacts caducan a los 30 días, piden una cuenta de GitHub y en
+      # un repo público los baja cualquiera. Inaccesible para el cliente y
+      # accesible para el resto — al revés de lo que hace falta.
+      #
+      # Ahora va a un release con tag fijo (`programa-ultimo`) y nombre de
+      # archivo SIN versión, para que la URL no cambie nunca: es la que
+      # resuelve `api/descargar.js` después de comprobar el pago contra
+      # MercadoPago. El artifact sigue existiendo para depurar.
+      #
+      # Que el release sea público no regala nada: desde que la prueba de 7
+      # días es exclusiva de la edición demo (dxl/licencia.py), esta copia
+      # sin licencia válida no desbloquea generar, transformar, exportar,
+      # Fabric ni overlay. Y cuando el repositorio pase a privado, el enlace
+      # sigue andando: `api/descargar.js` pide una URL firmada con
+      # GITHUB_TOKEN.
+      # ------------------------------------------------------------------
+      - name: Publicar el instalador de cliente en un release
+        if: env.SECRETO_REAL == 'si'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $exe = Get-ChildItem daxlingo/desktop/dist-instalador `
+                   -Filter "MV-DAX-Lab-Setup-*.exe" | Select-Object -First 1
+          if (-not $exe) { throw "no se construyó el instalador de cliente" }
+
+          # Nombre estable: la URL de descarga no puede cambiar con cada
+          # versión, porque está horneada en el endpoint y en la página.
+          $fijo = Join-Path $env:RUNNER_TEMP "MV-DAX-Lab-Setup.exe"
+          Copy-Item $exe.FullName $fijo -Force
+
+          $ErrorActionPreference = "Continue"
+          gh release view programa-ultimo *> $null
+          if ($LASTEXITCODE -eq 0) { gh release delete programa-ultimo --yes }
+          $global:LASTEXITCODE = 0
+          $ErrorActionPreference = "Stop"
+
+          gh release create programa-ultimo $fijo `
+            --title "MV DAX Lab — instalador de Windows" `
+            --notes @"
+          Instalador de la edición que se vende. **Necesita una clave de licencia**: sin ella no
+          desbloquea generar, transformar, exportar, Fabric ni overlay.
+
+          Si compraste, la clave y el enlace de descarga salen en la página de descarga del sitio
+          después de que MercadoPago confirma el pago. Si no compraste, esto no te sirve de nada
+          — la demo se pide en https://power-bi-mv13.vercel.app/demo
+
+          Build: $($exe.Name) — commit ${{ github.sha }}
+          "@
+
+          # Evidencia: el endpoint de descarga apunta a este nombre exacto.
+          # Si el asset no quedó así, la descarga del cliente da 404.
+          $assets = gh release view programa-ultimo --json assets --jq '.assets[].name'
+          Write-Host "assets publicados: $assets"
+          if ($assets -notcontains "MV-DAX-Lab-Setup.exe") {
+            throw "el asset no quedó con el nombre fijo que espera api/descargar.js"
+          }
+          Write-Host "OK: descargable en releases/download/programa-ultimo/MV-DAX-Lab-Setup.exe"
 
       # ------------------------------------------------------------------
       # El instalador OWNER, en un release BORRADOR.
@@ -780,6 +903,19 @@ jobs:
           $global:LASTEXITCODE = 0
           $ErrorActionPreference = "Stop"
 
+          # Estas dos ediciones no dependen del secreto de licencias —owner
+          # viene desbloqueada, demo cuenta por fecha—, así que se publican
+          # igual esté configurado o no. La que sí depende es cliente, y de
+          # eso habla esta línea.
+          $sobreCliente = if ($env:SECRETO_REAL -eq "si") {
+            "La edición que se vende (``cliente``) no está acá: esa se publica en los artifacts, y sin`n" +
+            "licencia válida no desbloquea nada, así que no hay nada que regalar."
+          } else {
+            "⚠️ La edición que se vende (``cliente``) NO se publicó en esta corrida: el repositorio no`n" +
+            "tiene configurado ``MVDAX_LICENSE_SECRET``, así que se construyó con una clave descartable`n" +
+            "y rechazaría las licencias que emite la web. Cargá el secreto y volvé a correr el workflow."
+          }
+
           gh release create owner-ultimo $exe.FullName $demo.FullName `
             --draft `
             --title "MV DAX Lab OWNER — solo para el dueño" `
@@ -789,8 +925,7 @@ jobs:
           - **OWNER** — todo desbloqueado, sin clave y sin vencimiento. Para probar el producto entero.
           - **DEMO** — 7 días con todo. Es el que le mandás a quien pide una demo por el formulario.
 
-          La edición que se vende (`cliente`) no está acá: esa se publica en los artifacts, y sin
-          licencia válida no desbloquea nada, así que no hay nada que regalar.
+          $sobreCliente
 
           Este release es un **borrador**: solo lo ve quien tiene permiso de escritura en el repo.
           Publicarlo regala el producto entero. No lo publiques.
@@ -807,3 +942,52 @@ jobs:
             throw "el release de owner NO quedó en borrador — se borró por las dudas"
           }
           Write-Host "OK: owner quedó en un release borrador, invisible para el público"
+
+      # ------------------------------------------------------------------
+      # El resumen sale SIEMPRE (`if: always()`), también cuando algo falló:
+      # es justo ahí donde saber si el build era publicable o de prueba
+      # cambia cómo se lee el error.
+      # ------------------------------------------------------------------
+      - name: Resumen
+        if: always()
+        shell: pwsh
+        run: |
+          if ($env:SECRETO_REAL -eq "si") {
+            @"
+          ## Instaladores · build publicable
+
+          ``MVDAX_LICENSE_SECRET`` está configurado, así que el instalador de **cliente** quedó
+          sellado con la clave de producción y se publicó en los artifacts de esta corrida.
+
+          Las ediciones **owner** y **demo** están en el release borrador ``owner-ultimo``.
+          "@ | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            return
+          }
+
+          @"
+          ## Instaladores · build de PRUEBA, no publicable
+
+          Este repositorio **no tiene configurado** el secreto ``MVDAX_LICENSE_SECRET``, así que
+          el instalador se construyó con una clave descartable, generada para esta corrida.
+
+          | | |
+          |---|---|
+          | Se probó el instalador de Windows entero | sí |
+          | Se publicó el instalador de **cliente** | **no** |
+          | Se publicaron **owner** y **demo** (release borrador) | sí — no dependen del secreto |
+
+          Un instalador de cliente sellado con esa clave rechazaría **todas** las licencias que
+          emite la web, así que no se sube: el que compró se encontraría con un producto que no abre.
+
+          ### Para destrabarlo
+
+          1. Generá el valor: ``openssl rand -base64 48``
+          2. Cargalo en [Actions secrets](https://github.com/${{ github.repository }}/settings/secrets/actions)
+             como ``MVDAX_LICENSE_SECRET``
+          3. Cargá **el mismo valor** en las variables de entorno del proyecto en Vercel
+          4. Volvé a correr este workflow
+
+          Los dos lados tienen que coincidir: la web **firma** la licencia con ese valor
+          (``daxlingo/api/_licencia.js``) y el programa la **verifica** con el mismo
+          (``daxlingo/dxl/licencia.py``). Si no coinciden, todo se ve bien hasta que un cliente paga.
+          "@ | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
