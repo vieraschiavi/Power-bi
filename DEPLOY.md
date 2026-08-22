@@ -78,10 +78,20 @@ cliente paga**: MercadoPago aprueba, la web emite la clave, y el programa la
 rechaza con «licencia inválida». No lo agarra ningún test, porque cada lado
 funciona perfecto por separado.
 
-Desde ahora el build **falla** si construís la edición `cliente` sin el
-secreto, en vez de generar en silencio un instalador que rechaza todo. Así que
-si el secreto no está en GitHub, el workflow de instaladores se cae con el
-motivo escrito — es la forma de comprobarlo sin tener que leer el secreto.
+El build **falla** si construís la edición `cliente` sin el secreto, en vez de
+generar en silencio un instalador que rechaza todo.
+
+En el CI la cosa es un poco distinta, porque ahí hay dos preguntas separadas
+—«¿anda el instalador?» y «¿está configurado el secreto?»— y mezclarlas
+dejaba el check rojo permanente sin decir nada del código. Si el secreto no
+está, el workflow **genera una clave descartable para esa corrida**, prueba el
+instalador entero igual, y **no publica** el instalador de cliente: sellado con
+esa clave rechazaría las licencias reales. El resumen del job lo dice con todas
+las letras. Las ediciones owner y demo se publican igual, porque no dependen
+del secreto (una viene desbloqueada, la otra cuenta por fecha).
+
+O sea: **si el artifact `instaladores-windows` no aparece en la corrida, el
+secreto no está cargado.** Es la forma de comprobarlo sin tener que leerlo.
 
 La demo no lo necesita (es por fecha, no por clave) y la edición owner tampoco
 (viene desbloqueada, sin vencimiento).
